@@ -9,9 +9,13 @@ import { MultiResultsPage } from './pages/MultiResultsPage';
 import { InstructionsPage } from './pages/InstructionsPage';
 import { RankingPage } from './pages/RankingPage';
 
-const App: React.FC = () => (
+interface Props {
+  onLogout: () => void;
+}
+
+const App: React.FC<Props> = ({ onLogout }) => (
   <Routes>
-    <Route path="/" element={<HomePage />} />
+    <Route path="/" element={<HomePage onLogout={onLogout} />} />
     <Route path="/new" element={<NewSessionPage />} />
     <Route path="/results/:id" element={<SessionResultsPage />} />
     <Route path="/compare/:id1/:id2" element={<CompareSessionsPage />} />

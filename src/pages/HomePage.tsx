@@ -3,10 +3,20 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { HistoryList } from '../components/history/HistoryList';
 import { getSettings, getSessions } from '../lib/storage';
+import { logout, getCredentials } from '../lib/auth';
 import type { TestSession, AppSettings } from '../types';
 
-export const HomePage: React.FC = () => {
+interface Props {
+  onLogout: () => void;
+}
+
+export const HomePage: React.FC<Props> = ({ onLogout }) => {
   const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    onLogout();
+  };
   const [sessions, setSessions] = useState<TestSession[]>(getSessions);
   const [settings] = useState<AppSettings>(getSettings);
   const [view, setView] = useState<'home' | 'history'>('home');
@@ -35,10 +45,20 @@ export const HomePage: React.FC = () => {
       <div className="bg-gradient-to-br from-green-700 to-green-900 text-white px-6 pt-10 pb-8">
         <div className="max-w-2xl mx-auto flex items-center gap-5">
           <img src="./logo.png" alt="GT Logo" className="h-20 w-auto drop-shadow-lg" />
-          <div>
+          <div className="flex-1">
             <h1 className="text-2xl font-black tracking-tight">Tennis Precision Test</h1>
             <p className="text-green-200 text-sm mt-1">Profilo tecnico · Analisi precisione</p>
           </div>
+          <button
+            onClick={handleLogout}
+            className="flex-shrink-0 text-green-200 hover:text-white text-xs font-medium flex flex-col items-center gap-0.5 transition-colors"
+            title="Esci"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            <span>{getCredentials()?.username ?? ''}</span>
+          </button>
         </div>
       </div>
 
