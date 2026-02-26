@@ -91,9 +91,21 @@ export const HistoryList: React.FC<Props> = ({ sessions, settings, onRefresh }) 
               `}
             >
               <div className="flex items-start justify-between mb-3">
-                <div>
+                <div className="flex-1 min-w-0 mr-3">
                   <h3 className="font-bold text-gray-900">{session.playerName}</h3>
-                  <p className="text-xs text-gray-500">{session.date} · {session.category} · Coach: {session.coach}</p>
+                  <p className="text-xs text-gray-500">
+                    {session.date} · {session.category} · Coach: {session.coach}
+                    {session.dateOfBirth && (() => {
+                      const dob = new Date(session.dateOfBirth);
+                      const ref = new Date(session.date);
+                      let age = ref.getFullYear() - dob.getFullYear();
+                      if (ref.getMonth() < dob.getMonth() || (ref.getMonth() === dob.getMonth() && ref.getDate() < dob.getDate())) age--;
+                      return ` · ${age} anni`;
+                    })()}
+                  </p>
+                  {session.note && (
+                    <p className="text-xs text-amber-700 italic mt-1 line-clamp-2">{session.note}</p>
+                  )}
                 </div>
                 <div className="text-right">
                   <span className="text-xl font-black text-green-700">{r.percentOfIdeal.toFixed(0)}%</span>

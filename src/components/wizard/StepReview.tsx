@@ -106,6 +106,12 @@ export const StepReview: React.FC<Props> = ({ state, onPrev, onSave }) => {
             <div className="space-y-1 text-sm mb-4">
               <p><span className="text-gray-500">Giocatore:</span> <strong>{state.players[0].name}</strong></p>
               <p><span className="text-gray-500">Categoria:</span> <strong>{state.players[0].category}</strong></p>
+              {state.players[0].dateOfBirth && (
+                <p><span className="text-gray-500">Data di nascita:</span> <strong>{state.players[0].dateOfBirth}</strong></p>
+              )}
+              {state.players[0].note && (
+                <p><span className="text-gray-500">Nota:</span> <em className="text-gray-700">{state.players[0].note}</em></p>
+              )}
             </div>
             <PlayerSummary player={state.players[0]} label="" />
           </>
@@ -137,9 +143,14 @@ export const StepReview: React.FC<Props> = ({ state, onPrev, onSave }) => {
                 );
               })}
             </div>
-            <div className="text-sm mb-3">
-              <span className="text-gray-500">Categoria:</span>{' '}
-              <strong>{state.players[activeIdx].category}</strong>
+            <div className="text-sm mb-3 space-y-1">
+              <p><span className="text-gray-500">Categoria:</span> <strong>{state.players[activeIdx].category}</strong></p>
+              {state.players[activeIdx].dateOfBirth && (
+                <p><span className="text-gray-500">Data di nascita:</span> <strong>{state.players[activeIdx].dateOfBirth}</strong></p>
+              )}
+              {state.players[activeIdx].note && (
+                <p><span className="text-gray-500">Nota:</span> <em className="text-gray-700">{state.players[activeIdx].note}</em></p>
+              )}
             </div>
             <PlayerSummary
               player={state.players[activeIdx]}

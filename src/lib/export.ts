@@ -14,6 +14,8 @@ export function exportSessionCSV(session: TestSession): string {
   lines.push(csvRow(['Data', session.date]));
   lines.push(csvRow(['Categoria', session.category]));
   lines.push(csvRow(['Coach', session.coach]));
+  if (session.dateOfBirth) lines.push(csvRow(['Data di Nascita', session.dateOfBirth]));
+  if (session.note) lines.push(csvRow(['Nota', session.note]));
   lines.push('');
 
   lines.push(csvRow(['Stroke', 'Label', 'Ave', 'Dev', 'N Serie']));
@@ -52,6 +54,8 @@ export function exportHistoryCSV(sessions: TestSession[]): string {
       'Data',
       'Categoria',
       'Coach',
+      'DataNascita',
+      'Nota',
       'Serve_Ave',
       'Serve_Dev',
       'FH_Ave',
@@ -78,6 +82,8 @@ export function exportHistoryCSV(sessions: TestSession[]): string {
         session.date,
         session.category,
         session.coach,
+        session.dateOfBirth ?? '',
+        session.note ?? '',
         m.serve?.ave.toFixed(3) ?? '',
         m.serve?.dev.toFixed(3) ?? '',
         m.forehand?.ave.toFixed(3) ?? '',

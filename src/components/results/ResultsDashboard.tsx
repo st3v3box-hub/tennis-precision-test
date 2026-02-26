@@ -62,7 +62,19 @@ export const ResultsDashboard: React.FC<Props> = ({ session, settings, compareSe
             <h2 className="text-lg font-bold text-gray-900">{session.playerName}</h2>
             <p className="text-sm text-gray-500">
               {session.date} · {session.category} · Coach: {session.coach}
+              {session.dateOfBirth && (() => {
+                const dob = new Date(session.dateOfBirth);
+                const ref = new Date(session.date);
+                let age = ref.getFullYear() - dob.getFullYear();
+                if (ref.getMonth() < dob.getMonth() || (ref.getMonth() === dob.getMonth() && ref.getDate() < dob.getDate())) age--;
+                return ` · ${age} anni`;
+              })()}
             </p>
+            {session.note && (
+              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 mt-2 italic">
+                {session.note}
+              </p>
+            )}
           </div>
           <div className="flex gap-2">
             <Button

@@ -79,6 +79,8 @@ export const WizardContainer: React.FC = () => {
         date: state.date,
         category: p.category as Category,
         coach: state.coach,
+        dateOfBirth: p.dateOfBirth,
+        note: p.note,
         completed: true,
         createdAt: new Date().toISOString(),
         series: p.series,

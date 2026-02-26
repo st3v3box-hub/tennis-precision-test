@@ -103,6 +103,27 @@ export const StepMeta: React.FC<Props> = ({ state, update, updatePlayer, setPlay
               {/* Show diagram only for single player to keep multi-player UI compact */}
               {state.playerCount === 1 && <CategoryDiagram cat={p.category} />}
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Data di Nascita</label>
+              <input
+                type="date"
+                value={p.dateOfBirth ?? ''}
+                onChange={e => updatePlayer(i, { dateOfBirth: e.target.value || undefined })}
+                className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Nota <span className="text-gray-400 font-normal">(opzionale)</span>
+              </label>
+              <textarea
+                value={p.note ?? ''}
+                onChange={e => updatePlayer(i, { note: e.target.value || undefined })}
+                placeholder="Es. stato di forma, osservazioni tecniche..."
+                rows={2}
+                className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
+              />
+            </div>
           </div>
         </Card>
       ))}

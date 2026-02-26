@@ -46,6 +46,8 @@ export interface TestSession {
   date: string;
   category: Category;
   coach: string;
+  dateOfBirth?: string;
+  note?: string;
   completed: boolean;
   createdAt: string;
   series: SeriesResult[];
@@ -92,6 +94,8 @@ export interface WizardPlayerData {
   id: string;
   name: string;
   category: Category;
+  dateOfBirth?: string;
+  note?: string;
   series: SeriesResult[];
 }
 
