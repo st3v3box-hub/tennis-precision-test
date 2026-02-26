@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-gray-50 text-gray-900 min-h-screen;
+  }
+}
+
+@layer components {
+  .score-btn {
+    @apply flex items-center justify-center rounded-xl font-bold text-lg transition-all duration-150
+           border-2 select-none cursor-pointer active:scale-95;
+    min-height: 3rem;
+  }
+  .score-btn.selected {
+    @apply bg-green-600 border-green-600 text-white shadow-lg scale-105;
+  }
+  .score-btn.unselected {
+    @apply bg-white border-gray-300 text-gray-700 hover:border-green-500 hover:text-green-700;
+  }
+}
