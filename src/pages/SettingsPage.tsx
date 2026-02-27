@@ -4,11 +4,13 @@ import type { AppSettings } from '../types';
 import { getSettings, saveSettings } from '../lib/storage';
 import {
   changeCredentials, getCredentials,
-  hasAccount, getAccountInfo, upsertAccount, removeAccount,
+  getAccountsByRole, upsertAccount, removeAccount,
   ROLE_LABELS,
 } from '../lib/auth';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
+
+// ── Shared password input ─────────────────────────────────────────────────────
 
 const EyeIcon: React.FC<{ visible: boolean }> = ({ visible }) =>
   visible ? (
@@ -22,7 +24,7 @@ const EyeIcon: React.FC<{ visible: boolean }> = ({ visible }) =>
     </svg>
   );
 
-const PwdInput: React.FC<{ value: string; onChange: (v: string) => void; placeholder: string }> = ({ value, onChange, placeholder }) => {
+const PwdInput: React.FC<{ value: string; onChange: (v: string) => void; placeholder: string; autoFocus?: boolean }> = ({ value, onChange, placeholder, autoFocus }) => {
   const [show, setShow] = useState(false);
   return (
     <div className="relative">
@@ -31,7 +33,10 @@ const PwdInput: React.FC<{ value: string; onChange: (v: string) => void; placeho
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full border border-gray-300 rounded-xl px-4 py-3 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+        autoFocus={autoFocus}
+        autoCorrect="off"
+        autoCapitalize="off"
+        className="w-full border border-gray-300 rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
       />
       <button type="button" onClick={() => setShow(s => !s)} tabIndex={-1}
         className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
@@ -41,146 +46,178 @@ const PwdInput: React.FC<{ value: string; onChange: (v: string) => void; placeho
   );
 };
 
-// ── Sub-account management card ───────────────────────────────────────────────
+// ── Multi-account card for a given role ───────────────────────────────────────
 
 type ManagedRole = 'coach' | 'viewer';
 
-interface AccountCardProps {
-  role: ManagedRole;
-}
+const MultiAccountCard: React.FC<{ role: ManagedRole }> = ({ role }) => {
+  const roleLabel = ROLE_LABELS[role];
+  const [accounts, setAccounts] = useState(() => getAccountsByRole(role));
+  // formOpen: null = closed, 'new' = adding, string = editing by id
+  const [formOpen, setFormOpen] = useState<null | 'new' | string>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
-const AccountCard: React.FC<AccountCardProps> = ({ role }) => {
-  const [exists, setExists] = useState(() => hasAccount(role));
-  const [username, setUsername] = useState(() => getAccountInfo(role)?.username ?? '');
-  const [expanded, setExpanded] = useState(false);
-  const [inputUser, setInputUser] = useState(username);
+  const [inputUser, setInputUser] = useState('');
   const [inputPwd, setInputPwd] = useState('');
   const [confirmPwd, setConfirmPwd] = useState('');
-  const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
-  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [formErr, setFormErr] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
 
-  const roleLabel = ROLE_LABELS[role];
+  const refresh = () => setAccounts(getAccountsByRole(role));
+
+  const openAdd = () => {
+    setFormOpen('new');
+    setInputUser(''); setInputPwd(''); setConfirmPwd(''); setFormErr(''); setSuccessMsg('');
+    setDeleteConfirm(null);
+  };
+
+  const openEdit = (id: string, username: string) => {
+    setFormOpen(id);
+    setInputUser(username); setInputPwd(''); setConfirmPwd(''); setFormErr(''); setSuccessMsg('');
+    setDeleteConfirm(null);
+  };
+
+  const closeForm = () => {
+    setFormOpen(null);
+    setFormErr('');
+  };
+
+  const isEditing = formOpen !== null && formOpen !== 'new';
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setMsg(null);
-    if (!inputUser.trim()) { setMsg({ type: 'err', text: 'Username obbligatorio.' }); return; }
-    if (inputPwd.length < 4) { setMsg({ type: 'err', text: 'Password di almeno 4 caratteri.' }); return; }
-    if (inputPwd !== confirmPwd) { setMsg({ type: 'err', text: 'Le password non coincidono.' }); return; }
-    await upsertAccount(role, inputUser.trim(), inputPwd);
-    setUsername(inputUser.trim());
-    setExists(true);
-    setInputPwd('');
-    setConfirmPwd('');
-    setExpanded(false);
-    setMsg({ type: 'ok', text: exists ? 'Account aggiornato!' : 'Account creato!' });
+    setFormErr('');
+
+    if (!inputUser.trim()) { setFormErr('Username obbligatorio.'); return; }
+    if (!isEditing) {
+      if (inputPwd.length < 4) { setFormErr('Password di almeno 4 caratteri.'); return; }
+      if (inputPwd !== confirmPwd) { setFormErr('Le password non coincidono.'); return; }
+    } else if (inputPwd) {
+      if (inputPwd.length < 4) { setFormErr('Password di almeno 4 caratteri.'); return; }
+      if (inputPwd !== confirmPwd) { setFormErr('Le password non coincidono.'); return; }
+    }
+
+    const editId = isEditing ? formOpen! : undefined;
+    await upsertAccount(role, inputUser.trim(), inputPwd, editId);
+    refresh();
+    closeForm();
+    setSuccessMsg(isEditing ? `Account "${inputUser.trim()}" aggiornato.` : `Account "${inputUser.trim()}" creato.`);
+    setTimeout(() => setSuccessMsg(''), 3000);
   };
 
-  const handleRemove = () => {
-    removeAccount(role);
-    setExists(false);
-    setUsername('');
-    setInputUser('');
-    setDeleteConfirm(false);
-    setExpanded(false);
-    setMsg(null);
+  const handleDelete = (id: string) => {
+    removeAccount(id);
+    refresh();
+    setDeleteConfirm(null);
+    if (formOpen === id) closeForm();
   };
 
   return (
-    <Card title={`Account ${roleLabel}`}>
-      {exists ? (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between bg-green-50 rounded-xl px-3 py-2.5 border border-green-200">
-            <div>
-              <p className="text-xs text-green-600 font-semibold mb-0.5">✓ Account attivo</p>
-              <p className="text-sm font-bold text-gray-900">{username}</p>
-            </div>
-            <div className="flex gap-2">
+    <Card title={`${roleLabel} — ${accounts.length} account`}>
+      <div className="space-y-2">
+
+        {/* Success banner */}
+        {successMsg && (
+          <p className="text-xs bg-green-50 border border-green-200 text-green-700 px-3 py-2 rounded-xl">
+            ✓ {successMsg}
+          </p>
+        )}
+
+        {/* Empty state */}
+        {accounts.length === 0 && formOpen === null && (
+          <p className="text-xs text-gray-400 py-1">Nessun account {roleLabel} configurato.</p>
+        )}
+
+        {/* Account list */}
+        {accounts.map(acc => (
+          <div key={acc.id} className="space-y-2">
+            <div className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border transition-colors
+              ${formOpen === acc.id ? 'border-green-300 bg-green-50' : 'border-gray-100 bg-gray-50'}`}>
+              <span className="text-sm font-medium text-gray-800 flex-1 truncate">{acc.username}</span>
               <button
                 type="button"
-                onClick={() => { setExpanded(e => !e); setMsg(null); setInputUser(username); setInputPwd(''); setConfirmPwd(''); }}
-                className="text-xs text-gray-500 hover:text-green-600 font-medium px-2 py-1 border border-gray-200 rounded-lg"
+                onClick={() => formOpen === acc.id ? closeForm() : openEdit(acc.id, acc.username)}
+                className="text-xs text-gray-500 hover:text-green-600 font-medium px-2 py-1 rounded transition-colors"
               >
-                Modifica
+                {formOpen === acc.id ? '×' : 'Modifica'}
               </button>
-              {deleteConfirm ? (
+              {deleteConfirm === acc.id ? (
                 <>
-                  <button onClick={handleRemove} className="text-xs text-red-600 font-bold px-2 py-1 rounded">Rimuovi</button>
-                  <button onClick={() => setDeleteConfirm(false)} className="text-xs text-gray-400 px-2 py-1 rounded">Ann.</button>
+                  <button onClick={() => handleDelete(acc.id)} className="text-xs text-red-600 font-bold px-2 py-1 rounded">Elimina</button>
+                  <button onClick={() => setDeleteConfirm(null)} className="text-xs text-gray-400 px-2 py-1 rounded">Ann.</button>
                 </>
               ) : (
-                <button onClick={() => setDeleteConfirm(true)} className="text-xs text-gray-400 hover:text-red-500 px-2 py-1 rounded">🗑</button>
+                <button onClick={() => { setDeleteConfirm(acc.id); closeForm(); }}
+                  className="text-xs text-gray-300 hover:text-red-500 px-2 py-1 rounded transition-colors">🗑</button>
               )}
             </div>
+
+            {/* Inline edit form */}
+            {formOpen === acc.id && (
+              <form onSubmit={handleSave} className="pl-3 border-l-2 border-green-300 space-y-2 py-1">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Username</label>
+                  <input type="text" value={inputUser} onChange={e => setInputUser(e.target.value)}
+                    autoCorrect="off" autoCapitalize="off"
+                    className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    Nuova password <span className="text-gray-400 font-normal">(lascia vuoto per non cambiare)</span>
+                  </label>
+                  <PwdInput value={inputPwd} onChange={setInputPwd} placeholder="Nuova password" />
+                </div>
+                {inputPwd && (
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Conferma password</label>
+                    <PwdInput value={confirmPwd} onChange={setConfirmPwd} placeholder="Ripeti password" />
+                  </div>
+                )}
+                {formErr && <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-xl px-3 py-1.5">{formErr}</p>}
+                <div className="flex gap-2">
+                  <button type="submit" className="flex-1 bg-green-700 text-white text-xs font-bold py-2 rounded-xl hover:bg-green-800 transition-colors">Salva</button>
+                  <button type="button" onClick={closeForm} className="px-3 text-xs text-gray-500 py-2 rounded-xl border border-gray-200 hover:bg-gray-50">Ann.</button>
+                </div>
+              </form>
+            )}
           </div>
+        ))}
 
-          {expanded && (
-            <form onSubmit={handleSave} className="space-y-3 pt-1">
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Nuovo username</label>
-                <input
-                  type="text"
-                  value={inputUser}
-                  onChange={e => setInputUser(e.target.value)}
-                  className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Nuova password</label>
-                <PwdInput value={inputPwd} onChange={setInputPwd} placeholder="Nuova password" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Conferma password</label>
-                <PwdInput value={confirmPwd} onChange={setConfirmPwd} placeholder="Ripeti password" />
-              </div>
-              <button type="submit" className="w-full bg-green-700 hover:bg-green-800 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors">
-                Salva Modifiche
-              </button>
-            </form>
-          )}
-        </div>
-      ) : (
-        <div className="space-y-3">
-          <p className="text-xs text-gray-500">
-            Nessun account {roleLabel} configurato.{' '}
-            <button type="button" onClick={() => { setExpanded(true); setMsg(null); }} className="text-green-600 font-medium hover:underline">
-              Crea ora
-            </button>
-          </p>
+        {/* Add new form */}
+        {formOpen === 'new' && (
+          <form onSubmit={handleSave} className="border border-green-200 rounded-xl p-3 bg-green-50 space-y-2">
+            <p className="text-xs font-bold text-green-700 mb-1">Nuovo account {roleLabel}</p>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Username</label>
+              <input type="text" value={inputUser} onChange={e => setInputUser(e.target.value)}
+                placeholder="Es. mario.rossi" autoFocus
+                autoCorrect="off" autoCapitalize="off"
+                className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Password</label>
+              <PwdInput value={inputPwd} onChange={setInputPwd} placeholder="Password" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Conferma password</label>
+              <PwdInput value={confirmPwd} onChange={setConfirmPwd} placeholder="Ripeti password" />
+            </div>
+            {formErr && <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-xl px-3 py-1.5">{formErr}</p>}
+            <div className="flex gap-2">
+              <button type="submit" className="flex-1 bg-green-700 text-white text-xs font-bold py-2.5 rounded-xl hover:bg-green-800 transition-colors">Crea Account</button>
+              <button type="button" onClick={closeForm} className="px-3 text-xs text-gray-500 py-2.5 rounded-xl border border-gray-200 hover:bg-gray-50">Ann.</button>
+            </div>
+          </form>
+        )}
 
-          {expanded && (
-            <form onSubmit={handleSave} className="space-y-3">
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Username</label>
-                <input
-                  type="text"
-                  value={inputUser}
-                  onChange={e => setInputUser(e.target.value)}
-                  placeholder="Es. coach1"
-                  className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Password</label>
-                <PwdInput value={inputPwd} onChange={setInputPwd} placeholder="Password" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Conferma password</label>
-                <PwdInput value={confirmPwd} onChange={setConfirmPwd} placeholder="Ripeti password" />
-              </div>
-              <button type="submit" className="w-full bg-green-700 hover:bg-green-800 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors">
-                Crea Account
-              </button>
-            </form>
-          )}
-        </div>
-      )}
-
-      {msg && (
-        <p className={`mt-2 text-xs px-3 py-2 rounded-xl border ${msg.type === 'ok' ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
-          {msg.text}
-        </p>
-      )}
+        {/* Add button */}
+        {formOpen === null && (
+          <button type="button" onClick={openAdd}
+            className="w-full py-2.5 rounded-xl border-2 border-dashed border-gray-200 text-sm text-gray-400 hover:border-green-400 hover:text-green-600 transition-colors font-medium">
+            + Aggiungi {roleLabel}
+          </button>
+        )}
+      </div>
     </Card>
   );
 };
@@ -192,7 +229,6 @@ export const SettingsPage: React.FC = () => {
   const [settings, setSettings] = useState<AppSettings>(getSettings);
   const [saved, setSaved] = useState(false);
 
-  // Admin credentials change state
   const currentUsername = getCredentials()?.username ?? '';
   const [currentPwd, setCurrentPwd] = useState('');
   const [newUsername, setNewUsername] = useState(currentUsername);
@@ -212,7 +248,6 @@ export const SettingsPage: React.FC = () => {
     } else {
       setCredMsg({ type: 'ok', text: 'Credenziali aggiornate!' });
       setCurrentPwd(''); setNewPwd(''); setConfirmPwd('');
-      setNewUsername(newUsername.trim());
     }
   };
 
@@ -237,9 +272,11 @@ export const SettingsPage: React.FC = () => {
         {/* Account management */}
         <div>
           <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">Gestione Account</h2>
-          <AccountCard role="coach" />
+          <div className="space-y-3">
+            <MultiAccountCard role="coach" />
+            <MultiAccountCard role="viewer" />
+          </div>
         </div>
-        <AccountCard role="viewer" />
 
         {/* Change admin credentials */}
         <Card title="Credenziali Amministratore">
@@ -253,12 +290,9 @@ export const SettingsPage: React.FC = () => {
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Nuovo username</label>
-              <input
-                type="text"
-                value={newUsername}
-                onChange={e => setNewUsername(e.target.value)}
-                className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-              />
+              <input type="text" value={newUsername} onChange={e => setNewUsername(e.target.value)}
+                autoCorrect="off" autoCapitalize="off"
+                className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Nuova password</label>
@@ -282,20 +316,14 @@ export const SettingsPage: React.FC = () => {
 
         {/* App settings */}
         <Card title="Deviazione Standard">
-          <p className="text-xs text-gray-500 mb-3">
-            Formula usata per il calcolo della deviazione nei risultati.
-          </p>
+          <p className="text-xs text-gray-500 mb-3">Formula usata per il calcolo della deviazione nei risultati.</p>
           <div className="grid grid-cols-2 gap-3">
             {(['sample', 'population'] as const).map(mode => (
-              <button
-                key={mode}
-                onClick={() => update({ stdDevMode: mode })}
+              <button key={mode} onClick={() => update({ stdDevMode: mode })}
                 className={`py-3 rounded-xl border-2 text-sm font-semibold transition-all
                   ${settings.stdDevMode === mode
                     ? 'bg-green-600 border-green-600 text-white'
-                    : 'bg-white border-gray-300 text-gray-700 hover:border-green-400'
-                  }`}
-              >
+                    : 'bg-white border-gray-300 text-gray-700 hover:border-green-400'}`}>
                 {mode === 'sample' ? 'Campionaria (n−1)' : 'Popolazione (n)'}
               </button>
             ))}
@@ -303,26 +331,18 @@ export const SettingsPage: React.FC = () => {
         </Card>
 
         <Card title="Strategia Precision–Time">
-          <p className="text-xs text-gray-500 mb-3">
-            Modalità di calcolo del grafico Precision–Time (10 punti).
-          </p>
+          <p className="text-xs text-gray-500 mb-3">Modalità di calcolo del grafico Precision–Time (10 punti).</p>
           <div className="space-y-2">
             {([
               { v: 'A', label: 'Strategia A', desc: 'Per ogni punto i: media(FH_i, BH_i, Combined_i) — 1:1 mapping' },
               { v: 'B', label: 'Strategia B', desc: 'Per ogni punto i: media di coppia FH+FH / BH+BH + Combined_i' },
             ] as const).map(({ v, label, desc }) => (
-              <button
-                key={v}
-                onClick={() => update({ precisionTimeStrategy: v })}
+              <button key={v} onClick={() => update({ precisionTimeStrategy: v })}
                 className={`w-full text-left py-3 px-4 rounded-xl border-2 transition-all
                   ${settings.precisionTimeStrategy === v
                     ? 'bg-green-50 border-green-500'
-                    : 'bg-white border-gray-200 hover:border-green-300'
-                  }`}
-              >
-                <div className={`font-semibold text-sm ${settings.precisionTimeStrategy === v ? 'text-green-700' : 'text-gray-800'}`}>
-                  {label}
-                </div>
+                    : 'bg-white border-gray-200 hover:border-green-300'}`}>
+                <div className={`font-semibold text-sm ${settings.precisionTimeStrategy === v ? 'text-green-700' : 'text-gray-800'}`}>{label}</div>
                 <div className="text-xs text-gray-500 mt-0.5">{desc}</div>
               </button>
             ))}
