@@ -9,13 +9,17 @@ import './index.css';
 
 const Root: React.FC = () => {
   const [authed, setAuthed] = useState(isAuthenticated);
+  const [role, setRole] = useState<UserRole>(() => getCurrentRole() ?? 'viewer');
+
+  const handleSuccess = () => {
+    // Read the role from sessionStorage RIGHT after login() has set it
+    setRole(getCurrentRole() ?? 'viewer');
+    setAuthed(true);
+  };
 
   if (!authed) {
-    return <LoginPage onSuccess={() => setAuthed(true)} />;
+    return <LoginPage onSuccess={handleSuccess} />;
   }
-
-  // Role is already stored in sessionStorage by login()
-  const role: UserRole = getCurrentRole() ?? 'viewer';
 
   return (
     <HashRouter>
