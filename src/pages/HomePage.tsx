@@ -94,6 +94,14 @@ export const HomePage: React.FC<Props> = ({ onLogout }) => {
             variant="secondary"
             size="lg"
             className="w-full justify-center"
+            onClick={() => navigate('/players')}
+          >
+            👤 Giocatori
+          </Button>
+          <Button
+            variant="secondary"
+            size="lg"
+            className="w-full justify-center"
             onClick={() => navigate('/instructions')}
           >
             📖 Istruzioni
@@ -101,7 +109,7 @@ export const HomePage: React.FC<Props> = ({ onLogout }) => {
           <Button
             variant="secondary"
             size="lg"
-            className="w-full justify-center"
+            className="w-full justify-center col-span-2"
             onClick={() => navigate('/settings')}
           >
             ⚙️ Impostazioni

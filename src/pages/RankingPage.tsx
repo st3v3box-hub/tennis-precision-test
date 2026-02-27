@@ -7,6 +7,7 @@ import { computeSessionResults } from '../lib/formulas';
 type Tab = Category | 'generale';
 
 const TABS: { id: Tab; label: string }[] = [
+  { id: 'u10_u12', label: 'U10/U12' },
   { id: 'terza', label: '3ª Cat.' },
   { id: 'seconda', label: '2ª Cat.' },
   { id: 'prima', label: '1ª Cat.' },
@@ -16,12 +17,14 @@ const TABS: { id: Tab; label: string }[] = [
 const MEDAL = ['🥇', '🥈', '🥉'];
 
 const categoryColor: Record<Category, string> = {
+  u10_u12: 'bg-blue-100 text-blue-700',
   terza: 'bg-green-100 text-green-700',
   seconda: 'bg-yellow-100 text-yellow-700',
   prima: 'bg-red-100 text-red-700',
 };
 
 const categoryLabel: Record<Category, string> = {
+  u10_u12: 'U10/U12',
   terza: '3ª',
   seconda: '2ª',
   prima: '1ª',
@@ -51,13 +54,13 @@ export const RankingPage: React.FC = () => {
     ranked.filter(r => r.session.category === cat);
 
   // Generale: best session per player per category
-  // Returns: { playerName, terza: best% | null, seconda: best% | null, prima: best% | null }
+  type GeneraleRow = { name: string; u10_u12: number | null; terza: number | null; seconda: number | null; prima: number | null };
   const generalRows = useMemo(() => {
-    const map = new Map<string, { name: string; terza: number | null; seconda: number | null; prima: number | null }>();
+    const map = new Map<string, GeneraleRow>();
     ranked.forEach(({ session, pct }) => {
       const key = session.playerName.trim().toLowerCase();
-      const existing = map.get(key) ?? { name: session.playerName, terza: null, seconda: null, prima: null };
-      const cat = session.category as Category;
+      const existing: GeneraleRow = map.get(key) ?? { name: session.playerName, u10_u12: null, terza: null, seconda: null, prima: null };
+      const cat = session.category;
       if (existing[cat] === null || pct > (existing[cat] as number)) {
         existing[cat] = pct;
       }
@@ -65,8 +68,8 @@ export const RankingPage: React.FC = () => {
     });
     // Sort by best score across all categories
     return Array.from(map.values()).sort((a, b) => {
-      const bestA = Math.max(a.terza ?? 0, a.seconda ?? 0, a.prima ?? 0);
-      const bestB = Math.max(b.terza ?? 0, b.seconda ?? 0, b.prima ?? 0);
+      const bestA = Math.max(a.u10_u12 ?? 0, a.terza ?? 0, a.seconda ?? 0, a.prima ?? 0);
+      const bestB = Math.max(b.u10_u12 ?? 0, b.terza ?? 0, b.seconda ?? 0, b.prima ?? 0);
       return bestB - bestA;
     });
   }, [ranked]);
@@ -144,20 +147,23 @@ export const RankingPage: React.FC = () => {
               <tr className="bg-gray-50 border-b border-gray-200">
                 <th className="text-left px-3 py-2 text-gray-600 font-semibold">#</th>
                 <th className="text-left px-3 py-2 text-gray-600 font-semibold">Giocatore</th>
-                <th className="text-center px-3 py-2 text-gray-600 font-semibold">
-                  <span className="inline-block bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full">3ª</span>
+                <th className="text-center px-2 py-2 text-gray-600 font-semibold">
+                  <span className="inline-block bg-blue-100 text-blue-700 text-xs px-1.5 py-0.5 rounded-full">U12</span>
                 </th>
-                <th className="text-center px-3 py-2 text-gray-600 font-semibold">
-                  <span className="inline-block bg-yellow-100 text-yellow-700 text-xs px-2 py-0.5 rounded-full">2ª</span>
+                <th className="text-center px-2 py-2 text-gray-600 font-semibold">
+                  <span className="inline-block bg-green-100 text-green-700 text-xs px-1.5 py-0.5 rounded-full">3ª</span>
                 </th>
-                <th className="text-center px-3 py-2 text-gray-600 font-semibold">
-                  <span className="inline-block bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded-full">1ª</span>
+                <th className="text-center px-2 py-2 text-gray-600 font-semibold">
+                  <span className="inline-block bg-yellow-100 text-yellow-700 text-xs px-1.5 py-0.5 rounded-full">2ª</span>
+                </th>
+                <th className="text-center px-2 py-2 text-gray-600 font-semibold">
+                  <span className="inline-block bg-red-100 text-red-700 text-xs px-1.5 py-0.5 rounded-full">1ª</span>
                 </th>
               </tr>
             </thead>
             <tbody>
               {generalRows.map((row, i) => {
-                const best = Math.max(row.terza ?? 0, row.seconda ?? 0, row.prima ?? 0);
+                const best = Math.max(row.u10_u12 ?? 0, row.terza ?? 0, row.seconda ?? 0, row.prima ?? 0);
                 return (
                   <tr key={row.name} className="border-b border-gray-100 last:border-0">
                     <td className="px-3 py-3">
@@ -169,8 +175,8 @@ export const RankingPage: React.FC = () => {
                     <td className="px-3 py-3">
                       <span className="font-semibold text-gray-900">{row.name}</span>
                     </td>
-                    {(['terza', 'seconda', 'prima'] as Category[]).map(cat => (
-                      <td key={cat} className="px-3 py-3 text-center">
+                    {(['u10_u12', 'terza', 'seconda', 'prima'] as Category[]).map(cat => (
+                      <td key={cat} className="px-2 py-3 text-center">
                         {row[cat] !== null ? (
                           <span className={`font-bold text-sm ${
                             (row[cat] as number) === best && best > 0 ? 'text-green-600' : 'text-gray-700'
@@ -191,7 +197,7 @@ export const RankingPage: React.FC = () => {
 
         {/* Per-category podium */}
         <div className="space-y-3">
-          {(['terza', 'seconda', 'prima'] as Category[]).map(cat => {
+          {(['u10_u12', 'terza', 'seconda', 'prima'] as Category[]).map(cat => {
             const top = byCategory(cat).slice(0, 3);
             if (top.length === 0) return null;
             return (
@@ -252,6 +258,7 @@ export const RankingPage: React.FC = () => {
       </div>
 
       <div className="max-w-2xl mx-auto px-4 py-5">
+        {activeTab === 'u10_u12' && renderCategoryRows('u10_u12')}
         {activeTab === 'terza' && renderCategoryRows('terza')}
         {activeTab === 'seconda' && renderCategoryRows('seconda')}
         {activeTab === 'prima' && renderCategoryRows('prima')}

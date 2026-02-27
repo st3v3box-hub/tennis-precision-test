@@ -80,6 +80,13 @@ export interface CategoryTarget {
 }
 
 export const CATEGORY_TARGETS: Record<Category, CategoryTarget> = {
+  u10_u12: {
+    label: 'U10/U12',
+    groundstroke: 'Area Pari (rossa) / Dispari (verde)',
+    volley: 'Area Pari / Dispari',
+    serve: 'Area Pari / Dispari',
+    description: 'Due zone a destra — PARI (rosso) FH/Cross, DISPARI (verde) Rovescio',
+  },
   terza: {
     label: '3ª Categoria',
     groundstroke: '1m × 1m',
@@ -104,9 +111,10 @@ export const CATEGORY_TARGETS: Record<Category, CategoryTarget> = {
 };
 
 export const CATEGORY_OPTIONS: { value: Category; label: string }[] = [
-  { value: 'terza', label: '3ª Categoria' },
-  { value: 'seconda', label: '2ª Categoria' },
-  { value: 'prima', label: '1ª Categoria' },
+  { value: 'u10_u12', label: 'U10/U12' },
+  { value: 'terza', label: '3ª Cat.' },
+  { value: 'seconda', label: '2ª Cat.' },
+  { value: 'prima', label: '1ª Cat.' },
 ];
 
 // Wizard step sequence

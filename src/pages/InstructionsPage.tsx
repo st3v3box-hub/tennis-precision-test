@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import type { Category } from '../types';
 
 const CATEGORIES: { value: Category; label: string; color: string }[] = [
+  { value: 'u10_u12', label: 'U10/U12', color: 'blue' },
   { value: 'terza', label: '3ª Categoria', color: 'green' },
   { value: 'seconda', label: '2ª Categoria', color: 'yellow' },
   { value: 'prima', label: '1ª Categoria', color: 'red' },
@@ -21,6 +22,17 @@ interface CategoryData {
 }
 
 const CATEGORY_DATA: Record<Category, CategoryData> = {
+  u10_u12: {
+    image: './images/court-u10u12.png',
+    accentClass: 'border-blue-500 text-blue-700 bg-blue-50',
+    zones: {
+      groundstroke: { width: 'Area PARI (rossa)', depth: 'Area DISPARI (verde)' },
+      volley: 'Area PARI/DISPARI',
+      serve: 'Area PARI/DISPARI',
+    },
+    level: 'Under 10 / Under 12',
+    levelDesc: 'Zone colorate — PARI (rossa) = FH/Cross/Volee · DISPARI (verde) = Rovescio',
+  },
   terza: {
     image: './images/court-terza.png',
     accentClass: 'border-green-500 text-green-700 bg-green-50',
@@ -135,18 +147,20 @@ export const InstructionsPage: React.FC = () => {
           <div className="p-4 border-b border-gray-100">
             <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3">Zone Target per Categoria</h2>
             {/* Category tabs */}
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               {CATEGORIES.map(cat => (
                 <button
                   key={cat.value}
                   onClick={() => setActiveCategory(cat.value)}
                   className={`py-2 px-2 rounded-xl border-2 text-xs font-bold transition-all
                     ${activeCategory === cat.value
-                      ? cat.color === 'green'
-                        ? 'bg-green-600 border-green-600 text-white'
-                        : cat.color === 'yellow'
-                          ? 'bg-yellow-500 border-yellow-500 text-white'
-                          : 'bg-red-600 border-red-600 text-white'
+                      ? cat.color === 'blue'
+                        ? 'bg-blue-600 border-blue-600 text-white'
+                        : cat.color === 'green'
+                          ? 'bg-green-600 border-green-600 text-white'
+                          : cat.color === 'yellow'
+                            ? 'bg-yellow-500 border-yellow-500 text-white'
+                            : 'bg-red-600 border-red-600 text-white'
                       : 'bg-white border-gray-300 text-gray-700 hover:border-gray-400'
                     }`}
                 >

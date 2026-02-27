@@ -8,6 +8,9 @@ import { SettingsPage } from './pages/SettingsPage';
 import { MultiResultsPage } from './pages/MultiResultsPage';
 import { InstructionsPage } from './pages/InstructionsPage';
 import { RankingPage } from './pages/RankingPage';
+import { PlayersPage } from './pages/PlayersPage';
+import { PlayerFormPage } from './pages/PlayerFormPage';
+import { PlayerDetailPage } from './pages/PlayerDetailPage';
 
 interface Props {
   onLogout: () => void;
@@ -23,6 +26,10 @@ const App: React.FC<Props> = ({ onLogout }) => (
     <Route path="/settings" element={<SettingsPage />} />
     <Route path="/instructions" element={<InstructionsPage />} />
     <Route path="/ranking" element={<RankingPage />} />
+    <Route path="/players" element={<PlayersPage />} />
+    <Route path="/players/new" element={<PlayerFormPage />} />
+    <Route path="/players/:id" element={<PlayerDetailPage />} />
+    <Route path="/players/:id/edit" element={<PlayerFormPage />} />
     <Route path="*" element={<Navigate to="/" replace />} />
   </Routes>
 );

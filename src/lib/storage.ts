@@ -1,4 +1,4 @@
-import type { AppState, Player, TestSession, AppSettings } from '../types';
+import type { AppState, Player, PlayerProfile, TestSession, AppSettings } from '../types';
 
 const KEY = 'tpt_v1';
 
@@ -10,15 +10,16 @@ const DEFAULT_SETTINGS: AppSettings = {
 export function loadState(): AppState {
   try {
     const raw = localStorage.getItem(KEY);
-    if (!raw) return { players: [], sessions: [], settings: DEFAULT_SETTINGS };
+    if (!raw) return { players: [], playerProfiles: [], sessions: [], settings: DEFAULT_SETTINGS };
     const parsed = JSON.parse(raw) as Partial<AppState>;
     return {
       players: parsed.players ?? [],
+      playerProfiles: parsed.playerProfiles ?? [],
       sessions: parsed.sessions ?? [],
       settings: { ...DEFAULT_SETTINGS, ...parsed.settings },
     };
   } catch {
-    return { players: [], sessions: [], settings: DEFAULT_SETTINGS };
+    return { players: [], playerProfiles: [], sessions: [], settings: DEFAULT_SETTINGS };
   }
 }
 
@@ -30,7 +31,7 @@ export function uid(): string {
   return `${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 }
 
-// ─── Player CRUD ─────────────────────────────────────────────────────────────
+// ─── Player CRUD (legacy) ─────────────────────────────────────────────────────
 
 export function getPlayers(): Player[] {
   return loadState().players;
@@ -47,7 +48,30 @@ export function upsertPlayer(player: Player): void {
 export function deletePlayer(id: string): void {
   const state = loadState();
   state.players = state.players.filter(p => p.id !== id);
-  state.sessions = state.sessions.filter(s => s.playerId !== id);
+  saveState(state);
+}
+
+// ─── PlayerProfile CRUD ───────────────────────────────────────────────────────
+
+export function getPlayerProfiles(): PlayerProfile[] {
+  return loadState().playerProfiles;
+}
+
+export function getPlayerProfile(id: string): PlayerProfile | undefined {
+  return loadState().playerProfiles.find(p => p.id === id);
+}
+
+export function upsertPlayerProfile(profile: PlayerProfile): void {
+  const state = loadState();
+  const idx = state.playerProfiles.findIndex(p => p.id === profile.id);
+  if (idx >= 0) state.playerProfiles[idx] = profile;
+  else state.playerProfiles.push(profile);
+  saveState(state);
+}
+
+export function deletePlayerProfile(id: string): void {
+  const state = loadState();
+  state.playerProfiles = state.playerProfiles.filter(p => p.id !== id);
   saveState(state);
 }
 

@@ -1,4 +1,4 @@
-export type Category = 'terza' | 'seconda' | 'prima';
+export type Category = 'terza' | 'seconda' | 'prima' | 'u10_u12';
 
 export type TestType = 'groundstrokes' | 'combined' | 'return' | 'serve' | 'volley';
 
@@ -22,6 +22,40 @@ export type StrokeName = 'serve' | 'forehand' | 'combined' | 'return' | 'backhan
 export type StdDevMode = 'sample' | 'population';
 
 export type PrecisionTimeStrategy = 'A' | 'B';
+
+// ─── Player Profile ──────────────────────────────────────────────────────────
+
+export interface InitialAssessment {
+  serve?: number;       // 1–5 stars
+  forehand?: number;
+  backhand?: number;
+  volley?: number;
+  return?: number;
+  combined?: number;
+  movement?: number;
+  coachNotes?: string;
+  assessmentDate?: string;
+}
+
+export interface PlayerProfile {
+  id: string;
+  firstName: string;
+  lastName: string;
+  dateOfBirth: string;
+  // Optional
+  phone?: string;
+  email?: string;
+  parentName?: string;
+  club?: string;
+  fitRanking?: string;
+  coachName?: string;
+  notes?: string;
+  initialAssessment?: InitialAssessment;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ─── Legacy minimal player ───────────────────────────────────────────────────
 
 export interface Player {
   id: string;
@@ -85,6 +119,7 @@ export interface AppSettings {
 
 export interface AppState {
   players: Player[];
+  playerProfiles: PlayerProfile[];
   sessions: TestSession[];
   settings: AppSettings;
 }
@@ -92,6 +127,7 @@ export interface AppState {
 // Wizard working state — multi-player
 export interface WizardPlayerData {
   id: string;
+  profileId?: string;   // linked PlayerProfile.id
   name: string;
   category: Category;
   dateOfBirth?: string;
