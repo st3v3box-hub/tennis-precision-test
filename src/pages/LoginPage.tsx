@@ -58,6 +58,7 @@ export const LoginPage: React.FC<Props> = ({ onSuccess }) => {
   const isSecure =
     typeof window !== 'undefined' &&
     (window.isSecureContext ||
+      window.location.protocol === 'https:' ||
       window.location.hostname === 'localhost' ||
       window.location.hostname === '127.0.0.1');
 
