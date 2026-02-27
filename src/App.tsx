@@ -11,6 +11,7 @@ import { RankingPage } from './pages/RankingPage';
 import { PlayersPage } from './pages/PlayersPage';
 import { PlayerFormPage } from './pages/PlayerFormPage';
 import { PlayerDetailPage } from './pages/PlayerDetailPage';
+import { ChallengeResultsPage } from './pages/ChallengeResultsPage';
 
 interface Props {
   onLogout: () => void;
@@ -30,6 +31,7 @@ const App: React.FC<Props> = ({ onLogout }) => (
     <Route path="/players/new" element={<PlayerFormPage />} />
     <Route path="/players/:id" element={<PlayerDetailPage />} />
     <Route path="/players/:id/edit" element={<PlayerFormPage />} />
+    <Route path="/challenge-results" element={<ChallengeResultsPage />} />
     <Route path="*" element={<Navigate to="/" replace />} />
   </Routes>
 );

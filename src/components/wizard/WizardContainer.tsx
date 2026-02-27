@@ -1,7 +1,13 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import type { WizardState, WizardPlayerData, Category, SeriesResult } from '../../types';
-import { uid, upsertSession } from '../../lib/storage';
+import {
+  uid,
+  upsertSession,
+  upsertPlayerProfile,
+  getLastCoach,
+  setLastCoach,
+} from '../../lib/storage';
 import { ProgressSteps } from '../ui/ProgressSteps';
 import { WIZARD_STEPS } from '../../lib/protocol';
 import { StepMeta } from './StepMeta';
@@ -19,17 +25,45 @@ const makePlayer = (): WizardPlayerData => ({
   series: [],
 });
 
-const DEFAULT_STATE: WizardState = {
-  step: 0,
-  date: new Date().toISOString().slice(0, 10),
-  coach: '',
-  playerCount: 1,
-  players: [makePlayer()],
-};
-
 export const WizardContainer: React.FC = () => {
   const navigate = useNavigate();
-  const [state, setState] = useState<WizardState>(DEFAULT_STATE);
+  const location = useLocation();
+
+  // Quick-start payload from PlayerDetailPage
+  const quickStart = (location.state as Record<string, unknown> | null)?.quickStart as {
+    profileId: string;
+    name: string;
+    dateOfBirth?: string;
+    category: Category;
+  } | undefined;
+
+  const [state, setState] = useState<WizardState>(() => {
+    if (quickStart) {
+      return {
+        step: 1,   // skip meta — player data already known
+        date: new Date().toISOString().slice(0, 10),
+        coach: getLastCoach(),
+        playerCount: 1,
+        players: [{
+          id: uid(),
+          profileId: quickStart.profileId,
+          name: quickStart.name,
+          dateOfBirth: quickStart.dateOfBirth,
+          category: quickStart.category,
+          series: [],
+        }],
+        challengeMode: 'none',
+      };
+    }
+    return {
+      step: 0,
+      date: new Date().toISOString().slice(0, 10),
+      coach: getLastCoach(),
+      playerCount: 1,
+      players: [makePlayer()],
+      challengeMode: 'none',
+    };
+  });
 
   const update = (patch: Partial<WizardState>) => setState(s => ({ ...s, ...patch }));
 
@@ -45,7 +79,8 @@ export const WizardContainer: React.FC = () => {
     setState(s => {
       const existing = s.players.slice(0, count);
       while (existing.length < count) existing.push(makePlayer());
-      return { ...s, playerCount: count, players: existing };
+      // Reset challenge mode when count changes
+      return { ...s, playerCount: count, players: existing, challengeMode: 'none' };
     });
   };
 
@@ -69,12 +104,33 @@ export const WizardContainer: React.FC = () => {
   const prev = () => setState(s => ({ ...s, step: Math.max(0, s.step - 1) }));
 
   const save = () => {
+    setLastCoach(state.coach);
+    const now = new Date().toISOString();
     const ids: string[] = [];
+
     state.players.forEach(p => {
+      // Resolve player profile ID — auto-create a minimal profile for unlinked players
+      let playerId = p.profileId;
+      if (!playerId) {
+        playerId = uid();
+        const nameParts = p.name.trim().split(/\s+/);
+        const firstName = nameParts[0] ?? p.name;
+        const lastName = nameParts.slice(1).join(' ');
+        upsertPlayerProfile({
+          id: playerId,
+          firstName,
+          lastName,
+          dateOfBirth: p.dateOfBirth ?? '',
+          autoCreated: true,
+          createdAt: now,
+          updatedAt: now,
+        });
+      }
+
       const id = uid();
       upsertSession({
         id,
-        playerId: p.id,
+        playerId,
         playerName: p.name,
         date: state.date,
         category: p.category as Category,
@@ -82,12 +138,15 @@ export const WizardContainer: React.FC = () => {
         dateOfBirth: p.dateOfBirth,
         note: p.note,
         completed: true,
-        createdAt: new Date().toISOString(),
+        createdAt: now,
         series: p.series,
       });
       ids.push(id);
     });
-    if (ids.length === 1) {
+
+    if (state.challengeMode !== 'none') {
+      navigate('/challenge-results', { state: { ids, mode: state.challengeMode } });
+    } else if (ids.length === 1) {
       navigate(`/results/${ids[0]}`);
     } else {
       navigate('/multi-results', { state: { ids } });

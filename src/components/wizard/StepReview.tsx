@@ -93,8 +93,15 @@ export const StepReview: React.FC<Props> = ({ state, onPrev, onSave }) => {
     <div className="space-y-4">
       <Card title="Riepilogo Sessione">
         <div className="space-y-1 text-sm mb-4">
+          {state.challengeMode !== 'none' && (
+            <div className="flex items-center gap-2 mb-3">
+              <span className="bg-orange-100 text-orange-700 text-xs font-bold px-2.5 py-1 rounded-full">
+                🏆 Sfida {state.challengeMode.toUpperCase()}
+              </span>
+            </div>
+          )}
           <p><span className="text-gray-500">Data:</span> <strong>{state.date}</strong></p>
-          <p><span className="text-gray-500">Coach:</span> <strong>{state.coach}</strong></p>
+          <p><span className="text-gray-500">Coach:</span> <strong>{state.coach || '—'}</strong></p>
           {state.playerCount > 1 && (
             <p><span className="text-gray-500">Giocatori:</span> <strong>{state.playerCount}</strong></p>
           )}
@@ -163,9 +170,11 @@ export const StepReview: React.FC<Props> = ({ state, onPrev, onSave }) => {
       <div className="flex gap-3">
         <Button variant="secondary" className="flex-1" onClick={onPrev}>← Indietro</Button>
         <Button className="flex-1 bg-green-700 hover:bg-green-800" onClick={onSave}>
-          {state.playerCount > 1
-            ? `Salva ${state.playerCount} sessioni`
-            : 'Salva & Vedi Risultati'
+          {state.challengeMode !== 'none'
+            ? '🏆 Salva & Vedi Sfida'
+            : state.playerCount > 1
+              ? `Salva ${state.playerCount} sessioni`
+              : 'Salva & Vedi Risultati'
           }
         </Button>
       </div>

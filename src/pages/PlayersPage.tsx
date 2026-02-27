@@ -93,9 +93,16 @@ export const PlayersPage: React.FC = () => {
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-gray-900">
-                        {p.lastName} {p.firstName}
-                      </h3>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="font-bold text-gray-900">
+                          {p.lastName} {p.firstName}
+                        </h3>
+                        {p.autoCreated && (
+                          <span className="text-xs text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-full font-medium">
+                            ⚠ Da completare
+                          </span>
+                        )}
+                      </div>
                       <p className="text-xs text-gray-500 mt-0.5">
                         {age} anni · {p.dateOfBirth}
                         {p.club && ` · ${p.club}`}

@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import type { WizardState, WizardPlayerData, Category } from '../../types';
+import type { PlayerProfile } from '../../types';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { CATEGORY_OPTIONS, CATEGORY_TARGETS } from '../../lib/protocol';
+import { getPlayerProfiles } from '../../lib/storage';
 
 interface Props {
   state: WizardState;
@@ -37,14 +39,53 @@ const CategoryDiagram: React.FC<{ cat: Category }> = ({ cat }) => {
 };
 
 export const StepMeta: React.FC<Props> = ({ state, update, updatePlayer, setPlayerCount, onNext }) => {
+  const [pickerOpenIdx, setPickerOpenIdx] = useState<number | null>(null);
+  const [pickerSearch, setPickerSearch] = useState('');
+  const profiles = useMemo(() => getPlayerProfiles(), []);
+
   const canContinue =
     state.players.every(p => p.name.trim().length > 0) &&
     state.date.length > 0 &&
     state.coach.trim().length > 0;
 
+  const linkProfile = (playerIdx: number, profile: PlayerProfile) => {
+    updatePlayer(playerIdx, {
+      profileId: profile.id,
+      name: `${profile.firstName} ${profile.lastName}`.trim(),
+      dateOfBirth: profile.dateOfBirth || undefined,
+    });
+    setPickerOpenIdx(null);
+    setPickerSearch('');
+  };
+
+  const unlinkProfile = (playerIdx: number) => {
+    updatePlayer(playerIdx, { profileId: undefined });
+  };
+
+  const canChallenge = state.playerCount === 2 || state.playerCount === 4;
+
+  const getCardTitle = (idx: number): string => {
+    if (state.challengeMode === '1v1') {
+      return idx === 0 ? '🔴 Giocatore A' : '🔵 Giocatore B';
+    }
+    if (state.challengeMode === '2v2') {
+      const labels = ['🔴 Team 1 · P1', '🔴 Team 1 · P2', '🔵 Team 2 · P1', '🔵 Team 2 · P2'];
+      return labels[idx] ?? `Giocatore ${idx + 1}`;
+    }
+    return state.playerCount > 1 ? `Giocatore ${idx + 1}` : 'Dati Giocatore';
+  };
+
+  const filteredProfiles = useMemo(() => {
+    const q = pickerSearch.toLowerCase();
+    return profiles.filter(p =>
+      `${p.firstName} ${p.lastName}`.toLowerCase().includes(q) ||
+      (p.club ?? '').toLowerCase().includes(q)
+    );
+  }, [profiles, pickerSearch]);
+
   return (
     <div className="space-y-4">
-      {/* Player count selector */}
+      {/* Player count */}
       <Card title="Numero di Giocatori">
         <p className="text-xs text-gray-500 mb-3">Seleziona quanti giocatori partecipano al test</p>
         <div className="grid grid-cols-4 gap-2">
@@ -65,32 +106,143 @@ export const StepMeta: React.FC<Props> = ({ state, update, updatePlayer, setPlay
         </div>
       </Card>
 
+      {/* Challenge mode toggle (2 or 4 players only) */}
+      {canChallenge && (
+        <Card title="Modalità">
+          <p className="text-xs text-gray-500 mb-3">
+            {state.playerCount === 2 ? 'Con 2 giocatori puoi attivare la sfida 1 vs 1.' : 'Con 4 giocatori puoi attivare la sfida 2 vs 2 a squadre.'}
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => update({ challengeMode: 'none' })}
+              className={`py-3 rounded-xl border-2 text-sm font-semibold transition-all
+                ${state.challengeMode === 'none'
+                  ? 'bg-green-600 border-green-600 text-white'
+                  : 'bg-white border-gray-300 text-gray-700 hover:border-green-400'
+                }`}
+            >
+              Normale
+            </button>
+            <button
+              type="button"
+              onClick={() => update({ challengeMode: state.playerCount === 2 ? '1v1' : '2v2' })}
+              className={`py-3 rounded-xl border-2 text-sm font-semibold transition-all
+                ${state.challengeMode !== 'none'
+                  ? 'bg-orange-500 border-orange-500 text-white'
+                  : 'bg-white border-gray-300 text-gray-700 hover:border-orange-400'
+                }`}
+            >
+              🏆 Sfida {state.playerCount === 2 ? '1 vs 1' : '2 vs 2'}
+            </button>
+          </div>
+        </Card>
+      )}
+
       {/* Per-player inputs */}
       {state.players.map((p, i) => (
-        <Card
-          key={i}
-          title={state.playerCount > 1 ? `Giocatore ${i + 1}` : 'Dati Giocatore'}
-        >
+        <Card key={i} title={getCardTitle(i)}>
           <div className="space-y-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nome *</label>
-              <input
-                type="text"
-                value={p.name}
-                onChange={e => updatePlayer(i, { name: e.target.value })}
-                placeholder="Es. Mario Rossi"
-                className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-              />
-            </div>
+
+            {/* Profile linked: show badge + delink */}
+            {p.profileId ? (
+              <div className="flex items-center justify-between bg-green-50 rounded-xl px-3 py-2.5 border border-green-200">
+                <div>
+                  <p className="text-xs text-green-600 font-semibold mb-0.5">✓ Profilo collegato</p>
+                  <p className="text-sm font-bold text-gray-900">{p.name}</p>
+                  {p.dateOfBirth && (
+                    <p className="text-xs text-gray-500 mt-0.5">{p.dateOfBirth}</p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => unlinkProfile(i)}
+                  className="text-gray-400 hover:text-red-500 text-lg leading-none px-2 py-1"
+                  title="Scollega profilo"
+                >
+                  ×
+                </button>
+              </div>
+            ) : (
+              /* Name input + profile picker */
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nome *</label>
+                <input
+                  type="text"
+                  value={p.name}
+                  onChange={e => updatePlayer(i, { name: e.target.value })}
+                  placeholder="Es. Mario Rossi"
+                  className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+
+                {/* Profile picker toggle */}
+                {profiles.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPickerOpenIdx(pickerOpenIdx === i ? null : i);
+                      setPickerSearch('');
+                    }}
+                    className="mt-1.5 text-xs text-green-600 hover:text-green-800 font-medium flex items-center gap-1"
+                  >
+                    🔗 Seleziona da anagrafica ({profiles.length})
+                    <span className="text-gray-400">{pickerOpenIdx === i ? '▲' : '▼'}</span>
+                  </button>
+                )}
+
+                {/* Inline profile picker */}
+                {pickerOpenIdx === i && (
+                  <div className="mt-2 border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                    <div className="p-2 border-b border-gray-100">
+                      <input
+                        type="text"
+                        value={pickerSearch}
+                        onChange={e => setPickerSearch(e.target.value)}
+                        placeholder="Cerca per nome o club..."
+                        className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-green-500"
+                        autoFocus
+                      />
+                    </div>
+                    <div className="max-h-48 overflow-y-auto">
+                      {filteredProfiles.length === 0 ? (
+                        <p className="text-xs text-gray-400 text-center py-4">Nessun profilo trovato</p>
+                      ) : (
+                        filteredProfiles.map(profile => (
+                          <button
+                            key={profile.id}
+                            type="button"
+                            onClick={() => linkProfile(i, profile)}
+                            className="w-full text-left px-3 py-2.5 hover:bg-green-50 border-b border-gray-50 last:border-0 transition-colors"
+                          >
+                            <p className="text-sm font-semibold text-gray-800">
+                              {profile.lastName} {profile.firstName}
+                              {profile.autoCreated && (
+                                <span className="ml-1 text-xs text-amber-500 font-normal">⚠ incompleto</span>
+                              )}
+                            </p>
+                            <p className="text-xs text-gray-400">
+                              {profile.dateOfBirth && `${profile.dateOfBirth} · `}
+                              {profile.club ?? ''}
+                            </p>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Category selector */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Categoria / Livello</label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-4 gap-2">
                 {CATEGORY_OPTIONS.map(opt => (
                   <button
                     key={opt.value}
                     type="button"
                     onClick={() => updatePlayer(i, { category: opt.value })}
-                    className={`py-2 rounded-xl border-2 text-sm font-semibold transition-all
+                    className={`py-2 rounded-xl border-2 text-xs font-semibold transition-all
                       ${p.category === opt.value
                         ? 'bg-green-600 border-green-600 text-white'
                         : 'bg-white border-gray-300 text-gray-700 hover:border-green-400'
@@ -100,18 +252,23 @@ export const StepMeta: React.FC<Props> = ({ state, update, updatePlayer, setPlay
                   </button>
                 ))}
               </div>
-              {/* Show diagram only for single player to keep multi-player UI compact */}
               {state.playerCount === 1 && <CategoryDiagram cat={p.category} />}
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Data di Nascita</label>
-              <input
-                type="date"
-                value={p.dateOfBirth ?? ''}
-                onChange={e => updatePlayer(i, { dateOfBirth: e.target.value || undefined })}
-                className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-              />
-            </div>
+
+            {/* DOB (only for unlinked players) */}
+            {!p.profileId && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Data di Nascita</label>
+                <input
+                  type="date"
+                  value={p.dateOfBirth ?? ''}
+                  onChange={e => updatePlayer(i, { dateOfBirth: e.target.value || undefined })}
+                  className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+            )}
+
+            {/* Note */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Nota <span className="text-gray-400 font-normal">(opzionale)</span>
@@ -128,7 +285,7 @@ export const StepMeta: React.FC<Props> = ({ state, update, updatePlayer, setPlay
         </Card>
       ))}
 
-      {/* Shared session info */}
+      {/* Session info */}
       <Card title="Dati Sessione">
         <div className="space-y-4">
           <div>
@@ -154,7 +311,7 @@ export const StepMeta: React.FC<Props> = ({ state, update, updatePlayer, setPlay
       </Card>
 
       <Button size="lg" className="w-full" disabled={!canContinue} onClick={onNext}>
-        Inizia Test →
+        {state.challengeMode !== 'none' ? `🏆 Inizia Sfida ${state.challengeMode.toUpperCase()} →` : 'Inizia Test →'}
       </Button>
     </div>
   );

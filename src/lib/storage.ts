@@ -114,3 +114,13 @@ export function saveSettings(settings: AppSettings): void {
   state.settings = settings;
   saveState(state);
 }
+
+// ─── Last coach (for quick-start pre-fill) ───────────────────────────────────
+
+export function getLastCoach(): string {
+  return localStorage.getItem('tpt_last_coach') ?? '';
+}
+
+export function setLastCoach(coach: string): void {
+  if (coach.trim()) localStorage.setItem('tpt_last_coach', coach.trim());
+}

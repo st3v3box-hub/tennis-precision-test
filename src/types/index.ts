@@ -51,6 +51,7 @@ export interface PlayerProfile {
   coachName?: string;
   notes?: string;
   initialAssessment?: InitialAssessment;
+  autoCreated?: boolean;   // true for profiles auto-generated from quick tests
   createdAt: string;
   updatedAt: string;
 }
@@ -141,4 +142,5 @@ export interface WizardState {
   coach: string;
   playerCount: 1 | 2 | 3 | 4;
   players: WizardPlayerData[];
+  challengeMode: 'none' | '1v1' | '2v2';
 }

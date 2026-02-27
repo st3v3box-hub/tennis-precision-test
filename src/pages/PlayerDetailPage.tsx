@@ -7,7 +7,6 @@ import { getPlayerProfile, getSessions, getSettings } from '../lib/storage';
 import { computeSessionResults } from '../lib/formulas';
 import { percentToStars, renderStars, STAR_LABELS } from '../lib/stars';
 import { StarPicker } from '../components/ui/StarPicker';
-import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import type { InitialAssessment } from '../types';
 
@@ -215,18 +214,43 @@ export const PlayerDetailPage: React.FC = () => {
           </Card>
         )}
 
+        {/* Quick-start test section */}
+        <Card title="Avvia Test Rapido">
+          <p className="text-xs text-gray-500 mb-3">
+            Seleziona la categoria per iniziare subito il test — i dati di {profile.firstName} sono già configurati.
+          </p>
+          <div className="grid grid-cols-4 gap-2">
+            {(['u10_u12', 'terza', 'seconda', 'prima'] as const).map(cat => {
+              const labels: Record<string, string> = {
+                u10_u12: 'U10/U12', terza: '3ª Cat.', seconda: '2ª Cat.', prima: '1ª Cat.',
+              };
+              return (
+                <button
+                  key={cat}
+                  onClick={() => navigate('/new', {
+                    state: {
+                      quickStart: {
+                        profileId: profile.id,
+                        name: `${profile.firstName} ${profile.lastName}`.trim(),
+                        dateOfBirth: profile.dateOfBirth,
+                        category: cat,
+                      },
+                    },
+                  })}
+                  className="py-2.5 rounded-xl border-2 border-green-300 bg-green-50 text-xs font-bold text-green-700 hover:bg-green-100 hover:border-green-500 transition-all"
+                >
+                  {labels[cat]}
+                </button>
+              );
+            })}
+          </div>
+        </Card>
+
         {/* Sessions */}
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-bold text-gray-600 uppercase tracking-wide">
             Sessioni ({sessions.length})
           </h2>
-          <Button
-            size="sm"
-            icon="+"
-            onClick={() => navigate('/new')}
-          >
-            Nuovo Test
-          </Button>
         </div>
 
         {sessions.length === 0 ? (
