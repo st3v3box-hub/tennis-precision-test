@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, Navigate } from 'react-router-dom';
+import { can } from '../lib/auth';
 import type { PlayerProfile, InitialAssessment, Category } from '../types';
 import { getPlayerProfile, upsertPlayerProfile, uid } from '../lib/storage';
 import { Card } from '../components/ui/Card';
@@ -20,6 +21,7 @@ export const PlayerFormPage: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const isEdit = !!id;
+  if (!can('editPlayers')) return <Navigate to="/" replace />;
   const existing = id ? getPlayerProfile(id) : undefined;
 
   const [firstName, setFirstName] = useState(existing?.firstName ?? '');

@@ -3,14 +3,22 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { HistoryList } from '../components/history/HistoryList';
 import { getSettings, getSessions } from '../lib/storage';
-import { logout, getCredentials } from '../lib/auth';
+import { logout, getCredentials, ROLE_LABELS } from '../lib/auth';
+import type { UserRole } from '../lib/auth';
 import type { TestSession, AppSettings } from '../types';
 
+const ROLE_BADGE: Record<UserRole, { label: string; cls: string }> = {
+  admin: { label: '🔑 Amministratore', cls: 'bg-red-500 text-white' },
+  coach: { label: '🎾 Maestro', cls: 'bg-green-400 text-white' },
+  viewer: { label: '👤 Visualizzatore', cls: 'bg-blue-400 text-white' },
+};
+
 interface Props {
+  role: UserRole;
   onLogout: () => void;
 }
 
-export const HomePage: React.FC<Props> = ({ onLogout }) => {
+export const HomePage: React.FC<Props> = ({ role, onLogout }) => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -22,6 +30,7 @@ export const HomePage: React.FC<Props> = ({ onLogout }) => {
   const [view, setView] = useState<'home' | 'history'>('home');
 
   const refresh = () => setSessions(getSessions());
+  const badge = ROLE_BADGE[role];
 
   if (view === 'history') {
     return (
@@ -45,9 +54,12 @@ export const HomePage: React.FC<Props> = ({ onLogout }) => {
       <div className="bg-gradient-to-br from-green-700 to-green-900 text-white px-6 pt-10 pb-8">
         <div className="max-w-2xl mx-auto flex items-center gap-5">
           <img src="./logo.png" alt="GT Logo" className="h-20 w-auto drop-shadow-lg" />
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <h1 className="text-2xl font-black tracking-tight">Tennis Precision Test</h1>
             <p className="text-green-200 text-sm mt-1">Profilo tecnico · Analisi precisione</p>
+            <span className={`inline-block mt-2 text-xs font-semibold px-2 py-0.5 rounded-full ${badge.cls}`}>
+              {badge.label}
+            </span>
           </div>
           <button
             onClick={handleLogout}
@@ -63,58 +75,63 @@ export const HomePage: React.FC<Props> = ({ onLogout }) => {
       </div>
 
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
-        {/* Actions */}
-        <Button
-          size="lg"
-          className="w-full text-base justify-center"
-          onClick={() => navigate('/new')}
-          icon="+"
-        >
-          Nuovo Test
-        </Button>
 
-        <div className="grid grid-cols-2 gap-3">
-          <Button
-            variant="secondary"
-            size="lg"
-            className="w-full justify-center"
-            onClick={() => setView('history')}
-          >
-            📋 Storico
-          </Button>
-          <Button
-            variant="secondary"
-            size="lg"
-            className="w-full justify-center"
-            onClick={() => navigate('/ranking')}
-          >
-            🏆 Classifiche
-          </Button>
-          <Button
-            variant="secondary"
-            size="lg"
-            className="w-full justify-center"
-            onClick={() => navigate('/players')}
-          >
-            👤 Giocatori
-          </Button>
-          <Button
-            variant="secondary"
-            size="lg"
-            className="w-full justify-center"
-            onClick={() => navigate('/instructions')}
-          >
-            📖 Istruzioni
-          </Button>
-          <Button
-            variant="secondary"
-            size="lg"
-            className="w-full justify-center col-span-2"
-            onClick={() => navigate('/settings')}
-          >
-            ⚙️ Impostazioni
-          </Button>
-        </div>
+        {/* Admin / Coach: full action bar */}
+        {(role === 'admin' || role === 'coach') && (
+          <>
+            <Button
+              size="lg"
+              className="w-full text-base justify-center"
+              onClick={() => navigate('/new')}
+              icon="+"
+            >
+              Nuovo Test
+            </Button>
+
+            <div className="grid grid-cols-2 gap-3">
+              <Button variant="secondary" size="lg" className="w-full justify-center" onClick={() => setView('history')}>
+                📋 Storico
+              </Button>
+              <Button variant="secondary" size="lg" className="w-full justify-center" onClick={() => navigate('/ranking')}>
+                🏆 Classifiche
+              </Button>
+              <Button variant="secondary" size="lg" className="w-full justify-center" onClick={() => navigate('/challenge')}>
+                ⚔️ Sfide
+              </Button>
+              <Button variant="secondary" size="lg" className="w-full justify-center" onClick={() => navigate('/players')}>
+                👤 Giocatori
+              </Button>
+              <Button variant="secondary" size="lg" className="w-full justify-center" onClick={() => navigate('/instructions')}>
+                📖 Istruzioni
+              </Button>
+              {role === 'admin' && (
+                <Button variant="secondary" size="lg" className="w-full justify-center" onClick={() => navigate('/settings')}>
+                  ⚙️ Impostazioni
+                </Button>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* Viewer: read-only grid */}
+        {role === 'viewer' && (
+          <>
+            <div className="bg-blue-50 border border-blue-200 rounded-2xl px-4 py-3 text-sm text-blue-700">
+              Benvenuto, <strong>{getCredentials()?.username ?? ''}</strong>. Qui puoi visualizzare risultati e classifiche.
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <Button variant="secondary" size="lg" className="w-full justify-center" onClick={() => navigate('/ranking')}>
+                🏆 Classifiche
+              </Button>
+              <Button variant="secondary" size="lg" className="w-full justify-center" onClick={() => navigate('/players')}>
+                👤 Giocatori
+              </Button>
+              <Button variant="secondary" size="lg" className="w-full justify-center col-span-2" onClick={() => setView('history')}>
+                📋 Storico Sessioni
+              </Button>
+            </div>
+          </>
+        )}
 
         {/* Recent sessions */}
         {recentSessions.length > 0 && (
@@ -151,7 +168,9 @@ export const HomePage: React.FC<Props> = ({ onLogout }) => {
         {recentSessions.length === 0 && (
           <div className="text-center py-10 text-gray-400">
             <div className="text-4xl mb-2">📊</div>
-            <p className="text-sm">Nessun test ancora. Inizia con "Nuovo Test"!</p>
+            <p className="text-sm">
+              {role === 'viewer' ? 'Nessun test disponibile.' : 'Nessun test ancora. Inizia con "Nuovo Test"!'}
+            </p>
           </div>
         )}
       </div>

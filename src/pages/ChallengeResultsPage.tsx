@@ -9,7 +9,7 @@ import { percentToStars, renderStars } from '../lib/stars';
 import { Button } from '../components/ui/Button';
 import type { TestSession } from '../types';
 
-type ChallengeMode = '1v1' | '2v2';
+type ChallengeMode = '1v1' | '2v2' | 'ffa';
 
 interface StrokeRow {
   label: string;
@@ -17,6 +17,32 @@ interface StrokeRow {
   val2: number;
   winner: 0 | 1 | 2;  // 0 = draw
 }
+
+// ── FFA helpers ───────────────────────────────────────────────────────────────
+
+interface PlayerStat {
+  idx: number;
+  name: string;
+  wins: number;
+  draws: number;
+  losses: number;
+  points: number;
+  pct: number;
+}
+
+interface MatchupResult {
+  a: number;
+  b: number;
+  strokesA: number;
+  strokesB: number;
+  winner: 0 | 1 | 2; // 0=draw, 1=a wins, 2=b wins
+  rows: StrokeRow[];
+}
+
+const RADAR_COLORS = ['#ef4444', '#3b82f6', '#22c55e', '#f97316'];
+const RADAR_LABELS = ['A', 'B', 'C', 'D'];
+
+// ── Component ─────────────────────────────────────────────────────────────────
 
 export const ChallengeResultsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -50,7 +76,200 @@ export const ChallengeResultsPage: React.FC = () => {
     );
   }
 
-  // ── Comparison algorithm ──────────────────────────────────────────────────
+  // ── FFA mode ─────────────────────────────────────────────────────────────────
+
+  if (mode === 'ffa') {
+    const n = sessions.length;
+
+    // Build all pairwise matchups
+    const matchups: MatchupResult[] = [];
+    for (let a = 0; a < n; a++) {
+      for (let b = a + 1; b < n; b++) {
+        const rA = results[a];
+        const rB = results[b];
+        const rows: StrokeRow[] = rA.stats.map((s, i) => ({
+          label: s.label,
+          val1: s.ave,
+          val2: rB.stats[i].ave,
+          winner: s.ave > rB.stats[i].ave ? 1 : rB.stats[i].ave > s.ave ? 2 : 0,
+        }));
+        const strokesA = rows.filter(r => r.winner === 1).length;
+        const strokesB = rows.filter(r => r.winner === 2).length;
+        matchups.push({
+          a, b, strokesA, strokesB,
+          winner: strokesA > strokesB ? 1 : strokesB > strokesA ? 2 : 0,
+          rows,
+        });
+      }
+    }
+
+    // Compute player stats
+    const playerStats: PlayerStat[] = sessions.map((s, i) => ({
+      idx: i,
+      name: s.playerName,
+      wins: 0,
+      draws: 0,
+      losses: 0,
+      points: 0,
+      pct: results[i].percentOfIdeal,
+    }));
+
+    matchups.forEach(mr => {
+      if (mr.winner === 1) {
+        playerStats[mr.a].wins++;
+        playerStats[mr.a].points += 2;
+        playerStats[mr.b].losses++;
+      } else if (mr.winner === 2) {
+        playerStats[mr.b].wins++;
+        playerStats[mr.b].points += 2;
+        playerStats[mr.a].losses++;
+      } else {
+        playerStats[mr.a].draws++;
+        playerStats[mr.a].points++;
+        playerStats[mr.b].draws++;
+        playerStats[mr.b].points++;
+      }
+    });
+
+    const ranked = [...playerStats].sort((a, b) =>
+      b.points !== a.points ? b.points - a.points : b.pct - a.pct
+    );
+
+    // Radar data for all players
+    const radarData = results[0].stats.map((s, si) => {
+      const entry: Record<string, string | number> = { subject: s.label };
+      results.forEach((r, ri) => {
+        entry[RADAR_LABELS[ri]] = parseFloat(r.stats[si].ave.toFixed(2));
+      });
+      return entry;
+    });
+
+    const medalFor = (rank: number) => ['🥇', '🥈', '🥉'][rank] ?? `${rank + 1}°`;
+
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-10 shadow-sm flex items-center gap-3">
+          <button onClick={() => navigate('/')} className="text-gray-500 hover:text-gray-700 text-xl">←</button>
+          <h1 className="text-lg font-bold text-gray-900">🔄 Tutti vs Tutti ({n} giocatori)</h1>
+        </div>
+
+        <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
+
+          {/* Ranking table */}
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
+              <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide">Classifica Finale</h2>
+            </div>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-100 bg-gray-50">
+                  <th className="text-left px-3 py-2 text-gray-500 font-semibold w-8">#</th>
+                  <th className="text-left px-3 py-2 text-gray-500 font-semibold">Giocatore</th>
+                  <th className="text-center px-2 py-2 text-gray-500 font-semibold">V</th>
+                  <th className="text-center px-2 py-2 text-gray-500 font-semibold">P</th>
+                  <th className="text-center px-2 py-2 text-gray-500 font-semibold">S</th>
+                  <th className="text-center px-2 py-2 text-gray-500 font-semibold">Pts</th>
+                  <th className="text-center px-3 py-2 text-gray-500 font-semibold">% Ideale</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ranked.map((ps, rank) => (
+                  <tr key={ps.idx} className={`border-b border-gray-50 last:border-0 ${rank === 0 ? 'bg-yellow-50' : ''}`}>
+                    <td className="px-3 py-3 text-lg">{medalFor(rank)}</td>
+                    <td className="px-3 py-3 font-bold text-gray-900">{ps.name}</td>
+                    <td className="px-2 py-3 text-center text-green-600 font-semibold">{ps.wins}</td>
+                    <td className="px-2 py-3 text-center text-gray-400">{ps.draws}</td>
+                    <td className="px-2 py-3 text-center text-red-400">{ps.losses}</td>
+                    <td className="px-2 py-3 text-center font-black text-gray-900">{ps.points}</td>
+                    <td className="px-3 py-3 text-center font-semibold text-green-700">{ps.pct.toFixed(1)}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div className="px-4 py-2 bg-gray-50 border-t border-gray-100">
+              <p className="text-xs text-gray-400">V = Vittorie (2 pts) · P = Pareggi (1 pt) · S = Sconfitte</p>
+            </div>
+          </div>
+
+          {/* Pairwise matchups */}
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
+              <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide">Sfide Dirette</h2>
+            </div>
+            <div className="divide-y divide-gray-50">
+              {matchups.map((mr, mi) => {
+                const nameA = sessions[mr.a].playerName.split(' ')[0];
+                const nameB = sessions[mr.b].playerName.split(' ')[0];
+                const colorA = RADAR_COLORS[mr.a];
+                const colorB = RADAR_COLORS[mr.b];
+                return (
+                  <div key={mi} className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-bold" style={{ color: colorA }}>{nameA}</span>
+                      <span className={`text-2xl font-black ${mr.winner === 0 ? 'text-gray-500' : 'text-gray-900'}`}>
+                        {mr.strokesA}–{mr.strokesB}
+                      </span>
+                      <span className="text-sm font-bold" style={{ color: colorB }}>{nameB}</span>
+                      <span className="ml-auto text-xs text-gray-400">colpi vinti</span>
+                      {mr.winner === 1 && <span className="text-xs font-bold text-green-600">↑ {nameA}</span>}
+                      {mr.winner === 2 && <span className="text-xs font-bold text-green-600">↑ {nameB}</span>}
+                      {mr.winner === 0 && <span className="text-xs text-gray-400">Pareggio</span>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Radar overlay */}
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
+            <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3">Radar Comparativo</h2>
+            <ResponsiveContainer width="100%" height={240}>
+              <RadarChart data={radarData}>
+                <PolarGrid />
+                <PolarAngleAxis dataKey="subject" tick={{ fontSize: 10 }} />
+                {results.map((_, ri) => (
+                  <Radar
+                    key={ri}
+                    name={sessions[ri].playerName.split(' ')[0]}
+                    dataKey={RADAR_LABELS[ri]}
+                    stroke={RADAR_COLORS[ri]}
+                    fill={RADAR_COLORS[ri]}
+                    fillOpacity={0.15}
+                  />
+                ))}
+                <Tooltip formatter={(v: number) => v.toFixed(2)} />
+                <Legend />
+              </RadarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Individual results */}
+          <div className="space-y-2">
+            <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wide">Dettaglio individuale</h2>
+            {ids.map((id, i) => (
+              <button
+                key={id}
+                onClick={() => navigate(`/results/${id}`)}
+                className="w-full bg-white rounded-xl border border-gray-200 px-4 py-3 text-left hover:border-green-300 hover:shadow-sm transition-all flex items-center justify-between"
+              >
+                <span className="text-sm font-medium text-gray-700">
+                  <span style={{ color: RADAR_COLORS[i] }}>●</span> {sessions[i]?.playerName ?? `Giocatore ${i + 1}`}
+                </span>
+                <span className="text-xs text-green-600 font-medium">Vedi risultati →</span>
+              </button>
+            ))}
+          </div>
+
+          <Button className="w-full justify-center" onClick={() => navigate('/')}>
+            Torna alla Home
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── 1v1 / 2v2 mode ───────────────────────────────────────────────────────────
 
   let name1: string;
   let name2: string;

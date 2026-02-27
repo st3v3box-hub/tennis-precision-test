@@ -37,6 +37,12 @@ export const WizardContainer: React.FC = () => {
     category: Category;
   } | undefined;
 
+  // Challenge setup payload from ChallengePage
+  const challengeSetup = (location.state as Record<string, unknown> | null)?.challengeSetup as {
+    playerCount: 1 | 2 | 3 | 4;
+    challengeMode: WizardState['challengeMode'];
+  } | undefined;
+
   const [state, setState] = useState<WizardState>(() => {
     if (quickStart) {
       return {
@@ -53,6 +59,17 @@ export const WizardContainer: React.FC = () => {
           series: [],
         }],
         challengeMode: 'none',
+      };
+    }
+    if (challengeSetup) {
+      const count = challengeSetup.playerCount;
+      return {
+        step: 0,
+        date: new Date().toISOString().slice(0, 10),
+        coach: getLastCoach(),
+        playerCount: count,
+        players: Array.from({ length: count }, () => makePlayer()),
+        challengeMode: challengeSetup.challengeMode,
       };
     }
     return {

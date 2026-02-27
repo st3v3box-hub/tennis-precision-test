@@ -62,7 +62,7 @@ export const StepMeta: React.FC<Props> = ({ state, update, updatePlayer, setPlay
     updatePlayer(playerIdx, { profileId: undefined });
   };
 
-  const canChallenge = state.playerCount === 2 || state.playerCount === 4;
+  const canChallenge = state.playerCount >= 2;
 
   const getCardTitle = (idx: number): string => {
     if (state.challengeMode === '1v1') {
@@ -71,6 +71,9 @@ export const StepMeta: React.FC<Props> = ({ state, update, updatePlayer, setPlay
     if (state.challengeMode === '2v2') {
       const labels = ['🔴 Team 1 · P1', '🔴 Team 1 · P2', '🔵 Team 2 · P1', '🔵 Team 2 · P2'];
       return labels[idx] ?? `Giocatore ${idx + 1}`;
+    }
+    if (state.challengeMode === 'ffa') {
+      return `⚔️ Giocatore ${idx + 1}`;
     }
     return state.playerCount > 1 ? `Giocatore ${idx + 1}` : 'Dati Giocatore';
   };
@@ -106,13 +109,15 @@ export const StepMeta: React.FC<Props> = ({ state, update, updatePlayer, setPlay
         </div>
       </Card>
 
-      {/* Challenge mode toggle (2 or 4 players only) */}
+      {/* Challenge mode toggle */}
       {canChallenge && (
         <Card title="Modalità">
           <p className="text-xs text-gray-500 mb-3">
-            {state.playerCount === 2 ? 'Con 2 giocatori puoi attivare la sfida 1 vs 1.' : 'Con 4 giocatori puoi attivare la sfida 2 vs 2 a squadre.'}
+            {state.playerCount === 2 && 'Con 2 giocatori puoi attivare la sfida 1 vs 1.'}
+            {state.playerCount === 3 && 'Con 3 giocatori puoi giocare tutti contro tutti (round-robin).'}
+            {state.playerCount === 4 && 'Con 4 giocatori puoi giocare 2 vs 2 o tutti contro tutti.'}
           </p>
-          <div className="grid grid-cols-2 gap-2">
+          <div className={`grid gap-2 ${state.playerCount === 4 ? 'grid-cols-3' : 'grid-cols-2'}`}>
             <button
               type="button"
               onClick={() => update({ challengeMode: 'none' })}
@@ -124,17 +129,58 @@ export const StepMeta: React.FC<Props> = ({ state, update, updatePlayer, setPlay
             >
               Normale
             </button>
-            <button
-              type="button"
-              onClick={() => update({ challengeMode: state.playerCount === 2 ? '1v1' : '2v2' })}
-              className={`py-3 rounded-xl border-2 text-sm font-semibold transition-all
-                ${state.challengeMode !== 'none'
-                  ? 'bg-orange-500 border-orange-500 text-white'
-                  : 'bg-white border-gray-300 text-gray-700 hover:border-orange-400'
-                }`}
-            >
-              🏆 Sfida {state.playerCount === 2 ? '1 vs 1' : '2 vs 2'}
-            </button>
+            {state.playerCount === 2 && (
+              <button
+                type="button"
+                onClick={() => update({ challengeMode: '1v1' })}
+                className={`py-3 rounded-xl border-2 text-sm font-semibold transition-all
+                  ${state.challengeMode === '1v1'
+                    ? 'bg-orange-500 border-orange-500 text-white'
+                    : 'bg-white border-gray-300 text-gray-700 hover:border-orange-400'
+                  }`}
+              >
+                🏆 1 vs 1
+              </button>
+            )}
+            {state.playerCount === 3 && (
+              <button
+                type="button"
+                onClick={() => update({ challengeMode: 'ffa' })}
+                className={`py-3 rounded-xl border-2 text-sm font-semibold transition-all
+                  ${state.challengeMode === 'ffa'
+                    ? 'bg-orange-500 border-orange-500 text-white'
+                    : 'bg-white border-gray-300 text-gray-700 hover:border-orange-400'
+                  }`}
+              >
+                🔄 Tutti vs Tutti
+              </button>
+            )}
+            {state.playerCount === 4 && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => update({ challengeMode: '2v2' })}
+                  className={`py-3 rounded-xl border-2 text-sm font-semibold transition-all
+                    ${state.challengeMode === '2v2'
+                      ? 'bg-orange-500 border-orange-500 text-white'
+                      : 'bg-white border-gray-300 text-gray-700 hover:border-orange-400'
+                    }`}
+                >
+                  👥 2 vs 2
+                </button>
+                <button
+                  type="button"
+                  onClick={() => update({ challengeMode: 'ffa' })}
+                  className={`py-3 rounded-xl border-2 text-sm font-semibold transition-all
+                    ${state.challengeMode === 'ffa'
+                      ? 'bg-orange-500 border-orange-500 text-white'
+                      : 'bg-white border-gray-300 text-gray-700 hover:border-orange-400'
+                    }`}
+                >
+                  🔄 Tutti vs Tutti
+                </button>
+              </>
+            )}
           </div>
         </Card>
       )}
@@ -311,7 +357,11 @@ export const StepMeta: React.FC<Props> = ({ state, update, updatePlayer, setPlay
       </Card>
 
       <Button size="lg" className="w-full" disabled={!canContinue} onClick={onNext}>
-        {state.challengeMode !== 'none' ? `🏆 Inizia Sfida ${state.challengeMode.toUpperCase()} →` : 'Inizia Test →'}
+        {state.challengeMode === 'ffa'
+          ? '🔄 Inizia Tutti vs Tutti →'
+          : state.challengeMode !== 'none'
+            ? `🏆 Inizia Sfida ${state.challengeMode.toUpperCase()} →`
+            : 'Inizia Test →'}
       </Button>
     </div>
   );

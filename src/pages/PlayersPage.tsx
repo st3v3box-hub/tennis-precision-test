@@ -5,6 +5,7 @@ import { computeSessionResults } from '../lib/formulas';
 import { percentToStars, renderStars, STAR_LABELS } from '../lib/stars';
 import type { PlayerProfile } from '../types';
 import { Button } from '../components/ui/Button';
+import { can } from '../lib/auth';
 
 function calcAge(dob: string, ref = new Date()): number {
   const d = new Date(dob);
@@ -15,6 +16,7 @@ function calcAge(dob: string, ref = new Date()): number {
 
 export const PlayersPage: React.FC = () => {
   const navigate = useNavigate();
+  const canEdit = can('editPlayers');
   const [search, setSearch] = useState('');
   const [profiles, setProfiles] = useState(getPlayerProfiles);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
@@ -63,7 +65,7 @@ export const PlayersPage: React.FC = () => {
             placeholder="Cerca per nome o club..."
             className="flex-1 border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
           />
-          <Button onClick={() => navigate('/players/new')} icon="+">Nuovo</Button>
+          {canEdit && <Button onClick={() => navigate('/players/new')} icon="+">Nuovo</Button>}
         </div>
 
         {filtered.length === 0 && (
@@ -126,22 +128,24 @@ export const PlayersPage: React.FC = () => {
                   </div>
                 </button>
 
-                <div className="border-t border-gray-100 px-4 py-2 flex gap-2 justify-end">
-                  <button
-                    onClick={() => navigate(`/players/${p.id}/edit`)}
-                    className="text-xs text-gray-500 hover:text-green-600 font-medium px-2 py-1 rounded"
-                  >
-                    Modifica
-                  </button>
-                  {deleteConfirm === p.id ? (
-                    <>
-                      <button onClick={() => handleDelete(p.id)} className="text-xs text-red-600 font-bold px-2 py-1 rounded">Conferma</button>
-                      <button onClick={() => setDeleteConfirm(null)} className="text-xs text-gray-400 px-2 py-1 rounded">Ann.</button>
-                    </>
-                  ) : (
-                    <button onClick={() => setDeleteConfirm(p.id)} className="text-xs text-gray-400 hover:text-red-500 px-2 py-1 rounded">🗑</button>
-                  )}
-                </div>
+                {canEdit && (
+                  <div className="border-t border-gray-100 px-4 py-2 flex gap-2 justify-end">
+                    <button
+                      onClick={() => navigate(`/players/${p.id}/edit`)}
+                      className="text-xs text-gray-500 hover:text-green-600 font-medium px-2 py-1 rounded"
+                    >
+                      Modifica
+                    </button>
+                    {deleteConfirm === p.id ? (
+                      <>
+                        <button onClick={() => handleDelete(p.id)} className="text-xs text-red-600 font-bold px-2 py-1 rounded">Conferma</button>
+                        <button onClick={() => setDeleteConfirm(null)} className="text-xs text-gray-400 px-2 py-1 rounded">Ann.</button>
+                      </>
+                    ) : (
+                      <button onClick={() => setDeleteConfirm(p.id)} className="text-xs text-gray-400 hover:text-red-500 px-2 py-1 rounded">🗑</button>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}

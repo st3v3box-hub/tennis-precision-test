@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { can } from '../lib/auth';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine,
 } from 'recharts';
@@ -41,6 +42,8 @@ export const PlayerDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const profile = id ? getPlayerProfile(id) : undefined;
+  const canEdit = can('editPlayers');
+  const canTest = can('createTest');
 
   const settings = useMemo(() => getSettings(), []);
   const allSessions = useMemo(() => getSessions(), []);
@@ -102,12 +105,14 @@ export const PlayerDetailPage: React.FC = () => {
         <h1 className="text-lg font-bold text-gray-900 flex-1 truncate">
           {profile.lastName} {profile.firstName}
         </h1>
-        <button
-          onClick={() => navigate(`/players/${profile.id}/edit`)}
-          className="text-xs text-gray-500 hover:text-green-600 font-medium px-3 py-1.5 border border-gray-200 rounded-lg"
-        >
-          Modifica
-        </button>
+        {canEdit && (
+          <button
+            onClick={() => navigate(`/players/${profile.id}/edit`)}
+            className="text-xs text-gray-500 hover:text-green-600 font-medium px-3 py-1.5 border border-gray-200 rounded-lg"
+          >
+            Modifica
+          </button>
+        )}
       </div>
 
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
@@ -214,8 +219,8 @@ export const PlayerDetailPage: React.FC = () => {
           </Card>
         )}
 
-        {/* Quick-start test section */}
-        <Card title="Avvia Test Rapido">
+        {/* Quick-start test section — coach/admin only */}
+        {canTest && <Card title="Avvia Test Rapido">
           <p className="text-xs text-gray-500 mb-3">
             Seleziona la categoria per iniziare subito il test — i dati di {profile.firstName} sono già configurati.
           </p>
@@ -244,7 +249,7 @@ export const PlayerDetailPage: React.FC = () => {
               );
             })}
           </div>
-        </Card>
+        </Card>}
 
         {/* Sessions */}
         <div className="flex items-center justify-between">

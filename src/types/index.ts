@@ -142,5 +142,5 @@ export interface WizardState {
   coach: string;
   playerCount: 1 | 2 | 3 | 4;
   players: WizardPlayerData[];
-  challengeMode: 'none' | '1v1' | '2v2';
+  challengeMode: 'none' | '1v1' | '2v2' | 'ffa';
 }
