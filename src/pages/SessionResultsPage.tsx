@@ -1,14 +1,14 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getSession, getSettings } from '../lib/storage';
+import { useAppData } from '../contexts/AppDataContext';
 import { ResultsDashboard } from '../components/results/ResultsDashboard';
 import { Button } from '../components/ui/Button';
 
 export const SessionResultsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { getSession, settings } = useAppData();
   const session = id ? getSession(id) : undefined;
-  const settings = getSettings();
 
   if (!session) {
     return (

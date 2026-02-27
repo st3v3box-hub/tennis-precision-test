@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { TestSession, AppSettings } from '../../types';
 import { computeSessionResults } from '../../lib/formulas';
-import { deleteSession } from '../../lib/storage';
+import { useAppData } from '../../contexts/AppDataContext';
 import { exportHistoryCSV, downloadCSV } from '../../lib/export';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
@@ -10,11 +10,12 @@ import { Card } from '../ui/Card';
 interface Props {
   sessions: TestSession[];
   settings: AppSettings;
-  onRefresh: () => void;
+  onRefresh?: () => void;
 }
 
-export const HistoryList: React.FC<Props> = ({ sessions, settings, onRefresh }) => {
+export const HistoryList: React.FC<Props> = ({ sessions, settings }) => {
   const navigate = useNavigate();
+  const { deleteSession } = useAppData();
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
@@ -26,10 +27,9 @@ export const HistoryList: React.FC<Props> = ({ sessions, settings, onRefresh }) 
     );
   };
 
-  const handleDelete = (id: string) => {
-    deleteSession(id);
+  const handleDelete = async (id: string) => {
+    await deleteSession(id);
     setDeleteConfirm(null);
-    onRefresh();
   };
 
   const handleExportAll = () => {
@@ -113,7 +113,6 @@ export const HistoryList: React.FC<Props> = ({ sessions, settings, onRefresh }) 
                 </div>
               </div>
 
-              {/* Mini stat grid */}
               <div className="grid grid-cols-3 gap-2 mb-3">
                 {r.stats.slice(0, 6).map(s => (
                   <div key={s.stroke} className="text-center bg-gray-50 rounded-lg py-1.5">

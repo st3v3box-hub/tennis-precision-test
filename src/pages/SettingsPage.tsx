@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { AppSettings } from '../types';
-import { getSettings, saveSettings } from '../lib/storage';
+import { useAppData } from '../contexts/AppDataContext';
 import {
   changeCredentials, getCredentials,
   getAccountsByRole, upsertAccount, removeAccount,
@@ -52,7 +52,7 @@ type ManagedRole = 'coach' | 'viewer';
 
 const MultiAccountCard: React.FC<{ role: ManagedRole }> = ({ role }) => {
   const roleLabel = ROLE_LABELS[role];
-  const [accounts, setAccounts] = useState(() => getAccountsByRole(role));
+  const [accounts, setAccounts] = useState<{ id: string; username: string }[]>([]);
   // formOpen: null = closed, 'new' = adding, string = editing by id
   const [formOpen, setFormOpen] = useState<null | 'new' | string>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
@@ -63,7 +63,12 @@ const MultiAccountCard: React.FC<{ role: ManagedRole }> = ({ role }) => {
   const [formErr, setFormErr] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
-  const refresh = () => setAccounts(getAccountsByRole(role));
+  const refresh = useCallback(async () => {
+    const accs = await getAccountsByRole(role);
+    setAccounts(accs);
+  }, [role]);
+
+  useEffect(() => { refresh(); }, [refresh]);
 
   const openAdd = () => {
     setFormOpen('new');
@@ -99,15 +104,15 @@ const MultiAccountCard: React.FC<{ role: ManagedRole }> = ({ role }) => {
 
     const editId = isEditing ? formOpen! : undefined;
     await upsertAccount(role, inputUser.trim(), inputPwd, editId);
-    refresh();
+    await refresh();
     closeForm();
     setSuccessMsg(isEditing ? `Account "${inputUser.trim()}" aggiornato.` : `Account "${inputUser.trim()}" creato.`);
     setTimeout(() => setSuccessMsg(''), 3000);
   };
 
-  const handleDelete = (id: string) => {
-    removeAccount(id);
-    refresh();
+  const handleDelete = async (id: string) => {
+    await removeAccount(id);
+    await refresh();
     setDeleteConfirm(null);
     if (formOpen === id) closeForm();
   };
@@ -226,7 +231,7 @@ const MultiAccountCard: React.FC<{ role: ManagedRole }> = ({ role }) => {
 
 export const SettingsPage: React.FC = () => {
   const navigate = useNavigate();
-  const [settings, setSettings] = useState<AppSettings>(getSettings);
+  const { settings, saveSettings } = useAppData();
   const [saved, setSaved] = useState(false);
 
   const currentUsername = getCredentials()?.username ?? '';
@@ -251,10 +256,9 @@ export const SettingsPage: React.FC = () => {
     }
   };
 
-  const update = (patch: Partial<AppSettings>) => {
+  const update = async (patch: Partial<AppSettings>) => {
     const next = { ...settings, ...patch };
-    setSettings(next);
-    saveSettings(next);
+    await saveSettings(next);
     setSaved(true);
     setTimeout(() => setSaved(false), 1500);
   };

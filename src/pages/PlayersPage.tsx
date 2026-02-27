@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getPlayerProfiles, deletePlayerProfile, getSessions, getSettings } from '../lib/storage';
+import { useAppData } from '../contexts/AppDataContext';
 import { computeSessionResults } from '../lib/formulas';
 import { percentToStars, renderStars, STAR_LABELS } from '../lib/stars';
 import type { PlayerProfile } from '../types';
@@ -18,10 +18,8 @@ export const PlayersPage: React.FC = () => {
   const navigate = useNavigate();
   const canEdit = can('editPlayers');
   const [search, setSearch] = useState('');
-  const [profiles, setProfiles] = useState(getPlayerProfiles);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-  const settings = useMemo(() => getSettings(), []);
-  const allSessions = useMemo(() => getSessions(), []);
+  const { players: profiles, sessions: allSessions, settings, deletePlayer } = useAppData();
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
@@ -33,9 +31,8 @@ export const PlayersPage: React.FC = () => {
       .sort((a, b) => `${a.lastName}${a.firstName}`.localeCompare(`${b.lastName}${b.firstName}`));
   }, [profiles, search]);
 
-  const handleDelete = (id: string) => {
-    deletePlayerProfile(id);
-    setProfiles(getPlayerProfiles());
+  const handleDelete = async (id: string) => {
+    await deletePlayer(id);
     setDeleteConfirm(null);
   };
 
@@ -56,7 +53,6 @@ export const PlayersPage: React.FC = () => {
       </div>
 
       <div className="max-w-2xl mx-auto px-4 py-4 space-y-4">
-        {/* Search + New */}
         <div className="flex gap-2">
           <input
             type="text"

@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
   RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer, Tooltip, Legend,
 } from 'recharts';
-import { getSessions, getSettings } from '../lib/storage';
+import { useAppData } from '../contexts/AppDataContext';
 import { computeSessionResults } from '../lib/formulas';
 import { percentToStars, renderStars } from '../lib/stars';
 import { Button } from '../components/ui/Button';
@@ -15,10 +15,8 @@ interface StrokeRow {
   label: string;
   val1: number;
   val2: number;
-  winner: 0 | 1 | 2;  // 0 = draw
+  winner: 0 | 1 | 2;
 }
-
-// ── FFA helpers ───────────────────────────────────────────────────────────────
 
 interface PlayerStat {
   idx: number;
@@ -35,22 +33,19 @@ interface MatchupResult {
   b: number;
   strokesA: number;
   strokesB: number;
-  winner: 0 | 1 | 2; // 0=draw, 1=a wins, 2=b wins
+  winner: 0 | 1 | 2;
   rows: StrokeRow[];
 }
 
 const RADAR_COLORS = ['#ef4444', '#3b82f6', '#22c55e', '#f97316'];
 const RADAR_LABELS = ['A', 'B', 'C', 'D'];
 
-// ── Component ─────────────────────────────────────────────────────────────────
-
 export const ChallengeResultsPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { ids, mode } = ((location.state ?? {}) as { ids?: string[]; mode?: ChallengeMode });
 
-  const settings = useMemo(() => getSettings(), []);
-  const allSessions = useMemo(() => getSessions(), []);
+  const { sessions: allSessions, settings } = useAppData();
 
   const sessions: TestSession[] = useMemo(
     () => (ids ?? []).map(id => allSessions.find(s => s.id === id)).filter(Boolean) as TestSession[],
@@ -81,7 +76,6 @@ export const ChallengeResultsPage: React.FC = () => {
   if (mode === 'ffa') {
     const n = sessions.length;
 
-    // Build all pairwise matchups
     const matchups: MatchupResult[] = [];
     for (let a = 0; a < n; a++) {
       for (let b = a + 1; b < n; b++) {
@@ -103,7 +97,6 @@ export const ChallengeResultsPage: React.FC = () => {
       }
     }
 
-    // Compute player stats
     const playerStats: PlayerStat[] = sessions.map((s, i) => ({
       idx: i,
       name: s.playerName,
@@ -135,7 +128,6 @@ export const ChallengeResultsPage: React.FC = () => {
       b.points !== a.points ? b.points - a.points : b.pct - a.pct
     );
 
-    // Radar data for all players
     const radarData = results[0].stats.map((s, si) => {
       const entry: Record<string, string | number> = { subject: s.label };
       results.forEach((r, ri) => {
@@ -154,8 +146,6 @@ export const ChallengeResultsPage: React.FC = () => {
         </div>
 
         <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
-
-          {/* Ranking table */}
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
             <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
               <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide">Classifica Finale</h2>
@@ -191,7 +181,6 @@ export const ChallengeResultsPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Pairwise matchups */}
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
             <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
               <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide">Sfide Dirette</h2>
@@ -221,7 +210,6 @@ export const ChallengeResultsPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Radar overlay */}
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
             <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3">Radar Comparativo</h2>
             <ResponsiveContainer width="100%" height={240}>
@@ -244,7 +232,6 @@ export const ChallengeResultsPage: React.FC = () => {
             </ResponsiveContainer>
           </div>
 
-          {/* Individual results */}
           <div className="space-y-2">
             <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wide">Dettaglio individuale</h2>
             {ids.map((id, i) => (
@@ -287,12 +274,7 @@ export const ChallengeResultsPage: React.FC = () => {
     pct2 = r2.percentOfIdeal;
     comparison = r1.stats.map((s, i) => {
       const v2 = r2.stats[i].ave;
-      return {
-        label: s.label,
-        val1: s.ave,
-        val2: v2,
-        winner: s.ave > v2 ? 1 : v2 > s.ave ? 2 : 0,
-      };
+      return { label: s.label, val1: s.ave, val2: v2, winner: s.ave > v2 ? 1 : v2 > s.ave ? 2 : 0 };
     });
     radarData = r1.stats.map((s, i) => ({
       subject: s.label,
@@ -300,7 +282,6 @@ export const ChallengeResultsPage: React.FC = () => {
       B: parseFloat(r2.stats[i].ave.toFixed(2)),
     }));
   } else {
-    // 2v2: team averages
     const rA1 = results[0];
     const rA2 = results[1] ?? results[0];
     const rB1 = results[2] ?? results[0];
@@ -312,12 +293,7 @@ export const ChallengeResultsPage: React.FC = () => {
     comparison = rA1.stats.map((s, i) => {
       const v1 = (s.ave + rA2.stats[i].ave) / 2;
       const v2 = (rB1.stats[i].ave + rB2.stats[i].ave) / 2;
-      return {
-        label: s.label,
-        val1: v1,
-        val2: v2,
-        winner: v1 > v2 ? 1 : v2 > v1 ? 2 : 0,
-      };
+      return { label: s.label, val1: v1, val2: v2, winner: v1 > v2 ? 1 : v2 > v1 ? 2 : 0 };
     });
     radarData = rA1.stats.map((s, i) => ({
       subject: s.label,
@@ -329,15 +305,12 @@ export const ChallengeResultsPage: React.FC = () => {
   const score1 = comparison.filter(c => c.winner === 1).length;
   const score2 = comparison.filter(c => c.winner === 2).length;
   const overallWinner = score1 > score2 ? 1 : score2 > score1 ? 2 : 0;
-
   const stars1 = percentToStars(pct1);
   const stars2 = percentToStars(pct2);
-
   const shortName = (full: string) => full.split(' ')[0];
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <div className="bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-10 shadow-sm flex items-center gap-3">
         <button onClick={() => navigate('/')} className="text-gray-500 hover:text-gray-700 text-xl">←</button>
         <h1 className="text-lg font-bold text-gray-900">
@@ -346,8 +319,6 @@ export const ChallengeResultsPage: React.FC = () => {
       </div>
 
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
-
-        {/* Hero comparison card */}
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
           {overallWinner !== 0 && (
             <div className="text-center mb-4">
@@ -364,7 +335,6 @@ export const ChallengeResultsPage: React.FC = () => {
           )}
 
           <div className="flex items-center gap-3">
-            {/* Side 1 */}
             <div className={`flex-1 text-center rounded-xl p-3 ${overallWinner === 1 ? 'bg-red-50 border-2 border-red-300' : overallWinner === 2 ? 'opacity-60' : ''}`}>
               <div className="text-xs font-bold text-red-500 mb-1">🔴 {mode === '2v2' ? 'TEAM 1' : ''}</div>
               <div className="text-sm font-black text-gray-900 leading-tight">{name1}</div>
@@ -372,13 +342,11 @@ export const ChallengeResultsPage: React.FC = () => {
               <div className="text-yellow-400 text-sm mt-0.5">{renderStars(stars1)}</div>
             </div>
 
-            {/* Score */}
             <div className="text-center px-2 flex-shrink-0">
               <div className="text-4xl font-black text-gray-900">{score1}–{score2}</div>
               <div className="text-xs text-gray-400 mt-0.5">colpi vinti</div>
             </div>
 
-            {/* Side 2 */}
             <div className={`flex-1 text-center rounded-xl p-3 ${overallWinner === 2 ? 'bg-blue-50 border-2 border-blue-300' : overallWinner === 1 ? 'opacity-60' : ''}`}>
               <div className="text-xs font-bold text-blue-500 mb-1">🔵 {mode === '2v2' ? 'TEAM 2' : ''}</div>
               <div className="text-sm font-black text-gray-900 leading-tight">{name2}</div>
@@ -388,7 +356,6 @@ export const ChallengeResultsPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Stroke comparison table */}
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
             <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide">Confronto Colpi</h2>
@@ -397,24 +364,18 @@ export const ChallengeResultsPage: React.FC = () => {
             <thead>
               <tr className="border-b border-gray-100">
                 <th className="text-left px-3 py-2 text-gray-500 font-semibold">Colpo</th>
-                <th className="text-center px-3 py-2 text-red-600 font-bold">
-                  🔴 {shortName(name1)}
-                </th>
-                <th className="text-center px-3 py-2 text-blue-600 font-bold">
-                  🔵 {shortName(name2)}
-                </th>
+                <th className="text-center px-3 py-2 text-red-600 font-bold">🔴 {shortName(name1)}</th>
+                <th className="text-center px-3 py-2 text-blue-600 font-bold">🔵 {shortName(name2)}</th>
               </tr>
             </thead>
             <tbody>
               {comparison.map((row, i) => (
                 <tr key={i} className="border-b border-gray-50 last:border-0">
                   <td className="px-3 py-3 font-medium text-gray-700">{row.label}</td>
-                  <td className={`px-3 py-3 text-center font-bold
-                    ${row.winner === 1 ? 'text-red-600 bg-red-50' : 'text-gray-400'}`}>
+                  <td className={`px-3 py-3 text-center font-bold ${row.winner === 1 ? 'text-red-600 bg-red-50' : 'text-gray-400'}`}>
                     {row.val1.toFixed(1)}{row.winner === 1 && ' ▲'}
                   </td>
-                  <td className={`px-3 py-3 text-center font-bold
-                    ${row.winner === 2 ? 'text-blue-600 bg-blue-50' : 'text-gray-400'}`}>
+                  <td className={`px-3 py-3 text-center font-bold ${row.winner === 2 ? 'text-blue-600 bg-blue-50' : 'text-gray-400'}`}>
                     {row.val2.toFixed(1)}{row.winner === 2 && ' ▲'}
                   </td>
                 </tr>
@@ -432,34 +393,20 @@ export const ChallengeResultsPage: React.FC = () => {
           </table>
         </div>
 
-        {/* Radar overlay */}
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
           <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3">Radar Comparativo</h2>
           <ResponsiveContainer width="100%" height={220}>
             <RadarChart data={radarData}>
               <PolarGrid />
               <PolarAngleAxis dataKey="subject" tick={{ fontSize: 10 }} />
-              <Radar
-                name={shortName(name1)}
-                dataKey="A"
-                stroke="#ef4444"
-                fill="#ef4444"
-                fillOpacity={0.2}
-              />
-              <Radar
-                name={shortName(name2)}
-                dataKey="B"
-                stroke="#3b82f6"
-                fill="#3b82f6"
-                fillOpacity={0.2}
-              />
+              <Radar name={shortName(name1)} dataKey="A" stroke="#ef4444" fill="#ef4444" fillOpacity={0.2} />
+              <Radar name={shortName(name2)} dataKey="B" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.2} />
               <Tooltip formatter={(v: number) => v.toFixed(2)} />
               <Legend />
             </RadarChart>
           </ResponsiveContainer>
         </div>
 
-        {/* Individual results links */}
         <div className="space-y-2">
           <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wide">Dettaglio individuale</h2>
           {ids.map((id, i) => (

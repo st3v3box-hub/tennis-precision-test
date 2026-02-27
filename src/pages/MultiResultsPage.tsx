@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { getSession, getSettings } from '../lib/storage';
+import { useAppData } from '../contexts/AppDataContext';
 import { ResultsDashboard } from '../components/results/ResultsDashboard';
 import { Button } from '../components/ui/Button';
 
@@ -8,9 +8,9 @@ export const MultiResultsPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const ids: string[] = (location.state as { ids: string[] } | null)?.ids ?? [];
+  const { getSession, settings } = useAppData();
 
   const sessions = ids.map(id => getSession(id)).filter(Boolean) as NonNullable<ReturnType<typeof getSession>>[];
-  const settings = getSettings();
 
   const [activeIdx, setActiveIdx] = useState(0);
 

@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Category } from '../types';
-import { getSessions, getSettings } from '../lib/storage';
+import { useAppData } from '../contexts/AppDataContext';
 import { computeSessionResults } from '../lib/formulas';
 
 type Tab = Category | 'generale';
@@ -33,11 +33,8 @@ const categoryLabel: Record<Category, string> = {
 export const RankingPage: React.FC = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<Tab>('generale');
+  const { sessions, settings } = useAppData();
 
-  const sessions = useMemo(() => getSessions(), []);
-  const settings = useMemo(() => getSettings(), []);
-
-  // Compute % ideale for every session
   const ranked = useMemo(() =>
     sessions
       .filter(s => s.completed)
@@ -49,11 +46,9 @@ export const RankingPage: React.FC = () => {
     [sessions, settings]
   );
 
-  // Per-category rankings (all sessions of that category, sorted)
   const byCategory = (cat: Category) =>
     ranked.filter(r => r.session.category === cat);
 
-  // Generale: best session per player per category
   type GeneraleRow = { name: string; u10_u12: number | null; terza: number | null; seconda: number | null; prima: number | null };
   const generalRows = useMemo(() => {
     const map = new Map<string, GeneraleRow>();
@@ -66,7 +61,6 @@ export const RankingPage: React.FC = () => {
       }
       map.set(key, existing);
     });
-    // Sort by best score across all categories
     return Array.from(map.values()).sort((a, b) => {
       const bestA = Math.max(a.u10_u12 ?? 0, a.terza ?? 0, a.seconda ?? 0, a.prima ?? 0);
       const bestB = Math.max(b.u10_u12 ?? 0, b.terza ?? 0, b.seconda ?? 0, b.prima ?? 0);
@@ -94,15 +88,12 @@ export const RankingPage: React.FC = () => {
             className="w-full bg-white rounded-xl border border-gray-200 p-4 text-left hover:border-green-300 hover:shadow-sm transition-all"
           >
             <div className="flex items-center gap-3">
-              {/* Position */}
               <div className="flex-shrink-0 w-8 text-center">
                 {i < 3
                   ? <span className="text-xl">{MEDAL[i]}</span>
                   : <span className="text-sm font-bold text-gray-400">#{i + 1}</span>
                 }
               </div>
-
-              {/* Info */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="font-semibold text-gray-900 truncate">{session.playerName}</span>
@@ -111,8 +102,6 @@ export const RankingPage: React.FC = () => {
                   {session.date} · Coach: {session.coach}
                 </p>
               </div>
-
-              {/* Score */}
               <div className="flex-shrink-0 text-right">
                 <div className={`text-xl font-black ${pct >= 80 ? 'text-green-600' : pct >= 60 ? 'text-yellow-600' : 'text-red-500'}`}>
                   {pct.toFixed(1)}%
@@ -195,7 +184,6 @@ export const RankingPage: React.FC = () => {
           </table>
         </div>
 
-        {/* Per-category podium */}
         <div className="space-y-3">
           {(['u10_u12', 'terza', 'seconda', 'prima'] as Category[]).map(cat => {
             const top = byCategory(cat).slice(0, 3);
@@ -231,14 +219,12 @@ export const RankingPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <div className="bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-10 shadow-sm flex items-center gap-3">
         <button onClick={() => navigate('/')} className="text-gray-500 hover:text-gray-700 text-xl">←</button>
         <h1 className="text-lg font-bold text-gray-900">Classifiche</h1>
         <span className="ml-auto text-xs text-gray-400">{sessions.filter(s => s.completed).length} sessioni totali</span>
       </div>
 
-      {/* Tab bar */}
       <div className="bg-white border-b border-gray-200 px-4 py-2">
         <div className="flex gap-1">
           {TABS.map(tab => (

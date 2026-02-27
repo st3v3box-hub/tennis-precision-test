@@ -4,7 +4,7 @@ import { can } from '../lib/auth';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine,
 } from 'recharts';
-import { getPlayerProfile, getSessions, getSettings } from '../lib/storage';
+import { useAppData } from '../contexts/AppDataContext';
 import { computeSessionResults } from '../lib/formulas';
 import { percentToStars, renderStars, STAR_LABELS } from '../lib/stars';
 import { StarPicker } from '../components/ui/StarPicker';
@@ -41,12 +41,11 @@ const CATEGORY_LABEL: Record<string, string> = {
 export const PlayerDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const profile = id ? getPlayerProfile(id) : undefined;
   const canEdit = can('editPlayers');
   const canTest = can('createTest');
+  const { getPlayer, sessions: allSessions, settings } = useAppData();
 
-  const settings = useMemo(() => getSettings(), []);
-  const allSessions = useMemo(() => getSessions(), []);
+  const profile = id ? getPlayer(id) : undefined;
 
   const sessions = useMemo(
     () =>
@@ -99,7 +98,6 @@ export const PlayerDetailPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <div className="bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-10 shadow-sm flex items-center gap-3">
         <button onClick={() => navigate('/players')} className="text-gray-500 hover:text-gray-700 text-xl">←</button>
         <h1 className="text-lg font-bold text-gray-900 flex-1 truncate">
@@ -117,7 +115,6 @@ export const PlayerDetailPage: React.FC = () => {
 
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
 
-        {/* Profile summary card */}
         <Card title="Profilo">
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-1">
@@ -127,24 +124,12 @@ export const PlayerDetailPage: React.FC = () => {
               <p className="text-sm text-gray-500">
                 {age} anni · {profile.dateOfBirth}
               </p>
-              {profile.club && (
-                <p className="text-sm text-gray-600">🏟 {profile.club}</p>
-              )}
-              {profile.fitRanking && (
-                <p className="text-sm text-blue-600 font-medium">FIT: {profile.fitRanking}</p>
-              )}
-              {profile.coachName && (
-                <p className="text-sm text-gray-500">Coach: {profile.coachName}</p>
-              )}
-              {profile.phone && (
-                <p className="text-sm text-gray-500">📞 {profile.phone}</p>
-              )}
-              {profile.email && (
-                <p className="text-sm text-gray-500">✉️ {profile.email}</p>
-              )}
-              {profile.parentName && (
-                <p className="text-sm text-gray-500">👨‍👩‍👦 {profile.parentName}</p>
-              )}
+              {profile.club && <p className="text-sm text-gray-600">🏟 {profile.club}</p>}
+              {profile.fitRanking && <p className="text-sm text-blue-600 font-medium">FIT: {profile.fitRanking}</p>}
+              {profile.coachName && <p className="text-sm text-gray-500">Coach: {profile.coachName}</p>}
+              {profile.phone && <p className="text-sm text-gray-500">📞 {profile.phone}</p>}
+              {profile.email && <p className="text-sm text-gray-500">✉️ {profile.email}</p>}
+              {profile.parentName && <p className="text-sm text-gray-500">👨‍👩‍👦 {profile.parentName}</p>}
             </div>
             {stars !== null && (
               <div className="text-right flex-shrink-0">
@@ -164,7 +149,6 @@ export const PlayerDetailPage: React.FC = () => {
           )}
         </Card>
 
-        {/* Initial assessment */}
         {profile.initialAssessment && Object.keys(profile.initialAssessment).some(
           k => k !== 'coachNotes' && k !== 'assessmentDate' && profile.initialAssessment![k as keyof InitialAssessment] !== undefined
         ) && (
@@ -192,7 +176,6 @@ export const PlayerDetailPage: React.FC = () => {
           </Card>
         )}
 
-        {/* Trend chart */}
         {chartData.length >= 2 && (
           <Card title="Andamento % Ideale">
             <ResponsiveContainer width="100%" height={180}>
@@ -219,7 +202,6 @@ export const PlayerDetailPage: React.FC = () => {
           </Card>
         )}
 
-        {/* Quick-start test section — coach/admin only */}
         {canTest && <Card title="Avvia Test Rapido">
           <p className="text-xs text-gray-500 mb-3">
             Seleziona la categoria per iniziare subito il test — i dati di {profile.firstName} sono già configurati.
@@ -251,7 +233,6 @@ export const PlayerDetailPage: React.FC = () => {
           </div>
         </Card>}
 
-        {/* Sessions */}
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-bold text-gray-600 uppercase tracking-wide">
             Sessioni ({sessions.length})

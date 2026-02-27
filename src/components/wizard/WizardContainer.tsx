@@ -1,13 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import type { WizardState, WizardPlayerData, Category, SeriesResult } from '../../types';
-import {
-  uid,
-  upsertSession,
-  upsertPlayerProfile,
-  getLastCoach,
-  setLastCoach,
-} from '../../lib/storage';
+import { uid } from '../../lib/storage';
+import { useAppData } from '../../contexts/AppDataContext';
 import { ProgressSteps } from '../ui/ProgressSteps';
 import { WIZARD_STEPS } from '../../lib/protocol';
 import { StepMeta } from './StepMeta';
@@ -28,6 +23,7 @@ const makePlayer = (): WizardPlayerData => ({
 export const WizardContainer: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { lastCoach, saveLastCoach, upsertPlayer, upsertSession } = useAppData();
 
   // Quick-start payload from PlayerDetailPage
   const quickStart = (location.state as Record<string, unknown> | null)?.quickStart as {
@@ -48,7 +44,7 @@ export const WizardContainer: React.FC = () => {
       return {
         step: 1,   // skip meta — player data already known
         date: new Date().toISOString().slice(0, 10),
-        coach: getLastCoach(),
+        coach: lastCoach,
         playerCount: 1,
         players: [{
           id: uid(),
@@ -66,7 +62,7 @@ export const WizardContainer: React.FC = () => {
       return {
         step: 0,
         date: new Date().toISOString().slice(0, 10),
-        coach: getLastCoach(),
+        coach: lastCoach,
         playerCount: count,
         players: Array.from({ length: count }, () => makePlayer()),
         challengeMode: challengeSetup.challengeMode,
@@ -75,7 +71,7 @@ export const WizardContainer: React.FC = () => {
     return {
       step: 0,
       date: new Date().toISOString().slice(0, 10),
-      coach: getLastCoach(),
+      coach: lastCoach,
       playerCount: 1,
       players: [makePlayer()],
       challengeMode: 'none',
@@ -120,12 +116,12 @@ export const WizardContainer: React.FC = () => {
   const next = () => setState(s => ({ ...s, step: s.step + 1 }));
   const prev = () => setState(s => ({ ...s, step: Math.max(0, s.step - 1) }));
 
-  const save = () => {
-    setLastCoach(state.coach);
+  const save = async () => {
+    await saveLastCoach(state.coach);
     const now = new Date().toISOString();
     const ids: string[] = [];
 
-    state.players.forEach(p => {
+    for (const p of state.players) {
       // Resolve player profile ID — auto-create a minimal profile for unlinked players
       let playerId = p.profileId;
       if (!playerId) {
@@ -133,7 +129,7 @@ export const WizardContainer: React.FC = () => {
         const nameParts = p.name.trim().split(/\s+/);
         const firstName = nameParts[0] ?? p.name;
         const lastName = nameParts.slice(1).join(' ');
-        upsertPlayerProfile({
+        await upsertPlayer({
           id: playerId,
           firstName,
           lastName,
@@ -145,7 +141,7 @@ export const WizardContainer: React.FC = () => {
       }
 
       const id = uid();
-      upsertSession({
+      await upsertSession({
         id,
         playerId,
         playerName: p.name,
@@ -159,7 +155,7 @@ export const WizardContainer: React.FC = () => {
         series: p.series,
       });
       ids.push(id);
-    });
+    }
 
     if (state.challengeMode !== 'none') {
       navigate('/challenge-results', { state: { ids, mode: state.challengeMode } });

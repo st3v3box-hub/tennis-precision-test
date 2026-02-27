@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { isFirstRun, login, setupAccount } from '../lib/auth';
 
 interface Props {
@@ -52,9 +52,12 @@ const PasswordInput: React.FC<{
 };
 
 export const LoginPage: React.FC<Props> = ({ onSuccess }) => {
-  const firstRun = isFirstRun();
+  const [firstRun, setFirstRun] = useState(false);
 
-  // Detect non-secure context (crypto.subtle unavailable)
+  useEffect(() => {
+    isFirstRun().then(setFirstRun).catch(() => setFirstRun(false));
+  }, []);
+
   const isSecure =
     typeof window !== 'undefined' &&
     (window.isSecureContext ||
@@ -83,7 +86,7 @@ export const LoginPage: React.FC<Props> = ({ onSuccess }) => {
     try {
       setLoading(true);
 
-      // 1. Try login first (works on any device, any run)
+      // 1. Try login first
       const role = await login(username, password);
       setLoading(false);
 
@@ -92,8 +95,9 @@ export const LoginPage: React.FC<Props> = ({ onSuccess }) => {
         return;
       }
 
-      // 2. If no account exists on this device → auto-create admin
-      if (isFirstRun()) {
+      // 2. If no account exists → auto-create admin
+      const first = await isFirstRun();
+      if (first) {
         if (password.length < 4) {
           setError('La password deve essere di almeno 4 caratteri.');
           return;
@@ -105,7 +109,7 @@ export const LoginPage: React.FC<Props> = ({ onSuccess }) => {
         return;
       }
 
-      // 3. Account exists but credentials wrong
+      // 3. Wrong credentials
       setError('Username o password errati.');
     } catch (err) {
       setLoading(false);
@@ -192,7 +196,7 @@ export const LoginPage: React.FC<Props> = ({ onSuccess }) => {
 
         {firstRun && isSecure && (
           <p className="text-center text-green-300 text-xs mt-4">
-            I dati vengono salvati localmente su questo dispositivo.
+            I dati vengono sincronizzati nel cloud su tutti i dispositivi.
           </p>
         )}
       </div>

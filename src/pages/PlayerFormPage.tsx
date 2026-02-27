@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate, useParams, Navigate } from 'react-router-dom';
 import { can } from '../lib/auth';
 import type { PlayerProfile, InitialAssessment, Category } from '../types';
-import { getPlayerProfile, upsertPlayerProfile, uid } from '../lib/storage';
+import { useAppData } from '../contexts/AppDataContext';
+import { uid } from '../lib/storage';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { StarPicker } from '../components/ui/StarPicker';
@@ -22,13 +23,13 @@ export const PlayerFormPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const isEdit = !!id;
   if (!can('editPlayers')) return <Navigate to="/" replace />;
-  const existing = id ? getPlayerProfile(id) : undefined;
+
+  const { getPlayer, upsertPlayer } = useAppData();
+  const existing = id ? getPlayer(id) : undefined;
 
   const [firstName, setFirstName] = useState(existing?.firstName ?? '');
   const [lastName, setLastName] = useState(existing?.lastName ?? '');
   const [dateOfBirth, setDateOfBirth] = useState(existing?.dateOfBirth ?? '');
-
-  // Optional
   const [phone, setPhone] = useState(existing?.phone ?? '');
   const [email, setEmail] = useState(existing?.email ?? '');
   const [parentName, setParentName] = useState(existing?.parentName ?? '');
@@ -36,21 +37,18 @@ export const PlayerFormPage: React.FC = () => {
   const [fitRanking, setFitRanking] = useState(existing?.fitRanking ?? '');
   const [coachName, setCoachName] = useState(existing?.coachName ?? '');
   const [notes, setNotes] = useState(existing?.notes ?? '');
-
-  // Initial assessment
   const [assessment, setAssessment] = useState<InitialAssessment>(
     existing?.initialAssessment ?? {}
   );
   const [showOptional, setShowOptional] = useState(isEdit);
   const [showAssessment, setShowAssessment] = useState(isEdit && !!existing?.initialAssessment);
-
   const [error, setError] = useState('');
   const [savedProfile, setSavedProfile] = useState<PlayerProfile | null>(null);
 
   const updateAssessment = (patch: Partial<InitialAssessment>) =>
     setAssessment(a => ({ ...a, ...patch }));
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!firstName.trim() || !lastName.trim() || !dateOfBirth) {
       setError('Nome, Cognome e Data di Nascita sono obbligatori.');
       return;
@@ -72,17 +70,14 @@ export const PlayerFormPage: React.FC = () => {
       createdAt: existing?.createdAt ?? now,
       updatedAt: now,
     };
-    upsertPlayerProfile(profile);
+    await upsertPlayer(profile);
     if (isEdit) {
-      // Editing: go directly back to the profile page
       navigate(`/players/${profile.id}`);
     } else {
-      // New profile: let the user choose what to do next
       setSavedProfile(profile);
     }
   };
 
-  // ── Post-save choice screen ──────────────────────────────────────────────
   if (savedProfile) {
     const fullName = `${savedProfile.firstName} ${savedProfile.lastName}`.trim();
     return (
@@ -94,7 +89,6 @@ export const PlayerFormPage: React.FC = () => {
 
         <div className="flex-1 flex items-center justify-center px-4">
           <div className="w-full max-w-sm space-y-5">
-            {/* Success indicator */}
             <div className="text-center">
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-3">
                 <span className="text-3xl">✓</span>
@@ -103,7 +97,6 @@ export const PlayerFormPage: React.FC = () => {
               <p className="text-sm text-gray-500 mt-1">Profilo creato con successo.</p>
             </div>
 
-            {/* Choice buttons */}
             <div className="space-y-3">
               <button
                 onClick={() => navigate(`/players/${savedProfile.id}`)}
@@ -169,7 +162,6 @@ export const PlayerFormPage: React.FC = () => {
       </div>
 
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
-        {/* Required */}
         <Card title="Dati Anagrafici">
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
@@ -192,7 +184,6 @@ export const PlayerFormPage: React.FC = () => {
           </div>
         </Card>
 
-        {/* Optional toggle */}
         <button
           onClick={() => setShowOptional(s => !s)}
           className="w-full flex items-center justify-between bg-white rounded-xl border border-gray-200 px-4 py-3 text-sm font-semibold text-gray-700 hover:border-green-400 transition-colors"
@@ -248,7 +239,6 @@ export const PlayerFormPage: React.FC = () => {
           </Card>
         )}
 
-        {/* Initial assessment toggle */}
         <button
           onClick={() => setShowAssessment(s => !s)}
           className="w-full flex items-center justify-between bg-white rounded-xl border border-gray-200 px-4 py-3 text-sm font-semibold text-gray-700 hover:border-green-400 transition-colors"

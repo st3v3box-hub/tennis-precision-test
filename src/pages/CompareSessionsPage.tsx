@@ -1,15 +1,15 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getSession, getSettings } from '../lib/storage';
+import { useAppData } from '../contexts/AppDataContext';
 import { ResultsDashboard } from '../components/results/ResultsDashboard';
 import { Button } from '../components/ui/Button';
 
 export const CompareSessionsPage: React.FC = () => {
   const { id1, id2 } = useParams<{ id1: string; id2: string }>();
   const navigate = useNavigate();
+  const { getSession, settings } = useAppData();
   const session1 = id1 ? getSession(id1) : undefined;
   const session2 = id2 ? getSession(id2) : undefined;
-  const settings = getSettings();
 
   if (!session1 || !session2) {
     return (

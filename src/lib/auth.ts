@@ -1,9 +1,12 @@
-const ACCOUNTS_KEY = 'tpt_accounts';
+import { collection, doc, setDoc, deleteDoc, getDocs } from 'firebase/firestore';
+import { db } from './firebase';
+
 const SESSION_KEY = 'tpt_session';
 const SESSION_USER_KEY = 'tpt_session_user';
 const SALT = 'tpt_2024_precision';
 
-// Legacy keys (migrated automatically on first load)
+// Legacy localStorage keys (for one-time migration)
+const ACCOUNTS_KEY = 'tpt_accounts';
 const LEGACY_ADMIN_KEY = 'tpt_credentials';
 const LEGACY_COACH_KEY = 'tpt_cred_coach';
 const LEGACY_VIEWER_KEY = 'tpt_cred_viewer';
@@ -35,14 +38,13 @@ function genId(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2);
 }
 
-function loadAccounts(): Account[] {
-  // New unified format
+/** Reads accounts from localStorage only — used for one-time migration. */
+function loadLocalAccounts(): Account[] {
   try {
     const raw = localStorage.getItem(ACCOUNTS_KEY);
     if (raw) return JSON.parse(raw) as Account[];
-  } catch { /* fall through to migration */ }
+  } catch { /* fall through */ }
 
-  // Migrate from legacy per-role keys
   const migrated: Account[] = [];
   const legacyMap: [string, UserRole][] = [
     [LEGACY_ADMIN_KEY, 'admin'],
@@ -57,7 +59,6 @@ function loadAccounts(): Account[] {
       migrated.push({ id: genId(), username: creds.username, passwordHash: creds.passwordHash, role });
     } catch { /* skip */ }
   }
-
   if (migrated.length > 0) {
     localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(migrated));
     localStorage.removeItem(LEGACY_ADMIN_KEY);
@@ -67,8 +68,19 @@ function loadAccounts(): Account[] {
   return migrated;
 }
 
-function saveAccounts(accounts: Account[]): void {
-  localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
+/** Loads accounts from Firestore, migrating from localStorage on first run. */
+async function loadAccounts(): Promise<Account[]> {
+  const snap = await getDocs(collection(db, 'accounts'));
+  if (!snap.empty) {
+    return snap.docs.map(d => d.data() as Account);
+  }
+
+  // Firestore empty — migrate from localStorage
+  const local = loadLocalAccounts();
+  if (local.length > 0) {
+    await Promise.all(local.map(acc => setDoc(doc(db, 'accounts', acc.id), acc)));
+  }
+  return local;
 }
 
 function setAuthenticated(role: UserRole, username: string): void {
@@ -90,7 +102,7 @@ export async function hashPassword(password: string): Promise<string> {
 export function getCurrentRole(): UserRole | null {
   const raw = sessionStorage.getItem(SESSION_KEY);
   if (!raw) return null;
-  if (raw === '1') return 'admin'; // backward compat
+  if (raw === '1') return 'admin';
   if (raw === 'admin' || raw === 'coach' || raw === 'viewer') return raw as UserRole;
   return null;
 }
@@ -99,41 +111,26 @@ export function isAuthenticated(): boolean {
   return getCurrentRole() !== null;
 }
 
-/** Returns the credentials of the currently logged-in user. */
 export function getCredentials(): StoredCredentials | null {
   const role = getCurrentRole();
   if (!role) return null;
-
-  const sessionUser = sessionStorage.getItem(SESSION_USER_KEY);
-  const accounts = loadAccounts();
-
-  if (sessionUser) {
-    const acc = accounts.find(a => a.username === sessionUser && a.role === role);
-    if (acc) return { username: acc.username, passwordHash: acc.passwordHash };
-  }
-
-  // Fallback for sessions created before username was stored in session
-  const acc = accounts.find(a => a.role === role);
-  if (acc) {
-    sessionStorage.setItem(SESSION_USER_KEY, acc.username);
-    return { username: acc.username, passwordHash: acc.passwordHash };
-  }
+  const username = sessionStorage.getItem(SESSION_USER_KEY);
+  if (username) return { username, passwordHash: '' };
   return null;
 }
 
-/** Returns all accounts for a given role (for admin account management). */
-export function getAccountsByRole(role: UserRole): { id: string; username: string }[] {
-  return loadAccounts()
-    .filter(a => a.role === role)
-    .map(a => ({ id: a.id, username: a.username }));
+export async function getAccountsByRole(role: UserRole): Promise<{ id: string; username: string }[]> {
+  const accounts = await loadAccounts();
+  return accounts.filter(a => a.role === role).map(a => ({ id: a.id, username: a.username }));
 }
 
-export function hasAccount(role: UserRole): boolean {
-  return loadAccounts().some(a => a.role === role);
+export async function hasAccount(role: UserRole): Promise<boolean> {
+  const accounts = await loadAccounts();
+  return accounts.some(a => a.role === role);
 }
 
-export function isFirstRun(): boolean {
-  return !hasAccount('admin');
+export async function isFirstRun(): Promise<boolean> {
+  return !(await hasAccount('admin'));
 }
 
 export function logout(): void {
@@ -151,7 +148,7 @@ export function can(action: 'createTest' | 'editPlayers' | 'manageAccounts'): bo
 
 export async function login(username: string, password: string): Promise<UserRole | null> {
   const hash = await hashPassword(password);
-  const accounts = loadAccounts();
+  const accounts = await loadAccounts();
   const match = accounts.find(
     a => a.username.toLowerCase() === username.trim().toLowerCase() && a.passwordHash === hash
   );
@@ -164,9 +161,9 @@ export async function login(username: string, password: string): Promise<UserRol
 
 export async function setupAccount(username: string, password: string): Promise<void> {
   const hash = await hashPassword(password);
-  const accounts = loadAccounts();
-  accounts.push({ id: genId(), username: username.trim(), passwordHash: hash, role: 'admin' });
-  saveAccounts(accounts);
+  const id = genId();
+  const acc: Account = { id, username: username.trim(), passwordHash: hash, role: 'admin' };
+  await setDoc(doc(db, 'accounts', id), acc);
   setAuthenticated('admin', username.trim());
 }
 
@@ -178,14 +175,14 @@ export async function changeCredentials(
   try {
     const sessionUser = sessionStorage.getItem(SESSION_USER_KEY) ?? '';
     const hash = await hashPassword(currentPassword);
-    const accounts = loadAccounts();
-    const idx = accounts.findIndex(
+    const accounts = await loadAccounts();
+    const target = accounts.find(
       a => a.username.toLowerCase() === sessionUser.toLowerCase() && a.passwordHash === hash
     );
-    if (idx === -1) return false;
+    if (!target) return false;
     const newHash = await hashPassword(newPassword);
-    accounts[idx] = { ...accounts[idx], username: newUsername.trim(), passwordHash: newHash };
-    saveAccounts(accounts);
+    const updated: Account = { ...target, username: newUsername.trim(), passwordHash: newHash };
+    await setDoc(doc(db, 'accounts', target.id), updated);
     sessionStorage.setItem(SESSION_USER_KEY, newUsername.trim());
     return true;
   } catch {
@@ -193,42 +190,34 @@ export async function changeCredentials(
   }
 }
 
-/**
- * Create or update a coach/viewer account.
- * - id undefined → create new account
- * - id provided  → update existing (empty password = keep existing)
- * Returns the account id.
- */
 export async function upsertAccount(
   role: 'coach' | 'viewer',
   username: string,
   password: string,
   id?: string
 ): Promise<string> {
-  const accounts = loadAccounts();
+  const accounts = await loadAccounts();
 
   if (id) {
-    const idx = accounts.findIndex(a => a.id === id);
-    if (idx !== -1) {
-      const newHash = password ? await hashPassword(password) : accounts[idx].passwordHash;
-      accounts[idx] = { ...accounts[idx], username: username.trim(), passwordHash: newHash };
-      saveAccounts(accounts);
+    const existing = accounts.find(a => a.id === id);
+    if (existing) {
+      const newHash = password ? await hashPassword(password) : existing.passwordHash;
+      const updated: Account = { ...existing, username: username.trim(), passwordHash: newHash };
+      await setDoc(doc(db, 'accounts', id), updated);
       return id;
     }
   }
 
-  // Create new
   const newId = genId();
   const hash = await hashPassword(password);
-  accounts.push({ id: newId, username: username.trim(), passwordHash: hash, role });
-  saveAccounts(accounts);
+  const acc: Account = { id: newId, username: username.trim(), passwordHash: hash, role };
+  await setDoc(doc(db, 'accounts', newId), acc);
   return newId;
 }
 
-/** Remove an account by id. Admin accounts cannot be removed this way. */
-export function removeAccount(id: string): void {
-  const accounts = loadAccounts();
+export async function removeAccount(id: string): Promise<void> {
+  const accounts = await loadAccounts();
   const target = accounts.find(a => a.id === id);
   if (!target || target.role === 'admin') return;
-  saveAccounts(accounts.filter(a => a.id !== id));
+  await deleteDoc(doc(db, 'accounts', id));
 }

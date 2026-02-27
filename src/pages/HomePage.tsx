@@ -2,10 +2,9 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { HistoryList } from '../components/history/HistoryList';
-import { getSettings, getSessions } from '../lib/storage';
+import { useAppData } from '../contexts/AppDataContext';
 import { logout, getCredentials, ROLE_LABELS } from '../lib/auth';
 import type { UserRole } from '../lib/auth';
-import type { TestSession, AppSettings } from '../types';
 
 const ROLE_BADGE: Record<UserRole, { label: string; cls: string }> = {
   admin: { label: '🔑 Amministratore', cls: 'bg-red-500 text-white' },
@@ -20,16 +19,14 @@ interface Props {
 
 export const HomePage: React.FC<Props> = ({ role, onLogout }) => {
   const navigate = useNavigate();
+  const { sessions, settings } = useAppData();
 
   const handleLogout = () => {
     logout();
     onLogout();
   };
-  const [sessions, setSessions] = useState<TestSession[]>(getSessions);
-  const [settings] = useState<AppSettings>(getSettings);
-  const [view, setView] = useState<'home' | 'history'>('home');
 
-  const refresh = () => setSessions(getSessions());
+  const [view, setView] = useState<'home' | 'history'>('home');
   const badge = ROLE_BADGE[role];
 
   if (view === 'history') {
@@ -40,7 +37,7 @@ export const HomePage: React.FC<Props> = ({ role, onLogout }) => {
           <h1 className="text-lg font-bold text-gray-900">Storico Sessioni</h1>
         </div>
         <div className="max-w-2xl mx-auto px-4 py-6">
-          <HistoryList sessions={sessions} settings={settings} onRefresh={refresh} />
+          <HistoryList sessions={sessions} settings={settings} />
         </div>
       </div>
     );
@@ -76,7 +73,6 @@ export const HomePage: React.FC<Props> = ({ role, onLogout }) => {
 
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
 
-        {/* Admin / Coach: full action bar */}
         {(role === 'admin' || role === 'coach') && (
           <>
             <Button
@@ -113,7 +109,6 @@ export const HomePage: React.FC<Props> = ({ role, onLogout }) => {
           </>
         )}
 
-        {/* Viewer: read-only grid */}
         {role === 'viewer' && (
           <>
             <div className="bg-blue-50 border border-blue-200 rounded-2xl px-4 py-3 text-sm text-blue-700">
@@ -133,7 +128,6 @@ export const HomePage: React.FC<Props> = ({ role, onLogout }) => {
           </>
         )}
 
-        {/* Recent sessions */}
         {recentSessions.length > 0 && (
           <div>
             <div className="flex items-center justify-between mb-3">

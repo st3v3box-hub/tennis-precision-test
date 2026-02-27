@@ -4,7 +4,7 @@ import type { PlayerProfile } from '../../types';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { CATEGORY_OPTIONS, CATEGORY_TARGETS } from '../../lib/protocol';
-import { getPlayerProfiles } from '../../lib/storage';
+import { useAppData } from '../../contexts/AppDataContext';
 
 interface Props {
   state: WizardState;
@@ -41,7 +41,7 @@ const CategoryDiagram: React.FC<{ cat: Category }> = ({ cat }) => {
 export const StepMeta: React.FC<Props> = ({ state, update, updatePlayer, setPlayerCount, onNext }) => {
   const [pickerOpenIdx, setPickerOpenIdx] = useState<number | null>(null);
   const [pickerSearch, setPickerSearch] = useState('');
-  const profiles = useMemo(() => getPlayerProfiles(), []);
+  const { players: profiles } = useAppData();
 
   const canContinue =
     state.players.every(p => p.name.trim().length > 0) &&
