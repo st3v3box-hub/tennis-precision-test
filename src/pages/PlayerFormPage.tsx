@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import type { PlayerProfile, InitialAssessment } from '../types';
+import type { PlayerProfile, InitialAssessment, Category } from '../types';
 import { getPlayerProfile, upsertPlayerProfile, uid } from '../lib/storage';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -43,6 +43,7 @@ export const PlayerFormPage: React.FC = () => {
   const [showAssessment, setShowAssessment] = useState(isEdit && !!existing?.initialAssessment);
 
   const [error, setError] = useState('');
+  const [savedProfile, setSavedProfile] = useState<PlayerProfile | null>(null);
 
   const updateAssessment = (patch: Partial<InitialAssessment>) =>
     setAssessment(a => ({ ...a, ...patch }));
@@ -70,8 +71,91 @@ export const PlayerFormPage: React.FC = () => {
       updatedAt: now,
     };
     upsertPlayerProfile(profile);
-    navigate(`/players/${profile.id}`);
+    if (isEdit) {
+      // Editing: go directly back to the profile page
+      navigate(`/players/${profile.id}`);
+    } else {
+      // New profile: let the user choose what to do next
+      setSavedProfile(profile);
+    }
   };
+
+  // ── Post-save choice screen ──────────────────────────────────────────────
+  if (savedProfile) {
+    const fullName = `${savedProfile.firstName} ${savedProfile.lastName}`.trim();
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col">
+        <div className="bg-white border-b border-gray-200 px-4 py-3 shadow-sm flex items-center gap-3">
+          <button onClick={() => navigate('/players')} className="text-gray-500 hover:text-gray-700 text-xl">←</button>
+          <h1 className="text-lg font-bold text-gray-900">Profilo Salvato</h1>
+        </div>
+
+        <div className="flex-1 flex items-center justify-center px-4">
+          <div className="w-full max-w-sm space-y-5">
+            {/* Success indicator */}
+            <div className="text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-3">
+                <span className="text-3xl">✓</span>
+              </div>
+              <h2 className="text-xl font-black text-gray-900">{fullName}</h2>
+              <p className="text-sm text-gray-500 mt-1">Profilo creato con successo.</p>
+            </div>
+
+            {/* Choice buttons */}
+            <div className="space-y-3">
+              <button
+                onClick={() => navigate(`/players/${savedProfile.id}`)}
+                className="w-full bg-white border-2 border-gray-200 rounded-2xl px-5 py-4 text-left hover:border-green-400 hover:shadow-sm transition-all"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">👤</span>
+                  <div>
+                    <p className="font-bold text-gray-900">Vai al Profilo</p>
+                    <p className="text-xs text-gray-500">Visualizza o completa la scheda giocatore</p>
+                  </div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => navigate('/new', {
+                  state: {
+                    quickStart: {
+                      profileId: savedProfile.id,
+                      name: fullName,
+                      dateOfBirth: savedProfile.dateOfBirth,
+                      category: 'seconda' as Category,
+                    },
+                  },
+                })}
+                className="w-full bg-green-600 border-2 border-green-600 rounded-2xl px-5 py-4 text-left hover:bg-green-700 hover:border-green-700 transition-all"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">🎾</span>
+                  <div>
+                    <p className="font-bold text-white">Inizia Nuovo Test</p>
+                    <p className="text-xs text-green-200">Avvia subito un test per {savedProfile.firstName}</p>
+                  </div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => navigate('/players/new')}
+                className="w-full bg-white border-2 border-gray-200 rounded-2xl px-5 py-4 text-left hover:border-green-400 hover:shadow-sm transition-all"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">➕</span>
+                  <div>
+                    <p className="font-bold text-gray-900">Crea Altro Giocatore</p>
+                    <p className="text-xs text-gray-500">Aggiungi un altro profilo all'anagrafica</p>
+                  </div>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
