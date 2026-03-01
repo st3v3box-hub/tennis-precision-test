@@ -4,7 +4,7 @@ import type { WizardState, WizardPlayerData, Category, SeriesResult } from '../.
 import { uid } from '../../lib/storage';
 import { useAppData } from '../../contexts/AppDataContext';
 import { ProgressSteps } from '../ui/ProgressSteps';
-import { WIZARD_STEPS } from '../../lib/protocol';
+import { WIZARD_STEPS, MODULE_STEP_ORDER } from '../../lib/protocol';
 import { StepMeta } from './StepMeta';
 import { StepGroundstrokes } from './StepGroundstrokes';
 import { StepCombined } from './StepCombined';
@@ -12,6 +12,8 @@ import { StepReturn } from './StepReturn';
 import { StepServe } from './StepServe';
 import { StepVolley } from './StepVolley';
 import { StepReview } from './StepReview';
+
+const ALL_MODULES = MODULE_STEP_ORDER;
 
 const makePlayer = (): WizardPlayerData => ({
   id: uid(),
@@ -55,6 +57,7 @@ export const WizardContainer: React.FC = () => {
           series: [],
         }],
         challengeMode: 'none',
+        selectedModules: [...ALL_MODULES],
       };
     }
     if (challengeSetup) {
@@ -66,6 +69,7 @@ export const WizardContainer: React.FC = () => {
         playerCount: count,
         players: Array.from({ length: count }, () => makePlayer()),
         challengeMode: challengeSetup.challengeMode,
+        selectedModules: [...ALL_MODULES],
       };
     }
     return {
@@ -75,8 +79,20 @@ export const WizardContainer: React.FC = () => {
       playerCount: 1,
       players: [makePlayer()],
       challengeMode: 'none',
+      selectedModules: [...ALL_MODULES],
     };
   });
+
+  // Compute active step IDs based on selected modules (order is always canonical)
+  const activeStepIds = [
+    'meta',
+    ...MODULE_STEP_ORDER.filter(m => state.selectedModules.includes(m)),
+    'review',
+  ];
+
+  const activeSteps = activeStepIds.map(id => WIZARD_STEPS.find(s => s.id === id)!);
+  const currentStepId = activeStepIds[state.step] ?? 'meta';
+  const currentStepDef = activeSteps[state.step];
 
   const update = (patch: Partial<WizardState>) => setState(s => ({ ...s, ...patch }));
 
@@ -153,6 +169,9 @@ export const WizardContainer: React.FC = () => {
         completed: true,
         createdAt: now,
         series: p.series,
+        selectedModules: state.selectedModules.length < ALL_MODULES.length
+          ? [...state.selectedModules]
+          : undefined,
       });
       ids.push(id);
     }
@@ -175,21 +194,21 @@ export const WizardContainer: React.FC = () => {
           <button onClick={() => navigate('/')} className="flex-shrink-0">
             <img src="./logo.png" alt="GT Logo — Home" className="h-8 w-auto" />
           </button>
-          <p className="text-xs text-green-200 font-medium">{WIZARD_STEPS[state.step]?.title}</p>
+          <p className="text-xs text-green-200 font-medium">{currentStepDef?.title}</p>
         </div>
         <div className="bg-white border-b border-gray-200 px-4 py-2">
-          <ProgressSteps currentStep={state.step} />
+          <ProgressSteps currentStep={state.step} steps={activeSteps} />
         </div>
       </div>
 
       <div className="max-w-2xl mx-auto px-4 py-6">
-        {state.step === 0 && <StepMeta {...stepProps} />}
-        {state.step === 1 && <StepGroundstrokes {...stepProps} />}
-        {state.step === 2 && <StepCombined {...stepProps} />}
-        {state.step === 3 && <StepReturn {...stepProps} />}
-        {state.step === 4 && <StepServe {...stepProps} />}
-        {state.step === 5 && <StepVolley {...stepProps} />}
-        {state.step === 6 && <StepReview {...stepProps} onSave={save} />}
+        {currentStepId === 'meta' && <StepMeta {...stepProps} />}
+        {currentStepId === 'groundstrokes' && <StepGroundstrokes {...stepProps} />}
+        {currentStepId === 'combined' && <StepCombined {...stepProps} />}
+        {currentStepId === 'return' && <StepReturn {...stepProps} />}
+        {currentStepId === 'serve' && <StepServe {...stepProps} />}
+        {currentStepId === 'volley' && <StepVolley {...stepProps} />}
+        {currentStepId === 'review' && <StepReview {...stepProps} onSave={save} />}
       </div>
     </div>
   );

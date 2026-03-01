@@ -117,6 +117,9 @@ export const CATEGORY_OPTIONS: { value: Category; label: string }[] = [
   { value: 'prima', label: '1ª Cat.' },
 ];
 
+/** Canonical order of test modules (used for step routing) */
+export const MODULE_STEP_ORDER: TestType[] = ['groundstrokes', 'combined', 'return', 'serve', 'volley'];
+
 // Wizard step sequence
 export const WIZARD_STEPS = [
   { id: 'meta', label: 'Info', title: 'Sessione & Categoria' },

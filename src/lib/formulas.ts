@@ -157,12 +157,26 @@ export function computeSessionResults(
 ): SessionResults {
   const stats = computeStrokeStats(session, mode);
   const values = stats.map(s => s.ave);
+
+  // For partial tests, compute percentOfIdeal only over strokes that have data
+  const testedValues = stats.filter(s => s.scores.length > 0).map(s => s.ave);
+  let poi: number;
+  if (testedValues.length === 0) {
+    poi = 0;
+  } else if (testedValues.length < 3) {
+    // radar area is 0 for < 3 axes; use simple mean instead
+    poi = (mean(testedValues) / 10) * 100;
+  } else {
+    const idealForN = radarArea(Array(testedValues.length).fill(10));
+    poi = idealForN > 0 ? (radarArea(testedValues) / idealForN) * 100 : 0;
+  }
+
   return {
     session,
     stats,
     radarValues: values,
     radarArea: radarArea(values),
-    percentOfIdeal: percentOfIdeal(values),
+    percentOfIdeal: poi,
     precisionTime: computePrecisionTime(session, ptStrategy),
   };
 }

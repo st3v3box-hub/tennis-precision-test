@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { WizardState, WizardPlayerData } from '../../types';
+import type { WizardState, WizardPlayerData, TestType } from '../../types';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { mean } from '../../lib/formulas';
@@ -19,31 +19,42 @@ interface Props {
 
 interface SummaryRow {
   label: string;
+  testType: TestType;
   total: number;
   done: number;
   avg: number | null;
 }
 
-function makeRows(player: WizardPlayerData): SummaryRow[] {
-  const make = (label: string, specs: { testType: string; seriesIndex: number }[]): SummaryRow => {
+function makeRows(player: WizardPlayerData, selectedModules: TestType[]): SummaryRow[] {
+  const make = (
+    label: string,
+    testType: TestType,
+    specs: { testType: string; seriesIndex: number }[]
+  ): SummaryRow => {
     const scores = specs
       .map(s => player.series.find(r => r.testType === s.testType && r.seriesIndex === s.seriesIndex)?.score)
       .filter(s => s !== undefined) as number[];
-    return { label, total: specs.length, done: scores.length, avg: scores.length > 0 ? mean(scores) : null };
+    return { label, testType, total: specs.length, done: scores.length, avg: scores.length > 0 ? mean(scores) : null };
   };
 
-  return [
-    make('Groundstrokes FH', GROUNDSTROKES_SERIES.filter(s => s.direction === 'fh_cross')),
-    make('Groundstrokes BH', GROUNDSTROKES_SERIES.filter(s => s.direction === 'bh_cross')),
-    make('Combined', COMBINED_SERIES),
-    make('Return', RETURN_SERIES),
-    make('Servizio', SERVE_SERIES),
-    make('Volley', VOLLEY_SERIES),
+  const allRows: SummaryRow[] = [
+    make('Groundstrokes FH', 'groundstrokes', GROUNDSTROKES_SERIES.filter(s => s.direction === 'fh_cross')),
+    make('Groundstrokes BH', 'groundstrokes', GROUNDSTROKES_SERIES.filter(s => s.direction === 'bh_cross')),
+    make('Combined', 'combined', COMBINED_SERIES),
+    make('Return', 'return', RETURN_SERIES),
+    make('Servizio', 'serve', SERVE_SERIES),
+    make('Volley', 'volley', VOLLEY_SERIES),
   ];
+
+  return allRows.filter(r => selectedModules.includes(r.testType));
 }
 
-const PlayerSummary: React.FC<{ player: WizardPlayerData; label: string }> = ({ player, label }) => {
-  const rows = makeRows(player);
+const PlayerSummary: React.FC<{ player: WizardPlayerData; label: string; selectedModules: TestType[] }> = ({
+  player,
+  label,
+  selectedModules,
+}) => {
+  const rows = makeRows(player, selectedModules);
   const allDone = rows.every(r => r.done === r.total);
 
   return (
@@ -87,7 +98,9 @@ const PlayerSummary: React.FC<{ player: WizardPlayerData; label: string }> = ({ 
 export const StepReview: React.FC<Props> = ({ state, onPrev, onSave }) => {
   const [activeIdx, setActiveIdx] = useState(0);
 
-  const allDone = state.players.every(p => makeRows(p).every(r => r.done === r.total));
+  const allDone = state.players.every(p =>
+    makeRows(p, state.selectedModules).every(r => r.done === r.total)
+  );
 
   return (
     <div className="space-y-4">
@@ -120,7 +133,7 @@ export const StepReview: React.FC<Props> = ({ state, onPrev, onSave }) => {
                 <p><span className="text-gray-500">Nota:</span> <em className="text-gray-700">{state.players[0].note}</em></p>
               )}
             </div>
-            <PlayerSummary player={state.players[0]} label="" />
+            <PlayerSummary player={state.players[0]} label="" selectedModules={state.selectedModules} />
           </>
         )}
 
@@ -129,7 +142,7 @@ export const StepReview: React.FC<Props> = ({ state, onPrev, onSave }) => {
           <>
             <div className="flex gap-1 mb-4 overflow-x-auto">
               {state.players.map((p, i) => {
-                const rows = makeRows(p);
+                const rows = makeRows(p, state.selectedModules);
                 const done = rows.every(r => r.done === r.total);
                 return (
                   <button
@@ -162,6 +175,7 @@ export const StepReview: React.FC<Props> = ({ state, onPrev, onSave }) => {
             <PlayerSummary
               player={state.players[activeIdx]}
               label=""
+              selectedModules={state.selectedModules}
             />
           </>
         )}

@@ -1,10 +1,26 @@
 import React, { useState, useMemo } from 'react';
-import type { WizardState, WizardPlayerData, Category } from '../../types';
+import type { WizardState, WizardPlayerData, Category, TestType } from '../../types';
 import type { PlayerProfile } from '../../types';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
-import { CATEGORY_OPTIONS, CATEGORY_TARGETS } from '../../lib/protocol';
+import { CATEGORY_OPTIONS, CATEGORY_TARGETS, MODULE_STEP_ORDER } from '../../lib/protocol';
 import { useAppData } from '../../contexts/AppDataContext';
+
+const MODULE_LABELS: Record<TestType, string> = {
+  groundstrokes: 'Groundstrokes (FH+BH)',
+  combined: 'Combined',
+  return: 'Return',
+  serve: 'Servizio',
+  volley: 'Volley',
+};
+
+const MODULE_SERIES: Record<TestType, number> = {
+  groundstrokes: 20,
+  combined: 10,
+  return: 10,
+  serve: 6,
+  volley: 10,
+};
 
 interface Props {
   state: WizardState;
@@ -46,7 +62,17 @@ export const StepMeta: React.FC<Props> = ({ state, update, updatePlayer, setPlay
   const canContinue =
     state.players.every(p => p.name.trim().length > 0) &&
     state.date.length > 0 &&
-    state.coach.trim().length > 0;
+    state.coach.trim().length > 0 &&
+    state.selectedModules.length > 0;
+
+  const toggleModule = (m: TestType) => {
+    const current = state.selectedModules;
+    if (current.includes(m)) {
+      update({ selectedModules: current.filter(x => x !== m) });
+    } else {
+      update({ selectedModules: [...current, m] });
+    }
+  };
 
   const linkProfile = (playerIdx: number, profile: PlayerProfile) => {
     updatePlayer(playerIdx, {
@@ -107,6 +133,36 @@ export const StepMeta: React.FC<Props> = ({ state, update, updatePlayer, setPlay
             </button>
           ))}
         </div>
+      </Card>
+
+      {/* Module selection */}
+      <Card title="Moduli del Test">
+        <p className="text-xs text-gray-500 mb-3">Seleziona i moduli da includere nel test</p>
+        <div className="space-y-2">
+          {MODULE_STEP_ORDER.map(m => {
+            const selected = state.selectedModules.includes(m);
+            return (
+              <button
+                key={m}
+                type="button"
+                onClick={() => toggleModule(m)}
+                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 text-sm font-semibold transition-all
+                  ${selected
+                    ? 'bg-green-600 border-green-600 text-white'
+                    : 'bg-white border-gray-300 text-gray-700 hover:border-green-400'
+                  }`}
+              >
+                <span>{MODULE_LABELS[m]}</span>
+                <span className={`text-xs font-normal ${selected ? 'text-green-200' : 'text-gray-400'}`}>
+                  {MODULE_SERIES[m]} serie
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        {state.selectedModules.length === 0 && (
+          <p className="mt-2 text-xs text-red-600">Seleziona almeno un modulo per continuare.</p>
+        )}
       </Card>
 
       {/* Challenge mode toggle */}

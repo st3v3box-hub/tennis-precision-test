@@ -86,6 +86,7 @@ export interface TestSession {
   completed: boolean;
   createdAt: string;
   series: SeriesResult[];
+  selectedModules?: TestType[];
 }
 
 export interface StrokeStats {
@@ -143,4 +144,5 @@ export interface WizardState {
   playerCount: 1 | 2 | 3 | 4;
   players: WizardPlayerData[];
   challengeMode: 'none' | '1v1' | '2v2' | 'ffa';
+  selectedModules: TestType[];
 }

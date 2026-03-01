@@ -130,6 +130,16 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, []);
 
   const upsertPlayer = useCallback(async (profile: PlayerProfile) => {
+    // Optimistic local update so callers see the new data immediately
+    setPlayers(prev => {
+      const idx = prev.findIndex(p => p.id === profile.id);
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = profile;
+        return next;
+      }
+      return [...prev, profile];
+    });
     await setDoc(doc(db, 'players', profile.id), profile);
   }, []);
 
@@ -150,6 +160,17 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, [sessions]);
 
   const upsertSession = useCallback(async (session: TestSession) => {
+    // Optimistic local update so ChallengeResultsPage / SessionResultsPage
+    // can find the session immediately after save, without waiting for onSnapshot
+    setSessions(prev => {
+      const idx = prev.findIndex(s => s.id === session.id);
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = session;
+        return next;
+      }
+      return [...prev, session];
+    });
     await setDoc(doc(db, 'sessions', session.id), session);
   }, []);
 

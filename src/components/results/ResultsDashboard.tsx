@@ -70,6 +70,11 @@ export const ResultsDashboard: React.FC<Props> = ({ session, settings, compareSe
                 return ` · ${age} anni`;
               })()}
             </p>
+            {session.selectedModules && session.selectedModules.length < 5 && (
+              <span className="inline-block mt-1.5 bg-blue-100 text-blue-700 text-xs font-semibold px-2.5 py-0.5 rounded-full">
+                Test Parziale ({session.selectedModules.length}/5 moduli)
+              </span>
+            )}
             {session.note && (
               <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 mt-2 italic">
                 {session.note}
