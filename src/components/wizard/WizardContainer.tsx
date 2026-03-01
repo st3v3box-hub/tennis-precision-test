@@ -129,59 +129,69 @@ export const WizardContainer: React.FC = () => {
     });
   };
 
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
   const next = () => setState(s => ({ ...s, step: s.step + 1 }));
   const prev = () => setState(s => ({ ...s, step: Math.max(0, s.step - 1) }));
 
   const save = async () => {
-    await saveLastCoach(state.coach);
-    const now = new Date().toISOString();
-    const ids: string[] = [];
+    setSaving(true);
+    setSaveError(null);
+    try {
+      await saveLastCoach(state.coach);
+      const now = new Date().toISOString();
+      const ids: string[] = [];
 
-    for (const p of state.players) {
-      // Resolve player profile ID — auto-create a minimal profile for unlinked players
-      let playerId = p.profileId;
-      if (!playerId) {
-        playerId = uid();
-        const nameParts = p.name.trim().split(/\s+/);
-        const firstName = nameParts[0] ?? p.name;
-        const lastName = nameParts.slice(1).join(' ');
-        await upsertPlayer({
-          id: playerId,
-          firstName,
-          lastName,
-          dateOfBirth: p.dateOfBirth ?? '',
-          autoCreated: true,
+      for (const p of state.players) {
+        // Resolve player profile ID — auto-create a minimal profile for unlinked players
+        let playerId = p.profileId;
+        if (!playerId) {
+          playerId = uid();
+          const nameParts = p.name.trim().split(/\s+/);
+          const firstName = nameParts[0] ?? p.name;
+          const lastName = nameParts.slice(1).join(' ');
+          await upsertPlayer({
+            id: playerId,
+            firstName,
+            lastName,
+            dateOfBirth: p.dateOfBirth ?? '',
+            autoCreated: true,
+            createdAt: now,
+            updatedAt: now,
+          });
+        }
+
+        const id = uid();
+        await upsertSession({
+          id,
+          playerId,
+          playerName: p.name,
+          date: state.date,
+          category: p.category as Category,
+          coach: state.coach,
+          dateOfBirth: p.dateOfBirth,
+          note: p.note,
+          completed: true,
           createdAt: now,
-          updatedAt: now,
+          series: p.series,
+          selectedModules: state.selectedModules.length < ALL_MODULES.length
+            ? [...state.selectedModules]
+            : undefined,
         });
+        ids.push(id);
       }
 
-      const id = uid();
-      await upsertSession({
-        id,
-        playerId,
-        playerName: p.name,
-        date: state.date,
-        category: p.category as Category,
-        coach: state.coach,
-        dateOfBirth: p.dateOfBirth,
-        note: p.note,
-        completed: true,
-        createdAt: now,
-        series: p.series,
-        selectedModules: state.selectedModules.length < ALL_MODULES.length
-          ? [...state.selectedModules]
-          : undefined,
-      });
-      ids.push(id);
-    }
-
-    if (state.challengeMode !== 'none') {
-      navigate('/challenge-results', { state: { ids, mode: state.challengeMode } });
-    } else if (ids.length === 1) {
-      navigate(`/results/${ids[0]}`);
-    } else {
-      navigate('/multi-results', { state: { ids } });
+      if (state.challengeMode !== 'none') {
+        navigate('/challenge-results', { state: { ids, mode: state.challengeMode } });
+      } else if (ids.length === 1) {
+        navigate(`/results/${ids[0]}`);
+      } else {
+        navigate('/multi-results', { state: { ids } });
+      }
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Errore durante il salvataggio. Riprova.');
+      setSaving(false);
     }
   };
 
@@ -208,7 +218,7 @@ export const WizardContainer: React.FC = () => {
         {currentStepId === 'return' && <StepReturn {...stepProps} />}
         {currentStepId === 'serve' && <StepServe {...stepProps} />}
         {currentStepId === 'volley' && <StepVolley {...stepProps} />}
-        {currentStepId === 'review' && <StepReview {...stepProps} onSave={save} />}
+        {currentStepId === 'review' && <StepReview {...stepProps} onSave={save} saving={saving} saveError={saveError} />}
       </div>
     </div>
   );

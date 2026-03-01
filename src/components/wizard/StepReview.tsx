@@ -15,6 +15,8 @@ interface Props {
   state: WizardState;
   onPrev: () => void;
   onSave: () => void;
+  saving?: boolean;
+  saveError?: string | null;
 }
 
 interface SummaryRow {
@@ -95,7 +97,7 @@ const PlayerSummary: React.FC<{ player: WizardPlayerData; label: string; selecte
   );
 };
 
-export const StepReview: React.FC<Props> = ({ state, onPrev, onSave }) => {
+export const StepReview: React.FC<Props> = ({ state, onPrev, onSave, saving = false, saveError = null }) => {
   const [activeIdx, setActiveIdx] = useState(0);
 
   const allDone = state.players.every(p =>
@@ -182,18 +184,26 @@ export const StepReview: React.FC<Props> = ({ state, onPrev, onSave }) => {
       </Card>
 
       <div className="flex gap-3">
-        <Button variant="secondary" className="flex-1" onClick={onPrev}>← Indietro</Button>
-        <Button className="flex-1 bg-green-700 hover:bg-green-800" onClick={onSave}>
-          {state.challengeMode !== 'none'
-            ? '🏆 Salva & Vedi Sfida'
-            : state.playerCount > 1
-              ? `Salva ${state.playerCount} sessioni`
-              : 'Salva & Vedi Risultati'
+        <Button variant="secondary" className="flex-1" onClick={onPrev} disabled={saving}>← Indietro</Button>
+        <Button className="flex-1 bg-green-700 hover:bg-green-800" onClick={onSave} disabled={saving}>
+          {saving
+            ? '⏳ Salvataggio…'
+            : state.challengeMode !== 'none'
+              ? '🏆 Salva & Vedi Sfida'
+              : state.playerCount > 1
+                ? `Salva ${state.playerCount} sessioni`
+                : 'Salva & Vedi Risultati'
           }
         </Button>
       </div>
 
-      {!allDone && (
+      {saveError && (
+        <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 text-center">
+          ⚠️ {saveError}
+        </div>
+      )}
+
+      {!allDone && !saveError && (
         <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 text-center">
           Alcune serie non sono complete. Torna indietro per completarle.
         </div>
