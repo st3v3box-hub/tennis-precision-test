@@ -22,6 +22,7 @@ interface AppDataContextValue {
   deletePlayer: (id: string) => Promise<void>;
   getPlayer: (id: string) => PlayerProfile | undefined;
   getPlayerSessions: (playerId: string) => TestSession[];
+  getChallengeSessions: (challengeId: string) => TestSession[];
   getSession: (id: string) => TestSession | undefined;
   upsertSession: (session: TestSession) => Promise<void>;
   deleteSession: (id: string) => Promise<void>;
@@ -155,6 +156,10 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return sessions.filter(s => s.playerId === playerId);
   }, [sessions]);
 
+  const getChallengeSessions = useCallback((challengeId: string) => {
+    return sessions.filter(s => s.challengeId === challengeId);
+  }, [sessions]);
+
   const getSession = useCallback((id: string) => {
     return sessions.find(s => s.id === id);
   }, [sessions]);
@@ -190,7 +195,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   return (
     <AppDataContext.Provider value={{
       players, sessions, settings, lastCoach, loading,
-      upsertPlayer, deletePlayer, getPlayer, getPlayerSessions,
+      upsertPlayer, deletePlayer, getPlayer, getPlayerSessions, getChallengeSessions,
       getSession, upsertSession, deleteSession, saveSettings, saveLastCoach,
     }}>
       {children}

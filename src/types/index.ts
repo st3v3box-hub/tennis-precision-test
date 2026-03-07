@@ -87,6 +87,7 @@ export interface TestSession {
   createdAt: string;
   series: SeriesResult[];
   selectedModules?: TestType[];
+  challengeId?: string;   // groups sessions belonging to the same challenge
 }
 
 export interface StrokeStats {
@@ -149,4 +150,6 @@ export interface WizardState {
   players: WizardPlayerData[];
   challengeMode: 'none' | '1v1' | '2v2' | 'ffa';
   selectedModules: TestType[];
+  challengeId?: string;       // generated at start for challenge sessions
+  draftSessionIds?: string[]; // existing session IDs to update on resume
 }

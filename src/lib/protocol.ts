@@ -1,4 +1,4 @@
-import type { Category, Direction, ServeType, TestType, TargetStrip } from '../types';
+import type { Category, Direction, ServeType, TestType, TargetStrip, SeriesResult } from '../types';
 
 export interface SeriesSpec {
   testType: TestType;
@@ -119,6 +119,12 @@ export const CATEGORY_OPTIONS: { value: Category; label: string }[] = [
 
 /** Canonical order of test modules (used for step routing) */
 export const MODULE_STEP_ORDER: TestType[] = ['groundstrokes', 'combined', 'return', 'serve', 'volley'];
+
+/** Returns the modules present in a series array, in canonical order */
+export function detectedModules(series: SeriesResult[]): TestType[] {
+  const found = new Set(series.map(s => s.testType));
+  return MODULE_STEP_ORDER.filter(m => found.has(m));
+}
 
 // Wizard step sequence
 export const WIZARD_STEPS = [

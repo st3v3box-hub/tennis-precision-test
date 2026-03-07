@@ -55,6 +55,14 @@ export const PlayerDetailPage: React.FC = () => {
     [allSessions, id]
   );
 
+  const draftSessions = useMemo(
+    () =>
+      allSessions
+        .filter(s => s.playerId === id && !s.completed)
+        .sort((a, b) => b.date.localeCompare(a.date)),
+    [allSessions, id]
+  );
+
   const sessionResults = useMemo(
     () =>
       sessions.map(s => ({
@@ -232,6 +240,41 @@ export const PlayerDetailPage: React.FC = () => {
             })}
           </div>
         </Card>}
+
+        {draftSessions.length > 0 && (
+          <div className="space-y-2">
+            <h2 className="text-sm font-bold text-gray-600 uppercase tracking-wide">
+              Bozze ({draftSessions.length})
+            </h2>
+            {draftSessions.map(session => (
+              <div
+                key={session.id}
+                className="w-full bg-white rounded-xl border border-blue-200 p-4 flex items-center justify-between gap-3"
+              >
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-semibold text-gray-800 text-sm">{session.date}</span>
+                    <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                      {CATEGORY_LABEL[session.category] ?? session.category}
+                    </span>
+                    <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-bold">
+                      Bozza
+                    </span>
+                  </div>
+                  {session.note && (
+                    <p className="text-xs text-gray-400 mt-1 truncate">{session.note}</p>
+                  )}
+                </div>
+                <button
+                  onClick={() => navigate('/new', { state: { resumeSession: session } })}
+                  className="flex-shrink-0 text-xs font-bold text-green-700 border border-green-300 rounded-lg px-3 py-1.5 hover:bg-green-50 transition-colors"
+                >
+                  Continua
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
 
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-bold text-gray-600 uppercase tracking-wide">

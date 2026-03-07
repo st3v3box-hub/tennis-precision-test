@@ -17,6 +17,8 @@ interface Props {
   onSave: () => void;
   saving?: boolean;
   saveError?: string | null;
+  onSaveDraft?: () => void;
+  savingDraft?: boolean;
 }
 
 interface SummaryRow {
@@ -97,7 +99,7 @@ const PlayerSummary: React.FC<{ player: WizardPlayerData; label: string; selecte
   );
 };
 
-export const StepReview: React.FC<Props> = ({ state, onPrev, onSave, saving = false, saveError = null }) => {
+export const StepReview: React.FC<Props> = ({ state, onPrev, onSave, saving = false, saveError = null, onSaveDraft, savingDraft = false }) => {
   const [activeIdx, setActiveIdx] = useState(0);
 
   const allDone = state.players.every(p =>
@@ -184,8 +186,13 @@ export const StepReview: React.FC<Props> = ({ state, onPrev, onSave, saving = fa
       </Card>
 
       <div className="flex gap-3">
-        <Button variant="secondary" className="flex-1" onClick={onPrev} disabled={saving}>← Indietro</Button>
-        <Button className="flex-1 bg-green-700 hover:bg-green-800" onClick={onSave} disabled={saving}>
+        <Button variant="secondary" className="flex-1" onClick={onPrev} disabled={saving || savingDraft}>← Indietro</Button>
+        {onSaveDraft && (
+          <Button variant="secondary" className="flex-1" onClick={onSaveDraft} disabled={saving || savingDraft}>
+            {savingDraft ? '⏳…' : 'Salva & Continua dopo'}
+          </Button>
+        )}
+        <Button className="flex-1 bg-green-700 hover:bg-green-800" onClick={onSave} disabled={saving || savingDraft}>
           {saving
             ? '⏳ Salvataggio…'
             : state.challengeMode !== 'none'

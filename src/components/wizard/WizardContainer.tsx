@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import type { WizardState, WizardPlayerData, Category, SeriesResult } from '../../types';
+import type { WizardState, WizardPlayerData, Category, SeriesResult, TestSession } from '../../types';
 import { uid } from '../../lib/storage';
 import { useAppData } from '../../contexts/AppDataContext';
 import { ProgressSteps } from '../ui/ProgressSteps';
-import { WIZARD_STEPS, MODULE_STEP_ORDER } from '../../lib/protocol';
+import { WIZARD_STEPS, MODULE_STEP_ORDER, detectedModules } from '../../lib/protocol';
 import { StepMeta } from './StepMeta';
 import { StepGroundstrokes } from './StepGroundstrokes';
 import { StepCombined } from './StepCombined';
@@ -25,7 +25,7 @@ const makePlayer = (): WizardPlayerData => ({
 export const WizardContainer: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { lastCoach, saveLastCoach, upsertPlayer, upsertSession } = useAppData();
+  const { lastCoach, saveLastCoach, upsertPlayer, upsertSession, sessions: allSessions } = useAppData();
 
   // Quick-start payload from PlayerDetailPage
   const quickStart = (location.state as Record<string, unknown> | null)?.quickStart as {
@@ -39,6 +39,15 @@ export const WizardContainer: React.FC = () => {
   const challengeSetup = (location.state as Record<string, unknown> | null)?.challengeSetup as {
     playerCount: 1 | 2 | 3 | 4;
     challengeMode: WizardState['challengeMode'];
+  } | undefined;
+
+  // Resume a single draft session
+  const resumeSession = (location.state as Record<string, unknown> | null)?.resumeSession as TestSession | undefined;
+
+  // Resume a draft challenge
+  const resumeChallenge = (location.state as Record<string, unknown> | null)?.resumeChallenge as {
+    challengeId: string;
+    mode: WizardState['challengeMode'];
   } | undefined;
 
   const [state, setState] = useState<WizardState>(() => {
@@ -60,6 +69,7 @@ export const WizardContainer: React.FC = () => {
         selectedModules: [...ALL_MODULES],
       };
     }
+
     if (challengeSetup) {
       const count = challengeSetup.playerCount;
       return {
@@ -70,8 +80,74 @@ export const WizardContainer: React.FC = () => {
         players: Array.from({ length: count }, () => makePlayer()),
         challengeMode: challengeSetup.challengeMode,
         selectedModules: [...ALL_MODULES],
+        challengeId: uid(),  // generate challenge ID at start
       };
     }
+
+    if (resumeSession) {
+      const alreadyDone = detectedModules(resumeSession.series);
+      const selectedModules = resumeSession.selectedModules ?? [...ALL_MODULES];
+      const activeIds = ['meta', ...MODULE_STEP_ORDER.filter(m => selectedModules.includes(m)), 'review'];
+      const firstNotDone = selectedModules.find(m => !alreadyDone.includes(m));
+      const idx = firstNotDone ? activeIds.indexOf(firstNotDone) : -1;
+      const step = Math.max(1, idx >= 0 ? idx : activeIds.length - 1);
+
+      return {
+        step,
+        date: resumeSession.date,
+        coach: resumeSession.coach,
+        playerCount: 1,
+        players: [{
+          id: uid(),
+          profileId: resumeSession.playerId,
+          name: resumeSession.playerName,
+          dateOfBirth: resumeSession.dateOfBirth,
+          category: resumeSession.category,
+          note: resumeSession.note,
+          series: [...resumeSession.series],
+        }],
+        challengeMode: 'none',
+        selectedModules,
+        draftSessionIds: [resumeSession.id],
+      };
+    }
+
+    if (resumeChallenge) {
+      const challengeSessions = allSessions.filter(s => s.challengeId === resumeChallenge.challengeId);
+      const playerCount = Math.max(1, Math.min(4, challengeSessions.length)) as 1 | 2 | 3 | 4;
+      const selectedModules = challengeSessions[0]?.selectedModules ?? [...ALL_MODULES];
+      // Module is done when ALL players have it in their series
+      const doneModules = selectedModules.filter(m =>
+        challengeSessions.every(s => detectedModules(s.series).includes(m))
+      );
+      const firstNotDone = selectedModules.find(m => !doneModules.includes(m));
+      const activeIds = ['meta', ...MODULE_STEP_ORDER.filter(m => selectedModules.includes(m)), 'review'];
+      const idx = firstNotDone ? activeIds.indexOf(firstNotDone) : -1;
+      const step = Math.max(1, idx >= 0 ? idx : activeIds.length - 1);
+
+      const players: WizardPlayerData[] = challengeSessions.map(s => ({
+        id: uid(),
+        profileId: s.playerId,
+        name: s.playerName,
+        dateOfBirth: s.dateOfBirth,
+        category: s.category,
+        note: s.note,
+        series: [...s.series],
+      }));
+
+      return {
+        step,
+        date: challengeSessions[0]?.date ?? new Date().toISOString().slice(0, 10),
+        coach: challengeSessions[0]?.coach ?? lastCoach,
+        playerCount,
+        players,
+        challengeMode: resumeChallenge.mode,
+        selectedModules,
+        challengeId: resumeChallenge.challengeId,
+        draftSessionIds: challengeSessions.map(s => s.id),
+      };
+    }
+
     return {
       step: 0,
       date: new Date().toISOString().slice(0, 10),
@@ -130,10 +206,84 @@ export const WizardContainer: React.FC = () => {
   };
 
   const [saving, setSaving] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
   const next = () => setState(s => ({ ...s, step: s.step + 1 }));
   const prev = () => setState(s => ({ ...s, step: Math.max(0, s.step - 1) }));
+
+  const buildSessionPayload = (
+    p: WizardPlayerData,
+    playerId: string,
+    id: string,
+    now: string,
+    completed: boolean
+  ) => ({
+    id,
+    playerId,
+    playerName: p.name,
+    date: state.date,
+    category: p.category as Category,
+    coach: state.coach,
+    dateOfBirth: p.dateOfBirth,
+    note: p.note,
+    completed,
+    createdAt: now,
+    series: p.series,
+    selectedModules: state.selectedModules.length < ALL_MODULES.length
+      ? [...state.selectedModules]
+      : undefined,
+    ...(state.challengeId ? { challengeId: state.challengeId } : {}),
+  });
+
+  const resolvePlayer = async (p: WizardPlayerData, now: string): Promise<string> => {
+    if (p.profileId) return p.profileId;
+    const playerId = uid();
+    const nameParts = p.name.trim().split(/\s+/);
+    const firstName = nameParts[0] ?? p.name;
+    const lastName = nameParts.slice(1).join(' ');
+    await upsertPlayer({
+      id: playerId,
+      firstName,
+      lastName,
+      dateOfBirth: p.dateOfBirth ?? '',
+      autoCreated: true,
+      createdAt: now,
+      updatedAt: now,
+    });
+    return playerId;
+  };
+
+  const saveDraft = async () => {
+    setSavingDraft(true);
+    setSaveError(null);
+    try {
+      await saveLastCoach(state.coach);
+      const now = new Date().toISOString();
+      const ids: string[] = [];
+
+      for (let pi = 0; pi < state.players.length; pi++) {
+        const p = state.players[pi];
+        const playerId = await resolvePlayer(p, now);
+        const id = state.draftSessionIds?.[pi] ?? uid();
+        await upsertSession(buildSessionPayload(p, playerId, id, now, false));
+        ids.push(id);
+      }
+
+      if (state.challengeMode !== 'none' && state.challengeId) {
+        navigate('/challenge-results', {
+          state: { challengeId: state.challengeId, mode: state.challengeMode, draft: true },
+        });
+      } else if (ids.length === 1) {
+        navigate(`/results/${ids[0]}`);
+      } else {
+        navigate('/multi-results', { state: { ids } });
+      }
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Errore durante il salvataggio. Riprova.');
+      setSavingDraft(false);
+    }
+  };
 
   const save = async () => {
     setSaving(true);
@@ -143,42 +293,11 @@ export const WizardContainer: React.FC = () => {
       const now = new Date().toISOString();
       const ids: string[] = [];
 
-      for (const p of state.players) {
-        // Resolve player profile ID — auto-create a minimal profile for unlinked players
-        let playerId = p.profileId;
-        if (!playerId) {
-          playerId = uid();
-          const nameParts = p.name.trim().split(/\s+/);
-          const firstName = nameParts[0] ?? p.name;
-          const lastName = nameParts.slice(1).join(' ');
-          await upsertPlayer({
-            id: playerId,
-            firstName,
-            lastName,
-            dateOfBirth: p.dateOfBirth ?? '',
-            autoCreated: true,
-            createdAt: now,
-            updatedAt: now,
-          });
-        }
-
-        const id = uid();
-        await upsertSession({
-          id,
-          playerId,
-          playerName: p.name,
-          date: state.date,
-          category: p.category as Category,
-          coach: state.coach,
-          dateOfBirth: p.dateOfBirth,
-          note: p.note,
-          completed: true,
-          createdAt: now,
-          series: p.series,
-          selectedModules: state.selectedModules.length < ALL_MODULES.length
-            ? [...state.selectedModules]
-            : undefined,
-        });
+      for (let pi = 0; pi < state.players.length; pi++) {
+        const p = state.players[pi];
+        const playerId = await resolvePlayer(p, now);
+        const id = state.draftSessionIds?.[pi] ?? uid();
+        await upsertSession(buildSessionPayload(p, playerId, id, now, true));
         ids.push(id);
       }
 
@@ -218,7 +337,16 @@ export const WizardContainer: React.FC = () => {
         {currentStepId === 'return' && <StepReturn {...stepProps} />}
         {currentStepId === 'serve' && <StepServe {...stepProps} />}
         {currentStepId === 'volley' && <StepVolley {...stepProps} />}
-        {currentStepId === 'review' && <StepReview {...stepProps} onSave={save} saving={saving} saveError={saveError} />}
+        {currentStepId === 'review' && (
+          <StepReview
+            {...stepProps}
+            onSave={save}
+            saving={saving}
+            saveError={saveError}
+            onSaveDraft={saveDraft}
+            savingDraft={savingDraft}
+          />
+        )}
       </div>
     </div>
   );

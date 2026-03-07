@@ -43,14 +43,21 @@ const RADAR_LABELS = ['A', 'B', 'C', 'D'];
 export const ChallengeResultsPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { ids, mode } = ((location.state ?? {}) as { ids?: string[]; mode?: ChallengeMode });
+  const { ids, mode, challengeId, draft } = ((location.state ?? {}) as {
+    ids?: string[];
+    mode?: ChallengeMode;
+    challengeId?: string;
+    draft?: boolean;
+  });
 
   const { sessions: allSessions, settings } = useAppData();
 
-  const sessions: TestSession[] = useMemo(
-    () => (ids ?? []).map(id => allSessions.find(s => s.id === id)).filter(Boolean) as TestSession[],
-    [ids, allSessions]
-  );
+  const sessions: TestSession[] = useMemo(() => {
+    if (challengeId) {
+      return allSessions.filter(s => s.challengeId === challengeId);
+    }
+    return (ids ?? []).map(id => allSessions.find(s => s.id === id)).filter(Boolean) as TestSession[];
+  }, [ids, challengeId, allSessions]);
 
   const results = useMemo(
     () => sessions.map(s => computeSessionResults(s, settings.stdDevMode, settings.precisionTimeStrategy)),
@@ -146,6 +153,17 @@ export const ChallengeResultsPage: React.FC = () => {
         </div>
 
         <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
+          {draft && challengeId && (
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between gap-3">
+              <p className="text-sm font-bold text-blue-800">Sfida in corso — risultati parziali</p>
+              <button
+                onClick={() => navigate('/new', { state: { resumeChallenge: { challengeId, mode } } })}
+                className="flex-shrink-0 text-xs font-bold text-green-700 border border-green-300 rounded-lg px-3 py-1.5 hover:bg-green-50 transition-colors"
+              >
+                Continua Sfida
+              </button>
+            </div>
+          )}
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
             <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
               <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide">Classifica Finale</h2>
@@ -319,6 +337,17 @@ export const ChallengeResultsPage: React.FC = () => {
       </div>
 
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
+        {draft && challengeId && (
+          <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between gap-3">
+            <p className="text-sm font-bold text-blue-800">Sfida in corso — risultati parziali</p>
+            <button
+              onClick={() => navigate('/new', { state: { resumeChallenge: { challengeId, mode } } })}
+              className="flex-shrink-0 text-xs font-bold text-green-700 border border-green-300 rounded-lg px-3 py-1.5 hover:bg-green-50 transition-colors"
+            >
+              Continua Sfida
+            </button>
+          </div>
+        )}
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
           {overallWinner !== 0 && (
             <div className="text-center mb-4">
