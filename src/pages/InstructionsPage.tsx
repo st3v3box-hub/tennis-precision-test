@@ -156,6 +156,65 @@ export const InstructionsPage: React.FC = () => {
           </div>
         </div>
 
+        {/* Dimensione mentale, fisica e caratteriale */}
+        <div className="bg-gray-900 rounded-2xl p-5 text-white space-y-4">
+          <h2 className="text-sm font-bold uppercase tracking-wide text-gray-300">Il test è mentale, fisico e caratteriale</h2>
+
+          <p className="text-sm leading-relaxed text-gray-100">
+            La precisione è solo la superficie. Eseguito al ritmo corretto — quello di uno <strong>scambio reale di torneo</strong>, senza pause tra una palla e l'altra — il Precision Test diventa uno degli strumenti più rivelatori che un coach possa utilizzare.
+          </p>
+
+          <div className="space-y-3">
+            <div className="bg-white/10 rounded-xl p-4">
+              <p className="text-xs font-bold text-white uppercase tracking-wide mb-1">La penalizzazione naturale dell'errore</p>
+              <p className="text-sm text-gray-200 leading-relaxed">
+                Il protocollo è costruito in modo che ogni errore abbia una conseguenza immediata e concreta: <strong>allungare il test</strong>. Chi sbaglia deve continuare a colpire per raggiungere la soglia di serie perfette, accumulando fatica fisica e pressione mentale.
+              </p>
+              <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                <div className="bg-green-500/20 border border-green-400/30 rounded-lg p-2.5">
+                  <p className="font-bold text-green-300 mb-1">Giocatore lucido</p>
+                  <p className="text-green-200">10 perfette nelle prime 10 serie → chiude subito, minimo sforzo fisico e mentale.</p>
+                </div>
+                <div className="bg-red-500/20 border border-red-400/30 rounded-lg p-2.5">
+                  <p className="font-bold text-red-300 mb-1">Giocatore sotto pressione</p>
+                  <p className="text-red-200">Arriva a 14, 16, 20 serie → più tempo in campo, più fatica, frustrazione crescente.</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white/10 rounded-xl p-4">
+              <p className="text-xs font-bold text-white uppercase tracking-wide mb-1">Perché il ritmo è tutto</p>
+              <p className="text-sm text-gray-200 leading-relaxed">
+                Se le palle vengono alimentate lentamente o con pause il test perde il suo valore diagnostico. La difficoltà deve essere reale: <strong>ritmo da scambio di torneo, senza interruzioni</strong>. È in queste condizioni che emergono le differenze vere tra giocatori. Chi colpisce con consapevolezza tattica regge; chi si affida solo alla memoria muscolare crolla non appena la pressione aumenta.
+              </p>
+            </div>
+
+            <div className="bg-white/10 rounded-xl p-4">
+              <p className="text-xs font-bold text-white uppercase tracking-wide mb-1">La spirale frustrazione → errore</p>
+              <p className="text-sm text-gray-200 leading-relaxed">
+                Il 9/10 — quello che non conta — è frustrante esattamente come un nastro in una partita di torneo: hai eseguito tecnicamente, ma il risultato non vale. La reazione a questa frustrazione è <strong>lo specchio del carattere dell'atleta</strong>.
+              </p>
+              <div className="mt-3 space-y-1.5 text-xs text-gray-300">
+                <div className="flex items-start gap-2">
+                  <span className="text-green-400 font-bold flex-shrink-0 mt-0.5">↑</span>
+                  <p>Chi resta calmo e reimposta la concentrazione supera la soglia in poche serie extra.</p>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-red-400 font-bold flex-shrink-0 mt-0.5">↓</span>
+                  <p>Chi si innervosisce entra nella spirale errore → frustrazione → errore: il test si allunga, diventa fisicamente pesante, e i dati registrano questa instabilità.</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white/10 rounded-xl p-4">
+              <p className="text-xs font-bold text-white uppercase tracking-wide mb-1">Cosa leggere nel risultato finale</p>
+              <p className="text-sm text-gray-200 leading-relaxed">
+                Il rapporto tra serie compilate e serie perfette non è solo un dato tecnico: è un <strong>indicatore di maturità agonistica</strong>. Un giocatore che chiude 10 su 10 è mentalmente stabile oltre che preciso. Uno che usa 18 o 20 serie per raggiungere la soglia ha un problema nella gestione dell'errore — e questo è esattamente il lavoro da fare.
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Regola di completamento */}
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
           <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3">Regola di completamento (soglia 50 %)</h2>
