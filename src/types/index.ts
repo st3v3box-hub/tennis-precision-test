@@ -95,6 +95,10 @@ export interface StrokeStats {
   scores: number[];
   ave: number;
   dev: number;
+  /** Number of series scored exactly 10/10 */
+  perfectCount: number;
+  /** Minimum perfect series needed to pass (50% of total series) */
+  passThreshold: number;
 }
 
 export interface PrecisionTimePoint {

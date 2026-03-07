@@ -79,6 +79,9 @@ export function computeStrokeStats(
     scores: raw,
     ave: mean(raw),
     dev: stdDev(raw, mode),
+    perfectCount: raw.filter(s => s === 10).length,
+    // Pass threshold: 50% of total series (e.g. 5/10, 3/6)
+    passThreshold: Math.floor(raw.length / 2),
   });
 
   return [
