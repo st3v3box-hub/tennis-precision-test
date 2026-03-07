@@ -13,6 +13,8 @@ interface Props {
   onPrev: () => void;
 }
 
+const PASS_THRESHOLD = SERVE_SERIES.length / 2; // 3 perfect series out of 6
+
 export const StepServe: React.FC<Props> = ({ state, setSeriesResult, onNext, onPrev }) => {
   const [activeIdx, setActiveIdx] = useState(0);
   const activePlayer = state.players[activeIdx];
@@ -55,19 +57,29 @@ export const StepServe: React.FC<Props> = ({ state, setSeriesResult, onNext, onP
     });
   };
 
-  const isDoneForPlayer = (pidx: number) =>
+  const perfectCountForPlayer = (pidx: number) =>
+    state.players[pidx].series.filter(r => r.testType === 'serve' && r.score === 10).length;
+
+  const isAllFilledForPlayer = (pidx: number) =>
     SERVE_SERIES.every(s => {
       const r = state.players[pidx].series.find(sr => sr.testType === 'serve' && sr.seriesIndex === s.seriesIndex);
       return r && r.targetStrip && r.score !== undefined;
     });
 
-  const completedFlags = state.players.map((_, i) => isDoneForPlayer(i));
+  const isReadyForPlayer = (pidx: number) =>
+    isAllFilledForPlayer(pidx) || perfectCountForPlayer(pidx) >= PASS_THRESHOLD;
+
+  const completedFlags = state.players.map((_, i) => isReadyForPlayer(i));
   const canContinue = completedFlags.every(Boolean);
 
   const activeDone = SERVE_SERIES.filter(s => {
     const r = activePlayer.series.find(sr => sr.testType === 'serve' && sr.seriesIndex === s.seriesIndex);
     return r && r.targetStrip && r.score !== undefined;
   }).length;
+
+  const activePerfect = perfectCountForPlayer(activeIdx);
+  const hasReachedThreshold = activePerfect >= PASS_THRESHOLD;
+  const activeAllFilled = isAllFilledForPlayer(activeIdx);
 
   const playerLabel = state.playerCount > 1 ? ` — ${activePlayer.name || `Giocatore ${activeIdx + 1}`}` : '';
 
@@ -169,6 +181,12 @@ export const StepServe: React.FC<Props> = ({ state, setSeriesResult, onNext, onP
         </div>
       </Card>
 
+      {hasReachedThreshold && !activeAllFilled && (
+        <div className="p-3 bg-green-50 border border-green-300 rounded-xl text-sm text-green-800">
+          🎯 <strong>{activePerfect} serie perfette</strong> — soglia raggiunta ({PASS_THRESHOLD}/{SERVE_SERIES.length}). Puoi avanzare al passo successivo.
+        </div>
+      )}
+
       <div className="flex gap-3">
         <Button variant="secondary" className="flex-1" onClick={onPrev}>← Indietro</Button>
         <Button className="flex-1" disabled={!canContinue} onClick={onNext}>Avanti →</Button>
@@ -176,8 +194,8 @@ export const StepServe: React.FC<Props> = ({ state, setSeriesResult, onNext, onP
       {!canContinue && (
         <p className="text-center text-xs text-gray-400">
           {state.playerCount > 1
-            ? `${completedFlags.filter(Boolean).length}/${state.playerCount} giocatori completati — completa tutte le serie per continuare`
-            : `Inserisci score e striscia per tutte le ${SERVE_SERIES.length} serie (${activeDone}/${SERVE_SERIES.length})`
+            ? `${completedFlags.filter(Boolean).length}/${state.playerCount} giocatori pronti`
+            : `${activeDone}/${SERVE_SERIES.length} serie compilate · ${activePerfect} perfette (soglia: ${PASS_THRESHOLD})`
           }
         </p>
       )}
