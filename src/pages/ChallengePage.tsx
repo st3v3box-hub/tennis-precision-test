@@ -79,7 +79,7 @@ export const ChallengePage: React.FC = function ChallengePage() {
             <button
               key={`${type.challengeMode}-${type.playerCount}-${type.title}`}
               onClick={() => handleSelect(type)}
-              className="w-full text-left bg-white rounded-2xl border border-gray-200 p-4 hover:border-green-400 transition-colors"
+              className="w-full text-left bg-white rounded-2xl border border-gray-200 p-4 hover:border-brand-400 transition-colors"
             >
               <div className="flex items-start gap-4">
                 <span className="text-3xl leading-none">{type.icon}</span>

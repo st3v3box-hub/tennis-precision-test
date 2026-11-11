@@ -38,8 +38,8 @@ export const MultiResultsPage: React.FC = () => {
                 onClick={() => setActiveIdx(i)}
                 className={`flex-1 py-2 px-3 rounded-xl border-2 text-sm font-semibold transition-all whitespace-nowrap
                   ${activeIdx === i
-                    ? 'bg-green-600 border-green-600 text-white'
-                    : 'bg-white border-gray-300 text-gray-700 hover:border-green-400'
+                    ? 'bg-brand-600 border-brand-600 text-white'
+                    : 'bg-white border-gray-300 text-gray-700 hover:border-brand-400'
                   }`}
               >
                 {s.playerName}

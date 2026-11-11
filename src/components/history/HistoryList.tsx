@@ -33,7 +33,7 @@ export const HistoryList: React.FC<Props> = ({ sessions, settings }) => {
   };
 
   const handleExportAll = () => {
-    const csv = exportHistoryCSV(sessions);
+    const csv = exportHistoryCSV(sessions, settings);
     downloadCSV(csv, `tpt_storico_${new Date().toISOString().slice(0, 10)}.csv`);
   };
 
@@ -81,7 +81,7 @@ export const HistoryList: React.FC<Props> = ({ sessions, settings }) => {
 
       <div className="space-y-3">
         {sorted.map(session => {
-          const r = computeSessionResults(session, settings.stdDevMode);
+          const r = computeSessionResults(session, settings);
           const isSelected = compareIds.includes(session.id);
           return (
             <div
@@ -108,7 +108,7 @@ export const HistoryList: React.FC<Props> = ({ sessions, settings }) => {
                   )}
                 </div>
                 <div className="text-right">
-                  <span className="text-xl font-black text-green-700">{r.percentOfIdeal.toFixed(0)}%</span>
+                  <span className="text-xl font-black text-neutral-900">{r.percentOfIdeal.toFixed(0)}%</span>
                   <p className="text-xs text-gray-400">dell'ideale</p>
                 </div>
               </div>
@@ -118,7 +118,7 @@ export const HistoryList: React.FC<Props> = ({ sessions, settings }) => {
                   <div key={s.stroke} className="text-center bg-gray-50 rounded-lg py-1.5">
                     <div className="text-xs text-gray-500 truncate px-1">{s.label}</div>
                     <div className={`text-base font-black ${
-                      s.ave >= 8 ? 'text-green-600' : s.ave >= 5 ? 'text-yellow-600' : 'text-red-500'
+                      s.ave >= 8 ? 'text-ok-600' : s.ave >= 5 ? 'text-yellow-600' : 'text-red-500'
                     }`}>{s.ave.toFixed(1)}</div>
                   </div>
                 ))}

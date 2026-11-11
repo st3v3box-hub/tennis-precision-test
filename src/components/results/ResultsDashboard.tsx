@@ -21,14 +21,10 @@ export const ResultsDashboard: React.FC<Props> = ({ session, settings, compareSe
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'stats' | 'radar' | 'series' | 'precision' | 'serve'>('stats');
 
-  const results: SessionResults = computeSessionResults(
-    session,
-    settings.stdDevMode,
-    settings.precisionTimeStrategy
-  );
+  const results: SessionResults = computeSessionResults(session, settings);
 
   const compareResults = compareSession
-    ? computeSessionResults(compareSession, settings.stdDevMode, settings.precisionTimeStrategy)
+    ? computeSessionResults(compareSession, settings)
     : undefined;
 
   const fhScores = session.series
@@ -86,7 +82,7 @@ export const ResultsDashboard: React.FC<Props> = ({ session, settings, compareSe
               size="sm"
               variant="secondary"
               onClick={() => {
-                const csv = exportSessionCSV(session);
+                const csv = exportSessionCSV(session, settings);
                 downloadCSV(csv, `tpt_${session.playerName}_${session.date}.csv`);
               }}
             >
@@ -107,7 +103,7 @@ export const ResultsDashboard: React.FC<Props> = ({ session, settings, compareSe
             onClick={() => setActiveTab(t.id)}
             className={`flex-1 py-2 px-3 rounded-xl text-sm font-semibold transition-all whitespace-nowrap
               ${activeTab === t.id
-                ? 'bg-green-600 text-white shadow-sm'
+                ? 'bg-brand-600 text-white shadow-sm'
                 : 'text-gray-600 hover:bg-gray-100'
               }`}
           >
@@ -148,7 +144,7 @@ export const ResultsDashboard: React.FC<Props> = ({ session, settings, compareSe
 
       {activeTab === 'precision' && (
         <Card
-          title="Precision–Time (10 punti)"
+          title={`Precision–Time (${results.precisionTime.length} punti)`}
           subtitle={`Strategia: ${settings.precisionTimeStrategy} — media FH/BH/Combined per punto`}
         >
           <PrecisionTimeChart data={results.precisionTime} />

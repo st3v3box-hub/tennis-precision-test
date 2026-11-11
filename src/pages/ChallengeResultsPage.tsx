@@ -60,7 +60,7 @@ export const ChallengeResultsPage: React.FC = () => {
   }, [ids, challengeId, allSessions]);
 
   const results = useMemo(
-    () => sessions.map(s => computeSessionResults(s, settings.stdDevMode, settings.precisionTimeStrategy)),
+    () => sessions.map(s => computeSessionResults(s, settings)),
     [sessions, settings]
   );
 
@@ -70,7 +70,7 @@ export const ChallengeResultsPage: React.FC = () => {
         <div className="text-center text-gray-400">
           <div className="text-4xl mb-2">🏆</div>
           <p>Sfida non trovata.</p>
-          <button onClick={() => navigate('/')} className="text-green-600 text-sm mt-2 underline">
+          <button onClick={() => navigate('/')} className="text-brand-600 text-sm mt-2 underline">
             Torna alla Home
           </button>
         </div>
@@ -158,7 +158,7 @@ export const ChallengeResultsPage: React.FC = () => {
               <p className="text-sm font-bold text-blue-800">Sfida in corso — risultati parziali</p>
               <button
                 onClick={() => navigate('/new', { state: { resumeChallenge: { challengeId, mode } } })}
-                className="flex-shrink-0 text-xs font-bold text-green-700 border border-green-300 rounded-lg px-3 py-1.5 hover:bg-green-50 transition-colors"
+                className="flex-shrink-0 text-xs font-bold text-brand-700 border border-brand-300 rounded-lg px-3 py-1.5 hover:bg-brand-50 transition-colors"
               >
                 Continua Sfida
               </button>
@@ -185,11 +185,11 @@ export const ChallengeResultsPage: React.FC = () => {
                   <tr key={ps.idx} className={`border-b border-gray-50 last:border-0 ${rank === 0 ? 'bg-yellow-50' : ''}`}>
                     <td className="px-3 py-3 text-lg">{medalFor(rank)}</td>
                     <td className="px-3 py-3 font-bold text-gray-900">{ps.name}</td>
-                    <td className="px-2 py-3 text-center text-green-600 font-semibold">{ps.wins}</td>
+                    <td className="px-2 py-3 text-center text-ok-600 font-semibold">{ps.wins}</td>
                     <td className="px-2 py-3 text-center text-gray-400">{ps.draws}</td>
                     <td className="px-2 py-3 text-center text-red-400">{ps.losses}</td>
                     <td className="px-2 py-3 text-center font-black text-gray-900">{ps.points}</td>
-                    <td className="px-3 py-3 text-center font-semibold text-green-700">{ps.pct.toFixed(1)}%</td>
+                    <td className="px-3 py-3 text-center font-semibold text-neutral-900">{ps.pct.toFixed(1)}%</td>
                   </tr>
                 ))}
               </tbody>
@@ -218,8 +218,8 @@ export const ChallengeResultsPage: React.FC = () => {
                       </span>
                       <span className="text-sm font-bold" style={{ color: colorB }}>{nameB}</span>
                       <span className="ml-auto text-xs text-gray-400">colpi vinti</span>
-                      {mr.winner === 1 && <span className="text-xs font-bold text-green-600">↑ {nameA}</span>}
-                      {mr.winner === 2 && <span className="text-xs font-bold text-green-600">↑ {nameB}</span>}
+                      {mr.winner === 1 && <span className="text-xs font-bold text-brand-600">↑ {nameA}</span>}
+                      {mr.winner === 2 && <span className="text-xs font-bold text-brand-600">↑ {nameB}</span>}
                       {mr.winner === 0 && <span className="text-xs text-gray-400">Pareggio</span>}
                     </div>
                   </div>
@@ -256,12 +256,12 @@ export const ChallengeResultsPage: React.FC = () => {
               <button
                 key={id}
                 onClick={() => navigate(`/results/${id}`)}
-                className="w-full bg-white rounded-xl border border-gray-200 px-4 py-3 text-left hover:border-green-300 hover:shadow-sm transition-all flex items-center justify-between"
+                className="w-full bg-white rounded-xl border border-gray-200 px-4 py-3 text-left hover:border-brand-300 hover:shadow-sm transition-all flex items-center justify-between"
               >
                 <span className="text-sm font-medium text-gray-700">
                   <span style={{ color: RADAR_COLORS[i] }}>●</span> {sessions[i]?.playerName ?? `Giocatore ${i + 1}`}
                 </span>
-                <span className="text-xs text-green-600 font-medium">Vedi risultati →</span>
+                <span className="text-xs text-brand-600 font-medium">Vedi risultati →</span>
               </button>
             ))}
           </div>
@@ -342,7 +342,7 @@ export const ChallengeResultsPage: React.FC = () => {
             <p className="text-sm font-bold text-blue-800">Sfida in corso — risultati parziali</p>
             <button
               onClick={() => navigate('/new', { state: { resumeChallenge: { challengeId, mode } } })}
-              className="flex-shrink-0 text-xs font-bold text-green-700 border border-green-300 rounded-lg px-3 py-1.5 hover:bg-green-50 transition-colors"
+              className="flex-shrink-0 text-xs font-bold text-brand-700 border border-brand-300 rounded-lg px-3 py-1.5 hover:bg-brand-50 transition-colors"
             >
               Continua Sfida
             </button>
@@ -367,7 +367,7 @@ export const ChallengeResultsPage: React.FC = () => {
             <div className={`flex-1 text-center rounded-xl p-3 ${overallWinner === 1 ? 'bg-red-50 border-2 border-red-300' : overallWinner === 2 ? 'opacity-60' : ''}`}>
               <div className="text-xs font-bold text-red-500 mb-1">🔴 {mode === '2v2' ? 'TEAM 1' : ''}</div>
               <div className="text-sm font-black text-gray-900 leading-tight">{name1}</div>
-              <div className="text-2xl font-black text-green-700 mt-1">{pct1.toFixed(1)}%</div>
+              <div className="text-2xl font-black text-neutral-900 mt-1">{pct1.toFixed(1)}%</div>
               <div className="text-yellow-400 text-sm mt-0.5">{renderStars(stars1)}</div>
             </div>
 
@@ -379,7 +379,7 @@ export const ChallengeResultsPage: React.FC = () => {
             <div className={`flex-1 text-center rounded-xl p-3 ${overallWinner === 2 ? 'bg-blue-50 border-2 border-blue-300' : overallWinner === 1 ? 'opacity-60' : ''}`}>
               <div className="text-xs font-bold text-blue-500 mb-1">🔵 {mode === '2v2' ? 'TEAM 2' : ''}</div>
               <div className="text-sm font-black text-gray-900 leading-tight">{name2}</div>
-              <div className="text-2xl font-black text-green-700 mt-1">{pct2.toFixed(1)}%</div>
+              <div className="text-2xl font-black text-neutral-900 mt-1">{pct2.toFixed(1)}%</div>
               <div className="text-yellow-400 text-sm mt-0.5">{renderStars(stars2)}</div>
             </div>
           </div>
@@ -442,12 +442,12 @@ export const ChallengeResultsPage: React.FC = () => {
             <button
               key={id}
               onClick={() => navigate(`/results/${id}`)}
-              className="w-full bg-white rounded-xl border border-gray-200 px-4 py-3 text-left hover:border-green-300 hover:shadow-sm transition-all flex items-center justify-between"
+              className="w-full bg-white rounded-xl border border-gray-200 px-4 py-3 text-left hover:border-brand-300 hover:shadow-sm transition-all flex items-center justify-between"
             >
               <span className="text-sm font-medium text-gray-700">
                 {i < 2 ? '🔴' : '🔵'} {sessions[i]?.playerName ?? `Giocatore ${i + 1}`}
               </span>
-              <span className="text-xs text-green-600 font-medium">Vedi risultati →</span>
+              <span className="text-xs text-brand-600 font-medium">Vedi risultati →</span>
             </button>
           ))}
         </div>

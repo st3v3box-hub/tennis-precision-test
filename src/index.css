@@ -18,9 +18,9 @@
     min-height: 3rem;
   }
   .score-btn.selected {
-    @apply bg-green-600 border-green-600 text-white shadow-lg scale-105;
+    @apply bg-brand-600 border-brand-600 text-white shadow-lg scale-105;
   }
   .score-btn.unselected {
-    @apply bg-white border-gray-300 text-gray-700 hover:border-green-500 hover:text-green-700;
+    @apply bg-white border-gray-300 text-gray-700 hover:border-brand-500 hover:text-brand-700;
   }
 }

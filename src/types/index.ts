@@ -23,6 +23,9 @@ export type StdDevMode = 'sample' | 'population';
 
 export type PrecisionTimeStrategy = 'A' | 'B';
 
+/** How the overall % is computed: radar area (quadratic) or simple mean (linear) */
+export type ScoreScale = 'radar' | 'linear';
+
 // ─── Player Profile ──────────────────────────────────────────────────────────
 
 export interface InitialAssessment {
@@ -122,6 +125,7 @@ export interface SessionResults {
 export interface AppSettings {
   stdDevMode: StdDevMode;
   precisionTimeStrategy: PrecisionTimeStrategy;
+  scoreScale: ScoreScale;
 }
 
 export interface AppState {

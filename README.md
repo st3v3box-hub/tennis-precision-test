@@ -1,6 +1,6 @@
 # 🎾 Tennis Precision Test
 
-Web app per la gestione del **Protocollo di Test di Precisione Tennis**: inserimento dati guidato (wizard), statistiche, grafici e storico sessioni.
+Web app Gladiators Training per il **Protocollo di Test di Precisione Tennis**: inserimento dati guidato (wizard), statistiche, grafici, classifica, sfide e storico sessioni.
 
 ---
 
@@ -13,10 +13,17 @@ Web app per la gestione del **Protocollo di Test di Precisione Tennis**: inserim
 | Styling | Tailwind CSS 3 |
 | Charts | Recharts 2 |
 | Routing | React Router 6 (HashRouter) |
-| Storage | localStorage (JSON) |
+| Dati | Firebase Firestore (sincronizzati tra dispositivi) |
+| Accesso | Account admin / maestro / genitore (vedi "Sicurezza") |
 | Test | Vitest |
 
-**Nessun backend richiesto.** Tutti i dati sono locali al browser.
+I dati sono salvati su **Firebase Firestore** (progetto `tennis-precision-test`).
+Il deploy avviene in automatico su **GitHub Pages** a ogni push sul branch `main` (`.github/workflows/deploy.yml`).
+
+> ⚠️ **Sicurezza — da completare.** Oggi l'app entra in Firebase come utente anonimo e il
+> controllo di account e ruoli avviene solo nel browser. Le regole Firestore non sono nel
+> repository. Prima di usarla con dati di persone esterne va migrata a Firebase Authentication
+> con regole Firestore basate sui ruoli.
 
 ---
 
@@ -49,7 +56,9 @@ src/
 ├── lib/
 │   ├── formulas.ts         # mean, stdDev, radarArea, percentOfIdeal, computeSessionResults
 │   ├── protocol.ts         # Definizioni serie, vincolo striscia, target categoria
-│   ├── storage.ts          # CRUD localStorage
+│   ├── firebase.ts         # Connessione Firestore
+│   ├── auth.ts             # Account e ruoli
+│   ├── storage.ts          # Lettura dati locali legacy (migrazione una tantum)
 │   └── export.ts           # CSV export (sessione + storico)
 ├── components/
 │   ├── ui/                 # ScoreInput, Button, Card, ProgressSteps
@@ -59,7 +68,8 @@ src/
 │   └── history/            # HistoryList (confronto + delete + export)
 └── pages/                  # HomePage, NewSessionPage, SessionResultsPage, CompareSessionsPage, SettingsPage
 tests/
-└── formulas.test.ts        # Unit test formule + protocollo
+├── formulas.test.ts        # Unit test formule + protocollo
+└── fixes.test.ts           # % ideale su test parziali, scala lineare, strategia B
 ```
 
 ---
@@ -100,20 +110,30 @@ A = 0.5 × Σ(r_i × r_{i+1} × sin(2π/6))   per i = 0..5, ciclico
 Con tutti r=10 → **Area ideale ≈ 259.81**
 
 ### % dell'ideale
+Calcolato solo sui moduli eseguiti (test parziali inclusi). Scala scelta in Impostazioni:
+
+**Area del radar** (default) — cresce al quadrato, premia la completezza:
 ```
-% = (radarArea(valori) / radarArea([10,10,10,10,10,10])) × 100
+% = radarArea(valori) / radarArea(tutti 10) × 100  =  Σ(r_i × r_{i+1}) / n   (ciclico)
+```
+La forma Σ/n vale anche con 1 o 2 moduli, così il risultato è confrontabile:
+tutti i colpi a 7 → 49% con 1, 2, 3 o 6 moduli.
+
+**Media lineare**:
+```
+% = media(valori) / 10 × 100        (tutti a 7 → 70%)
 ```
 
-### Precision–Time (10 punti)
-**Strategia A** (default):
+### Precision–Time
+**Strategia A** (default, 10 punti):
 ```
 punto_i = mean(FH_i, BH_i, Combined_i)   per i = 0..9
 ```
 dove `FH_i` = i-esima serie FH dei groundstrokes, `BH_i` = i-esima BH, `Combined_i` = i-esima combined.
 
-**Strategia B**:
+**Strategia B** (5 punti, ogni serie usata una sola volta):
 ```
-punto_i = mean(mean(FH_{2i}, FH_{2i+1}), mean(BH_{2i}, BH_{2i+1}), Combined_i)
+punto_k = mean(mean(FH_{2k}, FH_{2k+1}), mean(BH_{2k}, BH_{2k+1}), mean(C_{2k}, C_{2k+1}))   per k = 0..4
 ```
 
 ### Vincolo striscia servizio

@@ -36,13 +36,13 @@ export const SeriesInputBlock: React.FC<Props> = ({ specs, series, onSet, extraR
     <div>
       <div className="flex justify-between items-center mb-3">
         <span className="text-sm text-gray-500">Completate</span>
-        <span className={`text-sm font-bold ${completed === total ? 'text-green-600' : 'text-gray-700'}`}>
+        <span className={`text-sm font-bold ${completed === total ? 'text-ok-600' : 'text-gray-700'}`}>
           {completed} / {total}
         </span>
       </div>
       <div className="w-full bg-gray-200 rounded-full h-1.5 mb-4">
         <div
-          className="bg-green-500 h-1.5 rounded-full transition-all"
+          className="bg-brand-500 h-1.5 rounded-full transition-all"
           style={{ width: `${(completed / total) * 100}%` }}
         />
       </div>
@@ -59,7 +59,7 @@ export const SeriesInputBlock: React.FC<Props> = ({ specs, series, onSet, extraR
             <div
               key={spec.seriesIndex}
               className={`rounded-xl border-2 p-4 transition-colors
-                ${val !== null ? 'border-green-300 bg-green-50' : 'border-gray-200 bg-white'}
+                ${val !== null ? 'border-brand-300 bg-brand-50' : 'border-gray-200 bg-white'}
               `}
             >
               <div className="flex items-center justify-between mb-3">
@@ -73,7 +73,7 @@ export const SeriesInputBlock: React.FC<Props> = ({ specs, series, onSet, extraR
                 </div>
                 {val !== null && (
                   <span className={`text-xl font-black
-                    ${val >= 8 ? 'text-green-600' : val >= 5 ? 'text-yellow-600' : 'text-red-500'}
+                    ${val >= 8 ? 'text-ok-600' : val >= 5 ? 'text-yellow-600' : 'text-red-500'}
                   `}>
                     {val}
                   </span>

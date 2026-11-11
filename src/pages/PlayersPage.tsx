@@ -32,7 +32,12 @@ export const PlayersPage: React.FC = () => {
   }, [profiles, search]);
 
   const handleDelete = async (id: string) => {
-    await deletePlayer(id);
+    try {
+      await deletePlayer(id);
+    } catch (err) {
+      console.error('Delete player failed:', err);
+      alert('Eliminazione non riuscita. Controlla la connessione e riprova.');
+    }
     setDeleteConfirm(null);
   };
 
@@ -40,7 +45,7 @@ export const PlayersPage: React.FC = () => {
     const sessions = allSessions.filter(s => s.playerId === profileId && s.completed);
     if (sessions.length === 0) return null;
     return Math.max(...sessions.map(s =>
-      computeSessionResults(s, settings.stdDevMode, settings.precisionTimeStrategy).percentOfIdeal
+      computeSessionResults(s, settings).percentOfIdeal
     ));
   };
 
@@ -59,7 +64,7 @@ export const PlayersPage: React.FC = () => {
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Cerca per nome o club..."
-            className="flex-1 border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="flex-1 border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
           />
           {canEdit && <Button onClick={() => navigate('/players/new')} icon="+">Nuovo</Button>}
         </div>
@@ -128,13 +133,18 @@ export const PlayersPage: React.FC = () => {
                   <div className="border-t border-gray-100 px-4 py-2 flex gap-2 justify-end">
                     <button
                       onClick={() => navigate(`/players/${p.id}/edit`)}
-                      className="text-xs text-gray-500 hover:text-green-600 font-medium px-2 py-1 rounded"
+                      className="text-xs text-gray-500 hover:text-brand-600 font-medium px-2 py-1 rounded"
                     >
                       Modifica
                     </button>
                     {deleteConfirm === p.id ? (
                       <>
-                        <button onClick={() => handleDelete(p.id)} className="text-xs text-red-600 font-bold px-2 py-1 rounded">Conferma</button>
+                        <button onClick={() => handleDelete(p.id)} className="text-xs text-red-600 font-bold px-2 py-1 rounded">
+                          {(() => {
+                            const n = allSessions.filter(s => s.playerId === p.id).length;
+                            return n > 0 ? `Elimina con ${n} test` : 'Conferma';
+                          })()}
+                        </button>
                         <button onClick={() => setDeleteConfirm(null)} className="text-xs text-gray-400 px-2 py-1 rounded">Ann.</button>
                       </>
                     ) : (

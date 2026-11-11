@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import {
-  collection, doc, setDoc, deleteDoc, getDocs, getDoc, onSnapshot,
+  collection, doc, setDoc, deleteDoc, getDocs, getDoc, onSnapshot, query, where, writeBatch,
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import type { PlayerProfile, TestSession, AppSettings } from '../types';
@@ -9,6 +9,7 @@ import { loadState } from '../lib/storage';
 const DEFAULT_SETTINGS: AppSettings = {
   stdDevMode: 'sample',
   precisionTimeStrategy: 'A',
+  scoreScale: 'radar',
 };
 
 interface AppDataContextValue {
@@ -59,7 +60,10 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       if (cancelled) return;
 
-      if (playersSnap.empty && sessionsSnap.empty) {
+      // One-time migration from localStorage. Only when the cloud has never been
+      // initialised (no meta doc): otherwise a browser with old local data could
+      // re-upload records that were deliberately deleted from the database.
+      if (playersSnap.empty && sessionsSnap.empty && !metaSnap.exists()) {
         // Migrate data from localStorage
         const localState = loadState();
         const writes: Promise<void>[] = [];
@@ -144,8 +148,16 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     await setDoc(doc(db, 'players', profile.id), profile);
   }, []);
 
+  /** Deletes a player together with all of their test sessions (no orphans left behind). */
   const deletePlayer = useCallback(async (id: string) => {
-    await deleteDoc(doc(db, 'players', id));
+    const snap = await getDocs(query(collection(db, 'sessions'), where('playerId', '==', id)));
+    const refs = [...snap.docs.map(d => d.ref), doc(db, 'players', id)];
+    // Firestore batches are limited to 500 writes
+    for (let i = 0; i < refs.length; i += 450) {
+      const batch = writeBatch(db);
+      refs.slice(i, i + 450).forEach(r => batch.delete(r));
+      await batch.commit();
+    }
   }, []);
 
   const getPlayer = useCallback((id: string) => {

@@ -19,8 +19,8 @@ export const ProgressSteps: React.FC<Props> = ({ currentStep, steps: customSteps
               <div className="flex flex-col items-center">
                 <div
                   className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-colors
-                    ${done ? 'bg-green-600 border-green-600 text-white' : ''}
-                    ${active ? 'bg-white border-green-600 text-green-600' : ''}
+                    ${done ? 'bg-brand-600 border-brand-600 text-white' : ''}
+                    ${active ? 'bg-white border-brand-600 text-brand-600' : ''}
                     ${!done && !active ? 'bg-white border-gray-300 text-gray-400' : ''}
                   `}
                 >
@@ -28,7 +28,7 @@ export const ProgressSteps: React.FC<Props> = ({ currentStep, steps: customSteps
                 </div>
                 <span
                   className={`text-xs mt-1 font-medium whitespace-nowrap
-                    ${active ? 'text-green-700' : done ? 'text-green-600' : 'text-gray-400'}
+                    ${active ? 'text-brand-700' : done ? 'text-brand-600' : 'text-gray-400'}
                   `}
                 >
                   {step.label}
@@ -37,7 +37,7 @@ export const ProgressSteps: React.FC<Props> = ({ currentStep, steps: customSteps
               {i < stepsToRender.length - 1 && (
                 <div
                   className={`flex-1 h-0.5 mx-1 mb-5 transition-colors
-                    ${i < currentStep ? 'bg-green-600' : 'bg-gray-200'}
+                    ${i < currentStep ? 'bg-brand-600' : 'bg-gray-200'}
                   `}
                   style={{ minWidth: 12 }}
                 />

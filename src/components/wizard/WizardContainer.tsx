@@ -319,11 +319,11 @@ export const WizardContainer: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="sticky top-0 z-20 shadow-sm">
-        <div className="bg-green-800 px-4 py-2 flex items-center gap-3">
+        <div className="bg-black px-4 py-2 flex items-center gap-3">
           <button onClick={() => navigate('/')} className="flex-shrink-0">
-            <img src="./logo.png" alt="GT Logo — Home" className="h-8 w-auto" />
+            <img src="./logo.png" alt="Gladiators Training — Home" className="h-8 w-8" />
           </button>
-          <p className="text-xs text-green-200 font-medium">{currentStepDef?.title}</p>
+          <p className="text-xs text-neutral-300 font-medium">{currentStepDef?.title}</p>
         </div>
         <div className="bg-white border-b border-gray-200 px-4 py-2">
           <ProgressSteps currentStep={state.step} steps={activeSteps} />

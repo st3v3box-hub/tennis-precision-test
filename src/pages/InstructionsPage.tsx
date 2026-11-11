@@ -35,7 +35,7 @@ const CATEGORY_DATA: Record<Category, CategoryData> = {
   },
   terza: {
     image: './images/court-terza.png',
-    accentClass: 'border-green-500 text-green-700 bg-green-50',
+    accentClass: 'border-brand-500 text-brand-700 bg-brand-50',
     zones: {
       groundstroke: { width: '1 mt', depth: '1 mt' },
       volley: '1.5 mt',
@@ -82,7 +82,7 @@ const EXAMPLES = [
     color: 'green',
     desc: 'Completa 10 serie su 10 perfette in ogni modulo. Media altissima, deviazione minima.',
     badge: '10/10 ✓',
-    badgeColor: 'bg-green-100 text-green-700',
+    badgeColor: 'bg-brand-100 text-brand-700',
   },
   {
     label: 'Giocatore solido',
@@ -124,7 +124,7 @@ export const InstructionsPage: React.FC = () => {
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-5">
 
         {/* Obiettivo */}
-        <div className="bg-green-700 rounded-2xl p-5 text-white">
+        <div className="bg-brand-700 rounded-2xl p-5 text-white">
           <h2 className="text-sm font-bold uppercase tracking-wide opacity-80 mb-2">Obiettivo del Test</h2>
           <p className="text-sm leading-relaxed">
             Misurare la <strong>precisione e la continuità</strong> sui 5 colpi fondamentali del tennis.
@@ -138,15 +138,15 @@ export const InstructionsPage: React.FC = () => {
           <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3">Come funziona una serie</h2>
           <div className="space-y-3 text-sm text-gray-700">
             <div className="flex gap-3">
-              <span className="flex-shrink-0 w-7 h-7 rounded-full bg-green-100 text-green-700 font-bold text-xs flex items-center justify-center">1</span>
+              <span className="flex-shrink-0 w-7 h-7 rounded-full bg-brand-100 text-brand-700 font-bold text-xs flex items-center justify-center">1</span>
               <p>Il coach alimenta il giocatore con <strong>10 palle consecutive</strong> nella stessa zona.</p>
             </div>
             <div className="flex gap-3">
-              <span className="flex-shrink-0 w-7 h-7 rounded-full bg-green-100 text-green-700 font-bold text-xs flex items-center justify-center">2</span>
+              <span className="flex-shrink-0 w-7 h-7 rounded-full bg-brand-100 text-brand-700 font-bold text-xs flex items-center justify-center">2</span>
               <p>Il giocatore deve colpire la <strong>zona target</strong> (dimensioni diverse per categoria). Ogni palla che atterra nella zona vale 1 punto.</p>
             </div>
             <div className="flex gap-3">
-              <span className="flex-shrink-0 w-7 h-7 rounded-full bg-green-100 text-green-700 font-bold text-xs flex items-center justify-center">3</span>
+              <span className="flex-shrink-0 w-7 h-7 rounded-full bg-brand-100 text-brand-700 font-bold text-xs flex items-center justify-center">3</span>
               <p>Lo <strong>score della serie</strong> è il numero di palle centrate: da 0 a 10.</p>
             </div>
             <div className="flex gap-3">
@@ -171,9 +171,9 @@ export const InstructionsPage: React.FC = () => {
                 Il protocollo è costruito in modo che ogni errore abbia una conseguenza immediata e concreta: <strong>allungare il test</strong>. Chi sbaglia deve continuare a colpire per raggiungere la soglia di serie perfette, accumulando fatica fisica e pressione mentale.
               </p>
               <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                <div className="bg-green-500/20 border border-green-400/30 rounded-lg p-2.5">
-                  <p className="font-bold text-green-300 mb-1">Giocatore lucido</p>
-                  <p className="text-green-200">10 perfette nelle prime 10 serie → chiude subito, minimo sforzo fisico e mentale.</p>
+                <div className="bg-ok-500/20 border border-ok-400/30 rounded-lg p-2.5">
+                  <p className="font-bold text-ok-300 mb-1">Giocatore lucido</p>
+                  <p className="text-ok-200">10 perfette nelle prime 10 serie → chiude subito, minimo sforzo fisico e mentale.</p>
                 </div>
                 <div className="bg-red-500/20 border border-red-400/30 rounded-lg p-2.5">
                   <p className="font-bold text-red-300 mb-1">Giocatore sotto pressione</p>
@@ -196,7 +196,7 @@ export const InstructionsPage: React.FC = () => {
               </p>
               <div className="mt-3 space-y-1.5 text-xs text-gray-300">
                 <div className="flex items-start gap-2">
-                  <span className="text-green-400 font-bold flex-shrink-0 mt-0.5">↑</span>
+                  <span className="text-ok-400 font-bold flex-shrink-0 mt-0.5">↑</span>
                   <p>Chi resta calmo e reimposta la concentrazione supera la soglia in poche serie extra.</p>
                 </div>
                 <div className="flex items-start gap-2">
@@ -235,9 +235,9 @@ export const InstructionsPage: React.FC = () => {
                 {PROTOCOL_ROWS.map((row, i) => (
                   <tr key={i} className="border-b border-gray-100 last:border-0">
                     <td className="px-3 py-2 font-semibold text-gray-800">{row.test}</td>
-                    <td className="px-3 py-2 text-center font-bold text-green-700">{row.series}</td>
+                    <td className="px-3 py-2 text-center font-bold text-brand-700">{row.series}</td>
                     <td className="px-3 py-2 text-center">
-                      <span className="font-bold text-green-700 bg-green-50 px-2 py-0.5 rounded-full">{row.soglia}</span>
+                      <span className="font-bold text-brand-700 bg-brand-50 px-2 py-0.5 rounded-full">{row.soglia}</span>
                     </td>
                     <td className="px-3 py-2 text-gray-500 hidden sm:table-cell">{row.pattern}</td>
                   </tr>
@@ -290,7 +290,7 @@ export const InstructionsPage: React.FC = () => {
             </div>
             <div className="flex gap-2">
               <span className="flex-shrink-0 font-bold text-gray-800 w-20">% Ideale</span>
-              <p>Percentuale dell'area radar rispetto all'area di un giocatore che ottiene 10 in tutti i colpi. Indica il potenziale globale.</p>
+              <p>Percentuale dell'area radar rispetto all'area di un giocatore che ottiene 10 in tutti i colpi. Indica il potenziale globale. La scala cresce al quadrato: tutti i colpi a 7/10 valgono 49%, a 9/10 valgono 81%. Nei test parziali conta solo i moduli eseguiti. Dalle Impostazioni si può passare alla media lineare (7/10 → 70%).</p>
             </div>
             <div className="flex gap-2">
               <span className="flex-shrink-0 font-bold text-gray-800 w-20">Radar</span>
@@ -298,12 +298,12 @@ export const InstructionsPage: React.FC = () => {
             </div>
             <div className="flex gap-2">
               <span className="flex-shrink-0 font-bold text-gray-800 w-20">Precision–T</span>
-              <p>Curva di progressione in 10 punti che combina FH, BH e Combined. Mostra se la precisione migliora durante la sessione.</p>
+              <p>Curva di progressione che combina FH, BH e Combined: 10 punti con la strategia A, 5 punti (coppie di serie) con la strategia B. Mostra se la precisione migliora durante la sessione.</p>
             </div>
           </div>
           <div className="mt-3 p-3 rounded-xl bg-gray-50 border border-gray-200 text-xs text-gray-500">
             <strong>Legenda colori Ave:</strong>
-            {' '}<span className="text-green-600 font-bold">verde ≥ 8</span>,
+            {' '}<span className="text-ok-600 font-bold">verde ≥ 8</span>,
             {' '}<span className="text-yellow-600 font-bold">giallo ≥ 5</span>,
             {' '}<span className="text-red-500 font-bold">rosso &lt; 5</span>
           </div>
@@ -340,7 +340,7 @@ export const InstructionsPage: React.FC = () => {
                       ? cat.color === 'blue'
                         ? 'bg-blue-600 border-blue-600 text-white'
                         : cat.color === 'green'
-                          ? 'bg-green-600 border-green-600 text-white'
+                          ? 'bg-brand-600 border-brand-600 text-white'
                           : cat.color === 'yellow'
                             ? 'bg-yellow-500 border-yellow-500 text-white'
                             : 'bg-red-600 border-red-600 text-white'

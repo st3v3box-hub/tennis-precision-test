@@ -53,11 +53,11 @@ export const RadarSpider: React.FC<Props> = ({ values, compareValues, compareLab
         <Radar
           name="Sessione"
           dataKey="value"
-          stroke="#16a34a"
-          fill="#16a34a"
+          stroke="#e10600"
+          fill="#e10600"
           fillOpacity={0.25}
           strokeWidth={2}
-          dot={{ r: 4, fill: '#16a34a' }}
+          dot={{ r: 4, fill: '#e10600' }}
         />
         {compareValues && (
           <Radar
@@ -74,7 +74,7 @@ export const RadarSpider: React.FC<Props> = ({ values, compareValues, compareLab
         <Radar
           name="Ideale"
           dataKey="ideal"
-          stroke="#d1fae5"
+          stroke="#a3a3a3"
           fill="none"
           strokeWidth={1}
           strokeDasharray="4 4"

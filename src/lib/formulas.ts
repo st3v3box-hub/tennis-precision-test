@@ -6,6 +6,8 @@ import type {
   TestSession,
   StdDevMode,
   PrecisionTimeStrategy,
+  ScoreScale,
+  AppSettings,
 } from '../types';
 
 // ─── Primitives ─────────────────────────────────────────────────────────────
@@ -44,10 +46,31 @@ export const RADAR_N = 6;
 export const IDEAL_RADAR_VALUES: number[] = Array(RADAR_N).fill(10);
 export const IDEAL_AREA: number = radarArea(IDEAL_RADAR_VALUES);
 
+/**
+ * Radar-based % of ideal, generalised to any number of axes.
+ *
+ * For n ≥ 3 this equals radarArea(values) / radarArea(all 10s) × 100, because the
+ * sin(2π/n) factor cancels: % = Σ r_i·r_{i+1} / n  (indices wrap around).
+ * The same expression extends naturally to n = 1 (r²/100·100) and n = 2 (r1·r2),
+ * so partial tests with 1–2 modules stay on the same (quadratic) scale as full ones:
+ * all strokes at 7/10 → 49% whatever the number of modules.
+ */
+export function radarPercent(values: number[]): number {
+  const n = values.length;
+  if (n === 0) return 0;
+  let sum = 0;
+  for (let i = 0; i < n; i++) sum += values[i] * values[(i + 1) % n];
+  return sum / n;
+}
+
+/** Linear % of ideal: simple mean of stroke averages on a 0–100 scale (7/10 → 70%). */
+export function linearPercent(values: number[]): number {
+  return values.length === 0 ? 0 : (mean(values) / 10) * 100;
+}
+
+/** Kept for backward compatibility: radar % over the given values. */
 export function percentOfIdeal(values: number[]): number {
-  const ideal = IDEAL_AREA;
-  if (ideal === 0) return 0;
-  return (radarArea(values) / ideal) * 100;
+  return radarPercent(values);
 }
 
 // ─── Stroke stats ────────────────────────────────────────────────────────────
@@ -97,14 +120,12 @@ export function computeStrokeStats(
 // ─── Precision–Time ──────────────────────────────────────────────────────────
 
 /**
- * Strategy A (default): For i=0..9:
- *   fh = i-th FH series from groundstrokes
- *   bh = i-th BH series from groundstrokes
- *   combined = i-th combined series
- *   mean(fh, bh, combined)
+ * Strategy A (default): one point per series index i (max 10)
+ *   point_i = mean(FH_i, BH_i, Combined_i)
  *
- * Strategy B: Same data but fh/bh pair represents 2 consecutive groundstroke
- *   series averaged together then combined with combined_i.
+ * Strategy B: one point per PAIR of consecutive series (max 5)
+ *   point_k = mean( avg(FH_2k, FH_2k+1), avg(BH_2k, BH_2k+1), avg(C_2k, C_2k+1) )
+ *   Smoother curve; each series is used exactly once.
  */
 export function computePrecisionTime(
   session: TestSession,
@@ -112,67 +133,68 @@ export function computePrecisionTime(
 ): PrecisionTimePoint[] {
   const { series } = session;
 
-  const fhSeries = series
-    .filter(s => s.testType === 'groundstrokes' && s.direction === 'fh_cross')
-    .sort((a, b) => a.seriesIndex - b.seriesIndex);
-  const bhSeries = series
-    .filter(s => s.testType === 'groundstrokes' && s.direction === 'bh_cross')
-    .sort((a, b) => a.seriesIndex - b.seriesIndex);
-  const combSeries = series
-    .filter(s => s.testType === 'combined')
-    .sort((a, b) => a.seriesIndex - b.seriesIndex);
+  const byIndex = (pred: (s: TestSession['series'][0]) => boolean) =>
+    series.filter(pred).sort((a, b) => a.seriesIndex - b.seriesIndex).map(s => s.score);
 
-  const len = Math.min(fhSeries.length, bhSeries.length, combSeries.length, 10);
+  const fh = byIndex(s => s.testType === 'groundstrokes' && s.direction === 'fh_cross');
+  const bh = byIndex(s => s.testType === 'groundstrokes' && s.direction === 'bh_cross');
+  const comb = byIndex(s => s.testType === 'combined');
+
+  const point = (index: number, fhVal: number, bhVal: number, combinedVal: number): PrecisionTimePoint => ({
+    index,
+    fh: fhVal,
+    bh: bhVal,
+    combined: combinedVal,
+    mean: mean([fhVal, bhVal, combinedVal]),
+  });
+
   const points: PrecisionTimePoint[] = [];
 
-  for (let i = 0; i < len; i++) {
-    let fhVal: number;
-    let bhVal: number;
-
-    if (strategy === 'B' && i < Math.floor(fhSeries.length / 2)) {
-      // Strategy B: pair consecutive FH series → one data point
-      fhVal = mean([fhSeries[i * 2]?.score ?? 0, fhSeries[i * 2 + 1]?.score ?? 0]);
-      bhVal = mean([bhSeries[i * 2]?.score ?? 0, bhSeries[i * 2 + 1]?.score ?? 0]);
-    } else {
-      fhVal = fhSeries[i]?.score ?? 0;
-      bhVal = bhSeries[i]?.score ?? 0;
+  if (strategy === 'B') {
+    const pairs = Math.min(
+      Math.floor(fh.length / 2),
+      Math.floor(bh.length / 2),
+      Math.floor(comb.length / 2),
+      5
+    );
+    for (let k = 0; k < pairs; k++) {
+      points.push(point(
+        k + 1,
+        mean([fh[2 * k], fh[2 * k + 1]]),
+        mean([bh[2 * k], bh[2 * k + 1]]),
+        mean([comb[2 * k], comb[2 * k + 1]])
+      ));
     }
-
-    const combinedVal = combSeries[i]?.score ?? 0;
-    points.push({
-      index: i + 1,
-      fh: fhVal,
-      bh: bhVal,
-      combined: combinedVal,
-      mean: mean([fhVal, bhVal, combinedVal]),
-    });
+    return points;
   }
 
+  const len = Math.min(fh.length, bh.length, comb.length, 10);
+  for (let i = 0; i < len; i++) points.push(point(i + 1, fh[i], bh[i], comb[i]));
   return points;
 }
 
 // ─── Full session results ────────────────────────────────────────────────────
 
+export type ResultOptions = Partial<Pick<AppSettings, 'stdDevMode' | 'precisionTimeStrategy' | 'scoreScale'>>;
+
+/**
+ * Computes all results for a session. Pass the app settings object so every
+ * screen (and the CSV export) uses the same formulas.
+ */
 export function computeSessionResults(
   session: TestSession,
-  mode: StdDevMode = 'sample',
-  ptStrategy: PrecisionTimeStrategy = 'A'
+  options: ResultOptions = {}
 ): SessionResults {
+  const mode: StdDevMode = options.stdDevMode ?? 'sample';
+  const ptStrategy: PrecisionTimeStrategy = options.precisionTimeStrategy ?? 'A';
+  const scale: ScoreScale = options.scoreScale ?? 'radar';
+
   const stats = computeStrokeStats(session, mode);
   const values = stats.map(s => s.ave);
 
-  // For partial tests, compute percentOfIdeal only over strokes that have data
+  // Partial tests: only strokes that actually have data count towards the %
   const testedValues = stats.filter(s => s.scores.length > 0).map(s => s.ave);
-  let poi: number;
-  if (testedValues.length === 0) {
-    poi = 0;
-  } else if (testedValues.length < 3) {
-    // radar area is 0 for < 3 axes; use simple mean instead
-    poi = (mean(testedValues) / 10) * 100;
-  } else {
-    const idealForN = radarArea(Array(testedValues.length).fill(10));
-    poi = idealForN > 0 ? (radarArea(testedValues) / idealForN) * 100 : 0;
-  }
+  const poi = scale === 'linear' ? linearPercent(testedValues) : radarPercent(testedValues);
 
   return {
     session,

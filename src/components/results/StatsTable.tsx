@@ -1,5 +1,6 @@
 import React from 'react';
 import type { StrokeStats } from '../../types';
+import { IDEAL_AREA } from '../../lib/formulas';
 
 interface Props {
   stats: StrokeStats[];
@@ -8,7 +9,7 @@ interface Props {
 }
 
 const barColor = (v: number): string => {
-  if (v >= 8) return 'bg-green-500';
+  if (v >= 8) return 'bg-ok-500';
   if (v >= 5) return 'bg-yellow-500';
   return 'bg-red-400';
 };
@@ -42,7 +43,7 @@ export const StatsTable: React.FC<Props> = ({ stats, radarArea, percentOfIdeal }
                   <td className="px-3 py-3 text-center font-bold text-lg">
                     <span className={
                       !tested ? 'text-gray-300' :
-                      s.ave >= 8 ? 'text-green-600' :
+                      s.ave >= 8 ? 'text-ok-600' :
                       s.ave >= 5 ? 'text-yellow-600' :
                       'text-red-500'
                     }>
@@ -58,7 +59,7 @@ export const StatsTable: React.FC<Props> = ({ stats, radarArea, percentOfIdeal }
                     ) : (
                       <span className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full
                         ${passed
-                          ? 'bg-green-100 text-green-700'
+                          ? 'bg-ok-100 text-ok-700'
                           : 'bg-red-100 text-red-600'
                         }`}
                       >
@@ -93,16 +94,16 @@ export const StatsTable: React.FC<Props> = ({ stats, radarArea, percentOfIdeal }
         <div className="bg-gray-50 rounded-xl p-4 text-center border border-gray-200">
           <div className="text-2xl font-black text-gray-800">{radarArea.toFixed(1)}</div>
           <div className="text-xs text-gray-500 mt-1">Area Radar</div>
-          <div className="text-xs text-gray-400 mt-0.5">Ideale: {(25 * Math.sqrt(3)).toFixed(1)}</div>
+          <div className="text-xs text-gray-400 mt-0.5">Ideale: {IDEAL_AREA.toFixed(1)}</div>
         </div>
 
         <div className={`rounded-xl p-4 text-center border ${
-          percentOfIdeal >= 70 ? 'bg-green-50 border-green-200' :
+          percentOfIdeal >= 70 ? 'bg-ok-50 border-ok-200' :
           percentOfIdeal >= 40 ? 'bg-yellow-50 border-yellow-200' :
           'bg-red-50 border-red-200'
         }`}>
           <div className={`text-2xl font-black ${
-            percentOfIdeal >= 70 ? 'text-green-700' :
+            percentOfIdeal >= 70 ? 'text-ok-700' :
             percentOfIdeal >= 40 ? 'text-yellow-700' :
             'text-red-600'
           }`}>
@@ -114,13 +115,13 @@ export const StatsTable: React.FC<Props> = ({ stats, radarArea, percentOfIdeal }
 
         <div className={`rounded-xl p-4 text-center border ${
           testedCount === 0 ? 'bg-gray-50 border-gray-200' :
-          passedCount === testedCount ? 'bg-green-50 border-green-200' :
+          passedCount === testedCount ? 'bg-ok-50 border-ok-200' :
           passedCount >= Math.ceil(testedCount / 2) ? 'bg-yellow-50 border-yellow-200' :
           'bg-red-50 border-red-200'
         }`}>
           <div className={`text-2xl font-black ${
             testedCount === 0 ? 'text-gray-400' :
-            passedCount === testedCount ? 'text-green-700' :
+            passedCount === testedCount ? 'text-ok-700' :
             passedCount >= Math.ceil(testedCount / 2) ? 'text-yellow-700' :
             'text-red-600'
           }`}>

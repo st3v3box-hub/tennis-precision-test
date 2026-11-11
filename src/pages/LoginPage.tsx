@@ -36,7 +36,7 @@ const PasswordInput: React.FC<{
         autoCorrect="off"
         autoCapitalize="off"
         spellCheck={false}
-        className="w-full border border-gray-300 rounded-xl px-4 py-3 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+        className="w-full border border-gray-300 rounded-xl px-4 py-3 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
       />
       <button
         type="button"
@@ -123,13 +123,13 @@ export const LoginPage: React.FC<Props> = ({ onSuccess }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-700 to-green-900 flex flex-col items-center justify-center px-4">
+    <div className="min-h-screen bg-gradient-to-br from-neutral-900 via-black to-black flex flex-col items-center justify-center px-4">
       <div className="w-full max-w-sm">
         {/* Logo + title */}
         <div className="flex flex-col items-center mb-8">
-          <img src="./logo.png" alt="GT Logo" className="h-20 w-auto drop-shadow-lg mb-4" />
+          <img src="./logo-wordmark.png" alt="Gladiators Training — Tennis & Padel Academy" className="w-full max-w-xs h-auto mb-5" />
           <h1 className="text-2xl font-black text-white tracking-tight">Tennis Precision Test</h1>
-          <p className="text-green-200 text-sm mt-1">
+          <p className="text-neutral-300 text-sm mt-1">
             {firstRun ? 'Primo accesso — configura le credenziali' : 'Accedi per continuare'}
           </p>
         </div>
@@ -143,7 +143,7 @@ export const LoginPage: React.FC<Props> = ({ onSuccess }) => {
 
         {/* First-run info */}
         {firstRun && isSecure && (
-          <div className="mb-4 bg-green-600 bg-opacity-50 text-green-100 text-xs px-4 py-3 rounded-2xl border border-green-400">
+          <div className="mb-4 bg-brand-600 bg-opacity-50 text-neutral-200 text-xs px-4 py-3 rounded-2xl border border-brand-400">
             Inserisci le credenziali che vuoi usare su questo dispositivo. Se hai già un account su un altro dispositivo, usa le stesse credenziali.
           </div>
         )}
@@ -164,7 +164,7 @@ export const LoginPage: React.FC<Props> = ({ onSuccess }) => {
                 autoCorrect="off"
                 autoCapitalize="off"
                 spellCheck={false}
-                className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               />
             </div>
 
@@ -187,7 +187,7 @@ export const LoginPage: React.FC<Props> = ({ onSuccess }) => {
             <button
               type="submit"
               disabled={loading || !isSecure}
-              className="w-full bg-green-700 hover:bg-green-800 disabled:opacity-60 text-white font-bold py-3 rounded-xl transition-colors text-sm"
+              className="w-full bg-brand-700 hover:bg-brand-800 disabled:opacity-60 text-white font-bold py-3 rounded-xl transition-colors text-sm"
             >
               {loading ? '...' : 'Accedi'}
             </button>
@@ -195,7 +195,7 @@ export const LoginPage: React.FC<Props> = ({ onSuccess }) => {
         </div>
 
         {firstRun && isSecure && (
-          <p className="text-center text-green-300 text-xs mt-4">
+          <p className="text-center text-neutral-400 text-xs mt-4">
             I dati vengono sincronizzati nel cloud su tutti i dispositivi.
           </p>
         )}

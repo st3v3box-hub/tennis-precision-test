@@ -7,9 +7,9 @@ import { logout, getCredentials, ROLE_LABELS } from '../lib/auth';
 import type { UserRole } from '../lib/auth';
 
 const ROLE_BADGE: Record<UserRole, { label: string; cls: string }> = {
-  admin: { label: '🔑 Amministratore', cls: 'bg-red-500 text-white' },
-  coach: { label: '🎾 Maestro', cls: 'bg-green-400 text-white' },
-  viewer: { label: '👤 Visualizzatore', cls: 'bg-blue-400 text-white' },
+  admin: { label: '🔑 Amministratore', cls: 'bg-brand-600 text-white' },
+  coach: { label: '🎾 Maestro', cls: 'bg-white text-neutral-900' },
+  viewer: { label: '👤 Visualizzatore', cls: 'bg-neutral-700 text-white' },
 };
 
 interface Props {
@@ -48,19 +48,19 @@ export const HomePage: React.FC<Props> = ({ role, onLogout }) => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero */}
-      <div className="bg-gradient-to-br from-green-700 to-green-900 text-white px-6 pt-10 pb-8">
+      <div className="bg-gradient-to-br from-neutral-900 via-black to-black text-white px-6 pt-10 pb-8">
         <div className="max-w-2xl mx-auto flex items-center gap-5">
-          <img src="./logo.png" alt="GT Logo" className="h-20 w-auto drop-shadow-lg" />
+          <img src="./logo.png" alt="Gladiators Training" className="h-20 w-20 flex-shrink-0 drop-shadow-[0_0_18px_rgba(225,6,0,0.35)]" />
           <div className="flex-1 min-w-0">
             <h1 className="text-2xl font-black tracking-tight">Tennis Precision Test</h1>
-            <p className="text-green-200 text-sm mt-1">Profilo tecnico · Analisi precisione</p>
+            <p className="text-neutral-300 text-sm mt-1">Profilo tecnico · Analisi precisione</p>
             <span className={`inline-block mt-2 text-xs font-semibold px-2 py-0.5 rounded-full ${badge.cls}`}>
               {badge.label}
             </span>
           </div>
           <button
             onClick={handleLogout}
-            className="flex-shrink-0 text-green-200 hover:text-white text-xs font-medium flex flex-col items-center gap-0.5 transition-colors"
+            className="flex-shrink-0 text-neutral-300 hover:text-white text-xs font-medium flex flex-col items-center gap-0.5 transition-colors"
             title="Esci"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -132,7 +132,7 @@ export const HomePage: React.FC<Props> = ({ role, onLogout }) => {
           <div>
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-sm font-bold text-gray-600 uppercase tracking-wide">Recenti</h2>
-              <button onClick={() => setView('history')} className="text-xs text-green-600 font-medium">
+              <button onClick={() => setView('history')} className="text-xs text-brand-600 font-medium">
                 Vedi tutti →
               </button>
             </div>
@@ -141,7 +141,7 @@ export const HomePage: React.FC<Props> = ({ role, onLogout }) => {
                 <button
                   key={s.id}
                   onClick={() => navigate(`/results/${s.id}`)}
-                  className="w-full bg-white rounded-xl border border-gray-200 p-4 text-left hover:border-green-300 hover:shadow-sm transition-all"
+                  className="w-full bg-white rounded-xl border border-gray-200 p-4 text-left hover:border-brand-300 hover:shadow-sm transition-all"
                 >
                   <div className="flex items-center justify-between">
                     <div>

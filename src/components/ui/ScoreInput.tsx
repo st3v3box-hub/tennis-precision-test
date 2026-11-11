@@ -12,7 +12,7 @@ const scoreColor = (v: number, selected: boolean): string => {
   if (selected) {
     if (v <= 3) return 'bg-red-500 border-red-500 text-white shadow-lg';
     if (v <= 6) return 'bg-yellow-500 border-yellow-500 text-white shadow-lg';
-    return 'bg-green-500 border-green-500 text-white shadow-lg';
+    return 'bg-brand-500 border-brand-500 text-white shadow-lg';
   }
   return 'bg-white border-gray-300 text-gray-700 hover:border-gray-400 active:bg-gray-100';
 };

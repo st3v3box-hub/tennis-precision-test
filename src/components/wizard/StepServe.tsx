@@ -102,7 +102,7 @@ export const StepServe: React.FC<Props> = ({ state, setSeriesResult, onNext, onP
 
         <div className="flex justify-between text-sm mb-4">
           <span className="text-gray-500">Completate</span>
-          <span className={`font-bold ${activeDone === SERVE_SERIES.length ? 'text-green-600' : 'text-gray-700'}`}>
+          <span className={`font-bold ${activeDone === SERVE_SERIES.length ? 'text-ok-600' : 'text-gray-700'}`}>
             {activeDone} / {SERVE_SERIES.length}
           </span>
         </div>
@@ -120,7 +120,7 @@ export const StepServe: React.FC<Props> = ({ state, setSeriesResult, onNext, onP
               <div
                 key={spec.seriesIndex}
                 className={`rounded-xl border-2 p-4
-                  ${isComplete ? 'border-green-300 bg-green-50' : 'border-gray-200 bg-white'}
+                  ${isComplete ? 'border-ok-300 bg-ok-50' : 'border-gray-200 bg-white'}
                 `}
               >
                 <div className="flex items-center justify-between mb-3">
@@ -137,7 +137,7 @@ export const StepServe: React.FC<Props> = ({ state, setSeriesResult, onNext, onP
                   {score !== null && strip && (
                     <div className="text-right">
                       <span className={`text-xl font-black
-                        ${score >= 8 ? 'text-green-600' : score >= 5 ? 'text-yellow-600' : 'text-red-500'}
+                        ${score >= 8 ? 'text-ok-600' : score >= 5 ? 'text-yellow-600' : 'text-red-500'}
                       `}>{score}</span>
                       <p className="text-xs text-gray-500 mt-0.5">Striscia: <strong>{strip}</strong></p>
                     </div>
@@ -182,7 +182,7 @@ export const StepServe: React.FC<Props> = ({ state, setSeriesResult, onNext, onP
       </Card>
 
       {hasReachedThreshold && !activeAllFilled && (
-        <div className="p-3 bg-green-50 border border-green-300 rounded-xl text-sm text-green-800">
+        <div className="p-3 bg-ok-50 border border-ok-300 rounded-xl text-sm text-ok-800">
           🎯 <strong>{activePerfect} serie perfette</strong> — soglia raggiunta ({PASS_THRESHOLD}/{SERVE_SERIES.length}). Puoi avanzare al passo successivo.
         </div>
       )}

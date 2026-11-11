@@ -67,7 +67,7 @@ export const PlayerDetailPage: React.FC = () => {
     () =>
       sessions.map(s => ({
         session: s,
-        result: computeSessionResults(s, settings.stdDevMode, settings.precisionTimeStrategy),
+        result: computeSessionResults(s, settings),
       })),
     [sessions, settings]
   );
@@ -88,7 +88,7 @@ export const PlayerDetailPage: React.FC = () => {
         <div className="text-center text-gray-400">
           <div className="text-4xl mb-2">👤</div>
           <p>Giocatore non trovato</p>
-          <button onClick={() => navigate('/players')} className="text-green-600 text-sm mt-2 underline">
+          <button onClick={() => navigate('/players')} className="text-brand-600 text-sm mt-2 underline">
             Torna all'anagrafica
           </button>
         </div>
@@ -114,7 +114,7 @@ export const PlayerDetailPage: React.FC = () => {
         {canEdit && (
           <button
             onClick={() => navigate(`/players/${profile.id}/edit`)}
-            className="text-xs text-gray-500 hover:text-green-600 font-medium px-3 py-1.5 border border-gray-200 rounded-lg"
+            className="text-xs text-gray-500 hover:text-brand-600 font-medium px-3 py-1.5 border border-gray-200 rounded-lg"
           >
             Modifica
           </button>
@@ -195,14 +195,14 @@ export const PlayerDetailPage: React.FC = () => {
                   formatter={(value: number) => [`${value}%`, '% Ideale']}
                   labelFormatter={(label: string) => `Data: ${label}`}
                 />
-                <ReferenceLine y={50} stroke="#d1fae5" strokeDasharray="4 4" />
-                <ReferenceLine y={80} stroke="#6ee7b7" strokeDasharray="4 4" />
+                <ReferenceLine y={50} stroke="#d4d4d4" strokeDasharray="4 4" />
+                <ReferenceLine y={80} stroke="#a3a3a3" strokeDasharray="4 4" />
                 <Line
                   type="monotone"
                   dataKey="pct"
-                  stroke="#16a34a"
+                  stroke="#e10600"
                   strokeWidth={2}
-                  dot={{ fill: '#16a34a', r: 4 }}
+                  dot={{ fill: '#e10600', r: 4 }}
                   activeDot={{ r: 6 }}
                 />
               </LineChart>
@@ -232,7 +232,7 @@ export const PlayerDetailPage: React.FC = () => {
                       },
                     },
                   })}
-                  className="py-2.5 rounded-xl border-2 border-green-300 bg-green-50 text-xs font-bold text-green-700 hover:bg-green-100 hover:border-green-500 transition-all"
+                  className="py-2.5 rounded-xl border-2 border-brand-300 bg-brand-50 text-xs font-bold text-brand-700 hover:bg-brand-100 hover:border-brand-500 transition-all"
                 >
                   {labels[cat]}
                 </button>
@@ -267,7 +267,7 @@ export const PlayerDetailPage: React.FC = () => {
                 </div>
                 <button
                   onClick={() => navigate('/new', { state: { resumeSession: session } })}
-                  className="flex-shrink-0 text-xs font-bold text-green-700 border border-green-300 rounded-lg px-3 py-1.5 hover:bg-green-50 transition-colors"
+                  className="flex-shrink-0 text-xs font-bold text-brand-700 border border-brand-300 rounded-lg px-3 py-1.5 hover:bg-brand-50 transition-colors"
                 >
                   Continua
                 </button>
@@ -295,7 +295,7 @@ export const PlayerDetailPage: React.FC = () => {
                 <button
                   key={session.id}
                   onClick={() => navigate(`/results/${session.id}`)}
-                  className="w-full bg-white rounded-xl border border-gray-200 p-4 text-left hover:border-green-300 hover:shadow-sm transition-all"
+                  className="w-full bg-white rounded-xl border border-gray-200 p-4 text-left hover:border-brand-300 hover:shadow-sm transition-all"
                 >
                   <div className="flex items-center justify-between">
                     <div>

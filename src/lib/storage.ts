@@ -5,6 +5,7 @@ const KEY = 'tpt_v1';
 const DEFAULT_SETTINGS: AppSettings = {
   stdDevMode: 'sample',
   precisionTimeStrategy: 'A',
+  scoreScale: 'radar',
 };
 
 export function loadState(): AppState {

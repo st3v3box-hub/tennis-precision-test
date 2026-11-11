@@ -18,7 +18,7 @@ const MEDAL = ['🥇', '🥈', '🥉'];
 
 const categoryColor: Record<Category, string> = {
   u10_u12: 'bg-blue-100 text-blue-700',
-  terza: 'bg-green-100 text-green-700',
+  terza: 'bg-ok-100 text-ok-700',
   seconda: 'bg-yellow-100 text-yellow-700',
   prima: 'bg-red-100 text-red-700',
 };
@@ -40,7 +40,7 @@ export const RankingPage: React.FC = () => {
       .filter(s => s.completed)
       .map(s => ({
         session: s,
-        pct: computeSessionResults(s, settings.stdDevMode, settings.precisionTimeStrategy).percentOfIdeal,
+        pct: computeSessionResults(s, settings).percentOfIdeal,
       }))
       .sort((a, b) => b.pct - a.pct),
     [sessions, settings]
@@ -85,7 +85,7 @@ export const RankingPage: React.FC = () => {
           <button
             key={session.id}
             onClick={() => navigate(`/results/${session.id}`)}
-            className="w-full bg-white rounded-xl border border-gray-200 p-4 text-left hover:border-green-300 hover:shadow-sm transition-all"
+            className="w-full bg-white rounded-xl border border-gray-200 p-4 text-left hover:border-brand-300 hover:shadow-sm transition-all"
           >
             <div className="flex items-center gap-3">
               <div className="flex-shrink-0 w-8 text-center">
@@ -103,7 +103,7 @@ export const RankingPage: React.FC = () => {
                 </p>
               </div>
               <div className="flex-shrink-0 text-right">
-                <div className={`text-xl font-black ${pct >= 80 ? 'text-green-600' : pct >= 60 ? 'text-yellow-600' : 'text-red-500'}`}>
+                <div className={`text-xl font-black ${pct >= 80 ? 'text-ok-600' : pct >= 60 ? 'text-yellow-600' : 'text-red-500'}`}>
                   {pct.toFixed(1)}%
                 </div>
                 <div className="text-xs text-gray-400">% ideale</div>
@@ -140,7 +140,7 @@ export const RankingPage: React.FC = () => {
                   <span className="inline-block bg-blue-100 text-blue-700 text-xs px-1.5 py-0.5 rounded-full">U12</span>
                 </th>
                 <th className="text-center px-2 py-2 text-gray-600 font-semibold">
-                  <span className="inline-block bg-green-100 text-green-700 text-xs px-1.5 py-0.5 rounded-full">3ª</span>
+                  <span className="inline-block bg-ok-100 text-ok-700 text-xs px-1.5 py-0.5 rounded-full">3ª</span>
                 </th>
                 <th className="text-center px-2 py-2 text-gray-600 font-semibold">
                   <span className="inline-block bg-yellow-100 text-yellow-700 text-xs px-1.5 py-0.5 rounded-full">2ª</span>
@@ -168,7 +168,7 @@ export const RankingPage: React.FC = () => {
                       <td key={cat} className="px-2 py-3 text-center">
                         {row[cat] !== null ? (
                           <span className={`font-bold text-sm ${
-                            (row[cat] as number) === best && best > 0 ? 'text-green-600' : 'text-gray-700'
+                            (row[cat] as number) === best && best > 0 ? 'text-ok-700' : 'text-gray-700'
                           }`}>
                             {(row[cat] as number).toFixed(1)}%
                           </span>
@@ -205,7 +205,7 @@ export const RankingPage: React.FC = () => {
                     >
                       <div className="text-lg">{MEDAL[i]}</div>
                       <div className="text-xs font-bold text-gray-800 truncate">{session.playerName}</div>
-                      <div className="text-sm font-black text-green-700">{pct.toFixed(1)}%</div>
+                      <div className="text-sm font-black text-neutral-900">{pct.toFixed(1)}%</div>
                     </button>
                   ))}
                 </div>
@@ -233,7 +233,7 @@ export const RankingPage: React.FC = () => {
               onClick={() => setActiveTab(tab.id)}
               className={`flex-1 py-2 px-2 rounded-xl text-sm font-semibold transition-all
                 ${activeTab === tab.id
-                  ? 'bg-green-600 text-white shadow-sm'
+                  ? 'bg-brand-600 text-white shadow-sm'
                   : 'text-gray-600 hover:bg-gray-100'
                 }`}
             >

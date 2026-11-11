@@ -19,15 +19,15 @@ export const PlayerTabBar: React.FC<Props> = ({ players, activeIdx, completedFla
           onClick={() => onChange(i)}
           className={`flex items-center gap-1.5 py-2 px-3 rounded-xl border-2 text-sm font-semibold transition-all whitespace-nowrap
             ${activeIdx === i
-              ? 'bg-green-600 border-green-600 text-white'
-              : 'bg-white border-gray-300 text-gray-700 hover:border-green-400'
+              ? 'bg-brand-600 border-brand-600 text-white'
+              : 'bg-white border-gray-300 text-gray-700 hover:border-brand-400'
             }`}
         >
           <span className="truncate max-w-[80px]">{p.name || `G${i + 1}`}</span>
           {completedFlags[i] ? (
-            <span className={`text-xs ${activeIdx === i ? 'text-green-200' : 'text-green-600'}`}>✓</span>
+            <span className={`text-xs ${activeIdx === i ? 'text-brand-200' : 'text-brand-600'}`}>✓</span>
           ) : (
-            <span className={`w-2 h-2 rounded-full flex-shrink-0 ${activeIdx === i ? 'bg-green-300' : 'bg-gray-300'}`} />
+            <span className={`w-2 h-2 rounded-full flex-shrink-0 ${activeIdx === i ? 'bg-brand-300' : 'bg-gray-300'}`} />
           )}
         </button>
       ))}

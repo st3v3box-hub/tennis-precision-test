@@ -60,15 +60,6 @@ export function isStripAllowed(previousStrips: TargetStrip[], proposed: TargetSt
   return true;
 }
 
-/** Returns the strip that is forced (if any) given the history */
-export function getForcedStrip(previousStrips: TargetStrip[]): TargetStrip | null {
-  if (previousStrips.length < 2) return null;
-  const last = previousStrips[previousStrips.length - 1];
-  const secondLast = previousStrips[previousStrips.length - 2];
-  if (last === secondLast) return null; // forced to pick something different — no single forced value
-  return null;
-}
-
 // ─── Category targets (text descriptions + SVG mini-diagram) ─────────────────
 
 export interface CategoryTarget {

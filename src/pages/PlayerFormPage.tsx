@@ -90,7 +90,7 @@ export const PlayerFormPage: React.FC = () => {
         <div className="flex-1 flex items-center justify-center px-4">
           <div className="w-full max-w-sm space-y-5">
             <div className="text-center">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-3">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-brand-100 mb-3">
                 <span className="text-3xl">✓</span>
               </div>
               <h2 className="text-xl font-black text-gray-900">{fullName}</h2>
@@ -100,7 +100,7 @@ export const PlayerFormPage: React.FC = () => {
             <div className="space-y-3">
               <button
                 onClick={() => navigate(`/players/${savedProfile.id}`)}
-                className="w-full bg-white border-2 border-gray-200 rounded-2xl px-5 py-4 text-left hover:border-green-400 hover:shadow-sm transition-all"
+                className="w-full bg-white border-2 border-gray-200 rounded-2xl px-5 py-4 text-left hover:border-brand-400 hover:shadow-sm transition-all"
               >
                 <div className="flex items-center gap-3">
                   <span className="text-2xl">👤</span>
@@ -122,20 +122,20 @@ export const PlayerFormPage: React.FC = () => {
                     },
                   },
                 })}
-                className="w-full bg-green-600 border-2 border-green-600 rounded-2xl px-5 py-4 text-left hover:bg-green-700 hover:border-green-700 transition-all"
+                className="w-full bg-brand-600 border-2 border-brand-600 rounded-2xl px-5 py-4 text-left hover:bg-brand-700 hover:border-brand-700 transition-all"
               >
                 <div className="flex items-center gap-3">
                   <span className="text-2xl">🎾</span>
                   <div>
                     <p className="font-bold text-white">Inizia Nuovo Test</p>
-                    <p className="text-xs text-green-200">Avvia subito un test per {savedProfile.firstName}</p>
+                    <p className="text-xs text-brand-200">Avvia subito un test per {savedProfile.firstName}</p>
                   </div>
                 </div>
               </button>
 
               <button
                 onClick={() => navigate('/players/new')}
-                className="w-full bg-white border-2 border-gray-200 rounded-2xl px-5 py-4 text-left hover:border-green-400 hover:shadow-sm transition-all"
+                className="w-full bg-white border-2 border-gray-200 rounded-2xl px-5 py-4 text-left hover:border-brand-400 hover:shadow-sm transition-all"
               >
                 <div className="flex items-center gap-3">
                   <span className="text-2xl">➕</span>
@@ -168,25 +168,25 @@ export const PlayerFormPage: React.FC = () => {
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Nome *</label>
                 <input type="text" value={firstName} onChange={e => setFirstName(e.target.value)}
-                  placeholder="Mario" className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+                  placeholder="Mario" className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Cognome *</label>
                 <input type="text" value={lastName} onChange={e => setLastName(e.target.value)}
-                  placeholder="Rossi" className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+                  placeholder="Rossi" className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
               </div>
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Data di Nascita *</label>
               <input type="date" value={dateOfBirth} onChange={e => setDateOfBirth(e.target.value)}
-                className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+                className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
             </div>
           </div>
         </Card>
 
         <button
           onClick={() => setShowOptional(s => !s)}
-          className="w-full flex items-center justify-between bg-white rounded-xl border border-gray-200 px-4 py-3 text-sm font-semibold text-gray-700 hover:border-green-400 transition-colors"
+          className="w-full flex items-center justify-between bg-white rounded-xl border border-gray-200 px-4 py-3 text-sm font-semibold text-gray-700 hover:border-brand-400 transition-colors"
         >
           <span>Profilo Completo <span className="text-gray-400 font-normal">(opzionale)</span></span>
           <span className="text-gray-400">{showOptional ? '▲' : '▼'}</span>
@@ -199,41 +199,41 @@ export const PlayerFormPage: React.FC = () => {
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Telefono</label>
                   <input type="tel" value={phone} onChange={e => setPhone(e.target.value)}
-                    placeholder="+39 333 000 0000" className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+                    placeholder="+39 333 000 0000" className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Email</label>
                   <input type="email" value={email} onChange={e => setEmail(e.target.value)}
-                    placeholder="mario@email.it" className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+                    placeholder="mario@email.it" className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
                 </div>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Nome Genitore</label>
                 <input type="text" value={parentName} onChange={e => setParentName(e.target.value)}
-                  placeholder="Per i giocatori minorenni" className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+                  placeholder="Per i giocatori minorenni" className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Club / Accademia</label>
                   <input type="text" value={club} onChange={e => setClub(e.target.value)}
-                    placeholder="TC Roma" className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+                    placeholder="TC Roma" className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Classifica FIT</label>
                   <input type="text" value={fitRanking} onChange={e => setFitRanking(e.target.value)}
-                    placeholder="Es. 3.1" className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+                    placeholder="Es. 3.1" className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
                 </div>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Coach di Riferimento</label>
                 <input type="text" value={coachName} onChange={e => setCoachName(e.target.value)}
-                  placeholder="Nome coach" className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+                  placeholder="Nome coach" className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Note generali</label>
                 <textarea value={notes} onChange={e => setNotes(e.target.value)}
                   placeholder="Osservazioni, caratteristiche del giocatore..." rows={3}
-                  className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none" />
+                  className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none" />
               </div>
             </div>
           </Card>
@@ -241,7 +241,7 @@ export const PlayerFormPage: React.FC = () => {
 
         <button
           onClick={() => setShowAssessment(s => !s)}
-          className="w-full flex items-center justify-between bg-white rounded-xl border border-gray-200 px-4 py-3 text-sm font-semibold text-gray-700 hover:border-green-400 transition-colors"
+          className="w-full flex items-center justify-between bg-white rounded-xl border border-gray-200 px-4 py-3 text-sm font-semibold text-gray-700 hover:border-brand-400 transition-colors"
         >
           <span>Scheda Valutazione Iniziale <span className="text-gray-400 font-normal">(opzionale)</span></span>
           <span className="text-gray-400">{showAssessment ? '▲' : '▼'}</span>
@@ -268,7 +268,7 @@ export const PlayerFormPage: React.FC = () => {
                   type="date"
                   value={assessment.assessmentDate ?? ''}
                   onChange={e => updateAssessment({ assessmentDate: e.target.value || undefined })}
-                  className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                 />
               </div>
               <div>
@@ -278,7 +278,7 @@ export const PlayerFormPage: React.FC = () => {
                   onChange={e => updateAssessment({ coachNotes: e.target.value || undefined })}
                   placeholder="Osservazioni tecniche, punti di forza, aree di miglioramento..."
                   rows={3}
-                  className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
+                  className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"
                 />
               </div>
             </div>

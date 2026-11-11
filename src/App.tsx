@@ -27,10 +27,10 @@ const AppRoutes: React.FC<Props> = ({ role, onLogout }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-700 to-green-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-neutral-900 via-black to-black flex items-center justify-center">
         <div className="text-center text-white">
-          <img src="./logo.png" alt="GT Logo" className="h-16 w-auto mx-auto mb-4 opacity-90" />
-          <p className="text-green-200 text-sm font-medium">Caricamento dati...</p>
+          <img src="./logo-wordmark.png" alt="Gladiators Training" className="w-64 max-w-[80vw] h-auto mx-auto mb-4" />
+          <p className="text-neutral-300 text-sm font-medium">Caricamento dati...</p>
         </div>
       </div>
     );

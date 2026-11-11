@@ -64,7 +64,7 @@ export const StepCombined: React.FC<Props> = ({ state, setSeriesResult, onNext, 
       </Card>
 
       {hasReachedThreshold && !activeAllFilled && (
-        <div className="p-3 bg-green-50 border border-green-300 rounded-xl text-sm text-green-800">
+        <div className="p-3 bg-ok-50 border border-ok-300 rounded-xl text-sm text-ok-800">
           🎯 <strong>{activePerfect} serie perfette</strong> — soglia raggiunta ({PASS_THRESHOLD}/{COMBINED_SERIES.length}). Puoi avanzare al passo successivo.
         </div>
       )}

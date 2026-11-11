@@ -39,7 +39,7 @@ const CategoryDiagram: React.FC<{ cat: Category }> = ({ cat }) => {
       <div className="grid grid-cols-3 gap-2 text-center text-xs">
         <div className="bg-white rounded-lg p-2 border border-gray-200">
           <div className="text-gray-500 mb-1">Groundstroke</div>
-          <div className="font-semibold text-green-700">{t.groundstroke}</div>
+          <div className="font-semibold text-brand-700">{t.groundstroke}</div>
         </div>
         <div className="bg-white rounded-lg p-2 border border-gray-200">
           <div className="text-gray-500 mb-1">Volley</div>
@@ -125,8 +125,8 @@ export const StepMeta: React.FC<Props> = ({ state, update, updatePlayer, setPlay
               onClick={() => setPlayerCount(n)}
               className={`py-3 rounded-xl border-2 text-xl font-bold transition-all
                 ${state.playerCount === n
-                  ? 'bg-green-600 border-green-600 text-white'
-                  : 'bg-white border-gray-300 text-gray-700 hover:border-green-400'
+                  ? 'bg-brand-600 border-brand-600 text-white'
+                  : 'bg-white border-gray-300 text-gray-700 hover:border-brand-400'
                 }`}
             >
               {n}
@@ -148,12 +148,12 @@ export const StepMeta: React.FC<Props> = ({ state, update, updatePlayer, setPlay
                 onClick={() => toggleModule(m)}
                 className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 text-sm font-semibold transition-all
                   ${selected
-                    ? 'bg-green-600 border-green-600 text-white'
-                    : 'bg-white border-gray-300 text-gray-700 hover:border-green-400'
+                    ? 'bg-brand-600 border-brand-600 text-white'
+                    : 'bg-white border-gray-300 text-gray-700 hover:border-brand-400'
                   }`}
               >
                 <span>{MODULE_LABELS[m]}</span>
-                <span className={`text-xs font-normal ${selected ? 'text-green-200' : 'text-gray-400'}`}>
+                <span className={`text-xs font-normal ${selected ? 'text-brand-200' : 'text-gray-400'}`}>
                   {MODULE_SERIES[m]} serie
                 </span>
               </button>
@@ -179,8 +179,8 @@ export const StepMeta: React.FC<Props> = ({ state, update, updatePlayer, setPlay
               onClick={() => update({ challengeMode: 'none' })}
               className={`py-3 rounded-xl border-2 text-sm font-semibold transition-all
                 ${state.challengeMode === 'none'
-                  ? 'bg-green-600 border-green-600 text-white'
-                  : 'bg-white border-gray-300 text-gray-700 hover:border-green-400'
+                  ? 'bg-brand-600 border-brand-600 text-white'
+                  : 'bg-white border-gray-300 text-gray-700 hover:border-brand-400'
                 }`}
             >
               Normale
@@ -248,9 +248,9 @@ export const StepMeta: React.FC<Props> = ({ state, update, updatePlayer, setPlay
 
             {/* Profile linked: show badge + delink */}
             {p.profileId ? (
-              <div className="flex items-center justify-between bg-green-50 rounded-xl px-3 py-2.5 border border-green-200">
+              <div className="flex items-center justify-between bg-brand-50 rounded-xl px-3 py-2.5 border border-brand-200">
                 <div>
-                  <p className="text-xs text-green-600 font-semibold mb-0.5">✓ Profilo collegato</p>
+                  <p className="text-xs text-ok-600 font-semibold mb-0.5">✓ Profilo collegato</p>
                   <p className="text-sm font-bold text-gray-900">{p.name}</p>
                   {p.dateOfBirth && (
                     <p className="text-xs text-gray-500 mt-0.5">{p.dateOfBirth}</p>
@@ -274,7 +274,7 @@ export const StepMeta: React.FC<Props> = ({ state, update, updatePlayer, setPlay
                   value={p.name}
                   onChange={e => updatePlayer(i, { name: e.target.value })}
                   placeholder="Es. Mario Rossi"
-                  className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                 />
 
                 {/* Profile picker toggle */}
@@ -285,7 +285,7 @@ export const StepMeta: React.FC<Props> = ({ state, update, updatePlayer, setPlay
                       setPickerOpenIdx(pickerOpenIdx === i ? null : i);
                       setPickerSearch('');
                     }}
-                    className="mt-1.5 text-xs text-green-600 hover:text-green-800 font-medium flex items-center gap-1"
+                    className="mt-1.5 text-xs text-brand-600 hover:text-brand-800 font-medium flex items-center gap-1"
                   >
                     🔗 Seleziona da anagrafica ({profiles.length})
                     <span className="text-gray-400">{pickerOpenIdx === i ? '▲' : '▼'}</span>
@@ -301,7 +301,7 @@ export const StepMeta: React.FC<Props> = ({ state, update, updatePlayer, setPlay
                         value={pickerSearch}
                         onChange={e => setPickerSearch(e.target.value)}
                         placeholder="Cerca per nome o club..."
-                        className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-green-500"
+                        className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-500"
                         autoFocus
                       />
                     </div>
@@ -314,7 +314,7 @@ export const StepMeta: React.FC<Props> = ({ state, update, updatePlayer, setPlay
                             key={profile.id}
                             type="button"
                             onClick={() => linkProfile(i, profile)}
-                            className="w-full text-left px-3 py-2.5 hover:bg-green-50 border-b border-gray-50 last:border-0 transition-colors"
+                            className="w-full text-left px-3 py-2.5 hover:bg-brand-50 border-b border-gray-50 last:border-0 transition-colors"
                           >
                             <p className="text-sm font-semibold text-gray-800">
                               {profile.lastName} {profile.firstName}
@@ -346,8 +346,8 @@ export const StepMeta: React.FC<Props> = ({ state, update, updatePlayer, setPlay
                     onClick={() => updatePlayer(i, { category: opt.value })}
                     className={`py-2 rounded-xl border-2 text-xs font-semibold transition-all
                       ${p.category === opt.value
-                        ? 'bg-green-600 border-green-600 text-white'
-                        : 'bg-white border-gray-300 text-gray-700 hover:border-green-400'
+                        ? 'bg-brand-600 border-brand-600 text-white'
+                        : 'bg-white border-gray-300 text-gray-700 hover:border-brand-400'
                       }`}
                   >
                     {opt.label}
@@ -365,7 +365,7 @@ export const StepMeta: React.FC<Props> = ({ state, update, updatePlayer, setPlay
                   type="date"
                   value={p.dateOfBirth ?? ''}
                   onChange={e => updatePlayer(i, { dateOfBirth: e.target.value || undefined })}
-                  className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                 />
               </div>
             )}
@@ -380,7 +380,7 @@ export const StepMeta: React.FC<Props> = ({ state, update, updatePlayer, setPlay
                 onChange={e => updatePlayer(i, { note: e.target.value || undefined })}
                 placeholder="Es. stato di forma, osservazioni tecniche..."
                 rows={2}
-                className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
+                className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"
               />
             </div>
           </div>
@@ -397,7 +397,7 @@ export const StepMeta: React.FC<Props> = ({ state, update, updatePlayer, setPlay
               value={state.coach}
               onChange={e => update({ coach: e.target.value })}
               placeholder="Es. Luigi Bianchi"
-              className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
           </div>
           <div>
@@ -406,7 +406,7 @@ export const StepMeta: React.FC<Props> = ({ state, update, updatePlayer, setPlay
               type="date"
               value={state.date}
               onChange={e => update({ date: e.target.value })}
-              className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
           </div>
         </div>

@@ -1,12 +1,12 @@
 import type { TestSession } from '../types';
-import { computeSessionResults } from './formulas';
+import { computeSessionResults, type ResultOptions } from './formulas';
 
 function csvRow(cells: (string | number)[]): string {
   return cells.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',');
 }
 
-export function exportSessionCSV(session: TestSession): string {
-  const r = computeSessionResults(session);
+export function exportSessionCSV(session: TestSession, options: ResultOptions = {}): string {
+  const r = computeSessionResults(session, options);
   const lines: string[] = [];
 
   lines.push(csvRow(['Tennis Precision Test — Sessione']));
@@ -46,7 +46,7 @@ export function exportSessionCSV(session: TestSession): string {
   return lines.join('\n');
 }
 
-export function exportHistoryCSV(sessions: TestSession[]): string {
+export function exportHistoryCSV(sessions: TestSession[], options: ResultOptions = {}): string {
   const lines: string[] = [];
   lines.push(
     csvRow([
@@ -74,7 +74,7 @@ export function exportHistoryCSV(sessions: TestSession[]): string {
   );
 
   for (const session of sessions) {
-    const r = computeSessionResults(session);
+    const r = computeSessionResults(session, options);
     const m = Object.fromEntries(r.stats.map(s => [s.stroke, s]));
     lines.push(
       csvRow([

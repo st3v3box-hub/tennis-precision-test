@@ -78,7 +78,7 @@ const PlayerSummary: React.FC<{ player: WizardPlayerData; label: string; selecte
               <tr key={i} className="border-b border-gray-100 last:border-0">
                 <td className="px-3 py-2 font-medium">{row.label}</td>
                 <td className="px-3 py-2 text-center">
-                  <span className={`font-bold ${row.done === row.total ? 'text-green-600' : 'text-red-500'}`}>
+                  <span className={`font-bold ${row.done === row.total ? 'text-ok-600' : 'text-red-500'}`}>
                     {row.done}/{row.total}
                   </span>
                 </td>
@@ -154,14 +154,14 @@ export const StepReview: React.FC<Props> = ({ state, onPrev, onSave, saving = fa
                     onClick={() => setActiveIdx(i)}
                     className={`flex items-center gap-1.5 py-2 px-3 rounded-xl border-2 text-sm font-semibold transition-all whitespace-nowrap
                       ${activeIdx === i
-                        ? 'bg-green-600 border-green-600 text-white'
-                        : 'bg-white border-gray-300 text-gray-700 hover:border-green-400'
+                        ? 'bg-brand-600 border-brand-600 text-white'
+                        : 'bg-white border-gray-300 text-gray-700 hover:border-brand-400'
                       }`}
                   >
                     {p.name || `G${i + 1}`}
                     {done
-                      ? <span className={`text-xs ${activeIdx === i ? 'text-green-200' : 'text-green-600'}`}>✓</span>
-                      : <span className={`w-2 h-2 rounded-full ${activeIdx === i ? 'bg-green-300' : 'bg-red-300'}`} />
+                      ? <span className={`text-xs ${activeIdx === i ? 'text-brand-200' : 'text-brand-600'}`}>✓</span>
+                      : <span className={`w-2 h-2 rounded-full ${activeIdx === i ? 'bg-brand-300' : 'bg-red-300'}`} />
                     }
                   </button>
                 );
@@ -192,7 +192,7 @@ export const StepReview: React.FC<Props> = ({ state, onPrev, onSave, saving = fa
             {savingDraft ? '⏳…' : 'Salva & Continua dopo'}
           </Button>
         )}
-        <Button className="flex-1 bg-green-700 hover:bg-green-800" onClick={onSave} disabled={saving || savingDraft}>
+        <Button className="flex-1 bg-brand-700 hover:bg-brand-800" onClick={onSave} disabled={saving || savingDraft}>
           {saving
             ? '⏳ Salvataggio…'
             : state.challengeMode !== 'none'

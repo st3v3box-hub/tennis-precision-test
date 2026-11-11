@@ -36,7 +36,7 @@ const PwdInput: React.FC<{ value: string; onChange: (v: string) => void; placeho
         autoFocus={autoFocus}
         autoCorrect="off"
         autoCapitalize="off"
-        className="w-full border border-gray-300 rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+        className="w-full border border-gray-300 rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
       />
       <button type="button" onClick={() => setShow(s => !s)} tabIndex={-1}
         className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
@@ -123,7 +123,7 @@ const MultiAccountCard: React.FC<{ role: ManagedRole }> = ({ role }) => {
 
         {/* Success banner */}
         {successMsg && (
-          <p className="text-xs bg-green-50 border border-green-200 text-green-700 px-3 py-2 rounded-xl">
+          <p className="text-xs bg-ok-50 border border-ok-200 text-ok-700 px-3 py-2 rounded-xl">
             ✓ {successMsg}
           </p>
         )}
@@ -137,12 +137,12 @@ const MultiAccountCard: React.FC<{ role: ManagedRole }> = ({ role }) => {
         {accounts.map(acc => (
           <div key={acc.id} className="space-y-2">
             <div className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border transition-colors
-              ${formOpen === acc.id ? 'border-green-300 bg-green-50' : 'border-gray-100 bg-gray-50'}`}>
+              ${formOpen === acc.id ? 'border-brand-300 bg-brand-50' : 'border-gray-100 bg-gray-50'}`}>
               <span className="text-sm font-medium text-gray-800 flex-1 truncate">{acc.username}</span>
               <button
                 type="button"
                 onClick={() => formOpen === acc.id ? closeForm() : openEdit(acc.id, acc.username)}
-                className="text-xs text-gray-500 hover:text-green-600 font-medium px-2 py-1 rounded transition-colors"
+                className="text-xs text-gray-500 hover:text-brand-600 font-medium px-2 py-1 rounded transition-colors"
               >
                 {formOpen === acc.id ? '×' : 'Modifica'}
               </button>
@@ -159,12 +159,12 @@ const MultiAccountCard: React.FC<{ role: ManagedRole }> = ({ role }) => {
 
             {/* Inline edit form */}
             {formOpen === acc.id && (
-              <form onSubmit={handleSave} className="pl-3 border-l-2 border-green-300 space-y-2 py-1">
+              <form onSubmit={handleSave} className="pl-3 border-l-2 border-brand-300 space-y-2 py-1">
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Username</label>
                   <input type="text" value={inputUser} onChange={e => setInputUser(e.target.value)}
                     autoCorrect="off" autoCapitalize="off"
-                    className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+                    className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">
@@ -180,7 +180,7 @@ const MultiAccountCard: React.FC<{ role: ManagedRole }> = ({ role }) => {
                 )}
                 {formErr && <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-xl px-3 py-1.5">{formErr}</p>}
                 <div className="flex gap-2">
-                  <button type="submit" className="flex-1 bg-green-700 text-white text-xs font-bold py-2 rounded-xl hover:bg-green-800 transition-colors">Salva</button>
+                  <button type="submit" className="flex-1 bg-brand-700 text-white text-xs font-bold py-2 rounded-xl hover:bg-brand-800 transition-colors">Salva</button>
                   <button type="button" onClick={closeForm} className="px-3 text-xs text-gray-500 py-2 rounded-xl border border-gray-200 hover:bg-gray-50">Ann.</button>
                 </div>
               </form>
@@ -190,14 +190,14 @@ const MultiAccountCard: React.FC<{ role: ManagedRole }> = ({ role }) => {
 
         {/* Add new form */}
         {formOpen === 'new' && (
-          <form onSubmit={handleSave} className="border border-green-200 rounded-xl p-3 bg-green-50 space-y-2">
-            <p className="text-xs font-bold text-green-700 mb-1">Nuovo account {roleLabel}</p>
+          <form onSubmit={handleSave} className="border border-brand-200 rounded-xl p-3 bg-brand-50 space-y-2">
+            <p className="text-xs font-bold text-brand-700 mb-1">Nuovo account {roleLabel}</p>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Username</label>
               <input type="text" value={inputUser} onChange={e => setInputUser(e.target.value)}
                 placeholder="Es. mario.rossi" autoFocus
                 autoCorrect="off" autoCapitalize="off"
-                className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+                className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Password</label>
@@ -209,7 +209,7 @@ const MultiAccountCard: React.FC<{ role: ManagedRole }> = ({ role }) => {
             </div>
             {formErr && <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-xl px-3 py-1.5">{formErr}</p>}
             <div className="flex gap-2">
-              <button type="submit" className="flex-1 bg-green-700 text-white text-xs font-bold py-2.5 rounded-xl hover:bg-green-800 transition-colors">Crea Account</button>
+              <button type="submit" className="flex-1 bg-brand-700 text-white text-xs font-bold py-2.5 rounded-xl hover:bg-brand-800 transition-colors">Crea Account</button>
               <button type="button" onClick={closeForm} className="px-3 text-xs text-gray-500 py-2.5 rounded-xl border border-gray-200 hover:bg-gray-50">Ann.</button>
             </div>
           </form>
@@ -218,7 +218,7 @@ const MultiAccountCard: React.FC<{ role: ManagedRole }> = ({ role }) => {
         {/* Add button */}
         {formOpen === null && (
           <button type="button" onClick={openAdd}
-            className="w-full py-2.5 rounded-xl border-2 border-dashed border-gray-200 text-sm text-gray-400 hover:border-green-400 hover:text-green-600 transition-colors font-medium">
+            className="w-full py-2.5 rounded-xl border-2 border-dashed border-gray-200 text-sm text-gray-400 hover:border-brand-400 hover:text-brand-600 transition-colors font-medium">
             + Aggiungi {roleLabel}
           </button>
         )}
@@ -268,7 +268,7 @@ export const SettingsPage: React.FC = () => {
       <div className="bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-10 shadow-sm flex items-center gap-3">
         <button onClick={() => navigate(-1)} className="text-gray-500 hover:text-gray-700 text-xl">←</button>
         <h1 className="text-lg font-bold">Impostazioni</h1>
-        {saved && <span className="ml-auto text-xs text-green-600 font-medium">Salvato ✓</span>}
+        {saved && <span className="ml-auto text-xs text-ok-600 font-medium">Salvato ✓</span>}
       </div>
 
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
@@ -296,7 +296,7 @@ export const SettingsPage: React.FC = () => {
               <label className="block text-xs font-medium text-gray-600 mb-1">Nuovo username</label>
               <input type="text" value={newUsername} onChange={e => setNewUsername(e.target.value)}
                 autoCorrect="off" autoCapitalize="off"
-                className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+                className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Nuova password</label>
@@ -307,12 +307,12 @@ export const SettingsPage: React.FC = () => {
               <PwdInput value={confirmPwd} onChange={setConfirmPwd} placeholder="Ripeti nuova password" />
             </div>
             {credMsg && (
-              <p className={`text-xs px-3 py-2 rounded-xl border ${credMsg.type === 'ok' ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
+              <p className={`text-xs px-3 py-2 rounded-xl border ${credMsg.type === 'ok' ? 'bg-ok-50 border-ok-200 text-ok-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
                 {credMsg.text}
               </p>
             )}
             <button type="submit"
-              className="w-full bg-green-700 hover:bg-green-800 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors">
+              className="w-full bg-brand-700 hover:bg-brand-800 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors">
               Aggiorna Credenziali
             </button>
           </form>
@@ -326,27 +326,46 @@ export const SettingsPage: React.FC = () => {
               <button key={mode} onClick={() => update({ stdDevMode: mode })}
                 className={`py-3 rounded-xl border-2 text-sm font-semibold transition-all
                   ${settings.stdDevMode === mode
-                    ? 'bg-green-600 border-green-600 text-white'
-                    : 'bg-white border-gray-300 text-gray-700 hover:border-green-400'}`}>
+                    ? 'bg-brand-600 border-brand-600 text-white'
+                    : 'bg-white border-gray-300 text-gray-700 hover:border-brand-400'}`}>
                 {mode === 'sample' ? 'Campionaria (n−1)' : 'Popolazione (n)'}
               </button>
             ))}
           </div>
         </Card>
 
-        <Card title="Strategia Precision–Time">
-          <p className="text-xs text-gray-500 mb-3">Modalità di calcolo del grafico Precision–Time (10 punti).</p>
+        <Card title="Scala del % Ideale">
+          <p className="text-xs text-gray-500 mb-3">Come si calcola il punteggio complessivo (e quindi stelle e classifica). Vale per tutti i test, anche parziali.</p>
           <div className="space-y-2">
             {([
-              { v: 'A', label: 'Strategia A', desc: 'Per ogni punto i: media(FH_i, BH_i, Combined_i) — 1:1 mapping' },
-              { v: 'B', label: 'Strategia B', desc: 'Per ogni punto i: media di coppia FH+FH / BH+BH + Combined_i' },
+              { v: 'radar', label: 'Area del radar', desc: 'Premia la completezza: tutti i colpi a 7/10 → 49%. Un colpo debole pesa di più.' },
+              { v: 'linear', label: 'Media lineare', desc: 'Più intuitiva: tutti i colpi a 7/10 → 70%.' },
+            ] as const).map(({ v, label, desc }) => (
+              <button key={v} onClick={() => update({ scoreScale: v })}
+                className={`w-full text-left py-3 px-4 rounded-xl border-2 transition-all
+                  ${settings.scoreScale === v
+                    ? 'bg-brand-50 border-brand-500'
+                    : 'bg-white border-gray-200 hover:border-brand-300'}`}>
+                <div className={`font-semibold text-sm ${settings.scoreScale === v ? 'text-brand-700' : 'text-gray-800'}`}>{label}</div>
+                <div className="text-xs text-gray-500 mt-0.5">{desc}</div>
+              </button>
+            ))}
+          </div>
+        </Card>
+
+        <Card title="Strategia Precision–Time">
+          <p className="text-xs text-gray-500 mb-3">Modalità di calcolo del grafico Precision–Time.</p>
+          <div className="space-y-2">
+            {([
+              { v: 'A', label: 'Strategia A', desc: '10 punti: ogni punto è la media di una serie FH, una BH e una Combined' },
+              { v: 'B', label: 'Strategia B', desc: '5 punti: ogni punto è la media di due serie consecutive di FH, BH e Combined (curva più regolare)' },
             ] as const).map(({ v, label, desc }) => (
               <button key={v} onClick={() => update({ precisionTimeStrategy: v })}
                 className={`w-full text-left py-3 px-4 rounded-xl border-2 transition-all
                   ${settings.precisionTimeStrategy === v
-                    ? 'bg-green-50 border-green-500'
-                    : 'bg-white border-gray-200 hover:border-green-300'}`}>
-                <div className={`font-semibold text-sm ${settings.precisionTimeStrategy === v ? 'text-green-700' : 'text-gray-800'}`}>{label}</div>
+                    ? 'bg-brand-50 border-brand-500'
+                    : 'bg-white border-gray-200 hover:border-brand-300'}`}>
+                <div className={`font-semibold text-sm ${settings.precisionTimeStrategy === v ? 'text-brand-700' : 'text-gray-800'}`}>{label}</div>
                 <div className="text-xs text-gray-500 mt-0.5">{desc}</div>
               </button>
             ))}
