@@ -28,6 +28,13 @@ const Root: React.FC = () => {
   );
 };
 
+// Offline app shell (production builds on HTTPS only; never in local dev)
+if (import.meta.env.PROD && 'serviceWorker' in navigator && window.isSecureContext) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(err => console.warn('Service worker not registered:', err));
+  });
+}
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <Root />

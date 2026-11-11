@@ -6,9 +6,12 @@ import { percentToStars, renderStars, STAR_LABELS } from '../lib/stars';
 import type { PlayerProfile } from '../types';
 import { Button } from '../components/ui/Button';
 import { can } from '../lib/auth';
+import { ClubFilter, useClubFilter } from '../components/ui/ClubFilter';
+import { playerObjective } from '../lib/objectives';
 
-function calcAge(dob: string, ref = new Date()): number {
+function calcAge(dob: string, ref = new Date()): number | null {
   const d = new Date(dob);
+  if (!dob || Number.isNaN(d.getTime())) return null;
   let age = ref.getFullYear() - d.getFullYear();
   if (ref.getMonth() < d.getMonth() || (ref.getMonth() === d.getMonth() && ref.getDate() < d.getDate())) age--;
   return age;
@@ -20,16 +23,18 @@ export const PlayersPage: React.FC = () => {
   const [search, setSearch] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const { players: profiles, sessions: allSessions, settings, deletePlayer } = useAppData();
+  const { club, clubs, setClub, matchesPlayer } = useClubFilter(profiles);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return profiles
+      .filter(p => matchesPlayer(p.id))
       .filter(p =>
         `${p.firstName} ${p.lastName}`.toLowerCase().includes(q) ||
         (p.club ?? '').toLowerCase().includes(q)
       )
       .sort((a, b) => `${a.lastName}${a.firstName}`.localeCompare(`${b.lastName}${b.firstName}`));
-  }, [profiles, search]);
+  }, [profiles, search, matchesPlayer]);
 
   const handleDelete = async (id: string) => {
     try {
@@ -68,6 +73,7 @@ export const PlayersPage: React.FC = () => {
           />
           {canEdit && <Button onClick={() => navigate('/players/new')} icon="+">Nuovo</Button>}
         </div>
+        <ClubFilter club={club} clubs={clubs} onChange={setClub} />
 
         {filtered.length === 0 && (
           <div className="text-center py-16 text-gray-400">
@@ -100,6 +106,12 @@ export const PlayersPage: React.FC = () => {
                         <h3 className="font-bold text-gray-900">
                           {p.lastName} {p.firstName}
                         </h3>
+                        {(() => {
+                          const o = playerObjective(allSessions.filter(s => s.playerId === p.id), settings);
+                          if (o.status === 'pronto') return <span className="text-xs text-ok-700 bg-ok-50 border border-ok-200 px-1.5 py-0.5 rounded-full font-medium">↑ Pronto a salire</span>;
+                          if (o.status === 'fermo') return <span className="text-xs text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-full font-medium">Fermo da 3 test</span>;
+                          return null;
+                        })()}
                         {p.autoCreated && (
                           <span className="text-xs text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-full font-medium">
                             ⚠ Da completare
@@ -107,7 +119,7 @@ export const PlayersPage: React.FC = () => {
                         )}
                       </div>
                       <p className="text-xs text-gray-500 mt-0.5">
-                        {age} anni · {p.dateOfBirth}
+                        {age !== null ? `${age} anni · ${p.dateOfBirth}` : 'Data di nascita mancante'}
                         {p.club && ` · ${p.club}`}
                         {p.coachName && ` · Coach: ${p.coachName}`}
                       </p>

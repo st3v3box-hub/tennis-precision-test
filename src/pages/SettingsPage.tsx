@@ -1,3 +1,7 @@
+import { ZONE_LABELS, DEPTH_LABELS } from '../lib/killer';
+import { CATEGORY_OPTIONS } from '../lib/protocol';
+import { targetPercent } from '../lib/objectives';
+import type { KillerZone, KillerDepth } from '../types';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { AppSettings } from '../types';
@@ -370,6 +374,68 @@ export const SettingsPage: React.FC = () => {
               </button>
             ))}
           </div>
+        </Card>
+
+        <Card title="Test Killer">
+          <p className="text-xs text-gray-500 mb-3">Valori proposti all'inizio di ogni test Killer (si possono cambiare test per test).</p>
+          <label className="block mb-3">
+            <span className="text-xs font-medium text-gray-600">Palle consecutive da completare</span>
+            <input type="number" inputMode="numeric" min={2} max={1000} defaultValue={settings.killerTarget}
+              key={`kt-${settings.killerTarget}`}
+              onBlur={e => {
+                const v = Math.round(Number(e.target.value));
+                if (Number.isFinite(v) && v >= 2 && v <= 1000 && v !== settings.killerTarget) update({ killerTarget: v });
+                else e.target.value = String(settings.killerTarget);
+              }}
+              className="mt-1 w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+          </label>
+          <div className="space-y-2">
+            {(Object.keys(ZONE_LABELS) as KillerZone[]).map(z => (
+              <button key={z} onClick={() => update({ killerZone: z })}
+                className={`w-full text-left py-2.5 px-4 rounded-xl border-2 text-sm transition-all ${settings.killerZone === z ? 'bg-brand-50 border-brand-500 font-semibold' : 'bg-white border-gray-200'}`}>
+                {ZONE_LABELS[z]}
+              </button>
+            ))}
+            {(Object.keys(DEPTH_LABELS) as KillerDepth[]).map(d => (
+              <button key={d} onClick={() => update({ killerDepth: d })}
+                className={`w-full text-left py-2.5 px-4 rounded-xl border-2 text-sm transition-all ${settings.killerDepth === d ? 'bg-brand-50 border-brand-500 font-semibold' : 'bg-white border-gray-200'}`}>
+                {DEPTH_LABELS[d]}
+              </button>
+            ))}
+          </div>
+        </Card>
+
+        <Card title="Obiettivi di categoria">
+          <p className="text-xs text-gray-500 mb-3">
+            Media dei colpi (su 10) da raggiungere in una categoria per essere pronto alla successiva.
+            In % viene convertita con la scala scelta sopra.
+          </p>
+          <div className="space-y-2">
+            {CATEGORY_OPTIONS.map(o => {
+              const v = settings.promotionTargets[o.value];
+              return (
+                <div key={o.value} className="flex items-center gap-3">
+                  <span className="w-20 text-sm font-semibold">{o.label}</span>
+                  <input type="number" step={0.1} min={1} max={10} defaultValue={v} key={`pt-${o.value}-${v}`}
+                    onBlur={e => {
+                      const n = Math.round(Number(e.target.value) * 10) / 10;
+                      if (Number.isFinite(n) && n >= 1 && n <= 10 && n !== v) {
+                        update({ promotionTargets: { ...settings.promotionTargets, [o.value]: n } });
+                      } else e.target.value = String(v);
+                    }}
+                    className="w-20 border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                  <span className="text-xs text-gray-500">= {targetPercent(v, settings.scoreScale).toFixed(0)}%</span>
+                </div>
+              );
+            })}
+          </div>
+          <label className="flex items-center gap-3 mt-4">
+            <span className="text-sm text-gray-700 flex-1">Test consecutivi sopra l'obiettivo richiesti</span>
+            <select value={settings.promotionConsecutive} onChange={e => update({ promotionConsecutive: Number(e.target.value) })}
+              className="border border-gray-300 rounded-xl px-3 py-2 text-sm bg-white">
+              {[1, 2, 3].map(n => <option key={n} value={n}>{n}</option>)}
+            </select>
+          </label>
         </Card>
 
         <Button variant="secondary" className="w-full justify-center" onClick={() => navigate('/')}>

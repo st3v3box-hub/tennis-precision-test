@@ -16,6 +16,11 @@ import { PlayerFormPage } from './pages/PlayerFormPage';
 import { PlayerDetailPage } from './pages/PlayerDetailPage';
 import { ChallengeResultsPage } from './pages/ChallengeResultsPage';
 import { ChallengePage } from './pages/ChallengePage';
+import { SyncIndicator } from './components/ui/SyncIndicator';
+import { KillerHomePage } from './pages/KillerHomePage';
+import { KillerTestPage } from './pages/KillerTestPage';
+import { KillerResultsPage } from './pages/KillerResultsPage';
+import { PlayerReportPage } from './pages/PlayerReportPage';
 
 interface Props {
   role: UserRole;
@@ -37,18 +42,23 @@ const AppRoutes: React.FC<Props> = ({ role, onLogout }) => {
   }
 
   return (
+    <>
+    <SyncIndicator />
     <Routes>
       <Route path="/" element={<HomePage role={role} onLogout={onLogout} />} />
       <Route path="/ranking" element={<RankingPage />} />
       <Route path="/instructions" element={<InstructionsPage />} />
       <Route path="/players" element={<PlayersPage />} />
       <Route path="/players/:id" element={<PlayerDetailPage />} />
+      <Route path="/players/:id/report" element={<PlayerReportPage />} />
       <Route path="/results/:id" element={<SessionResultsPage />} />
       <Route path="/multi-results" element={<MultiResultsPage />} />
+      <Route path="/killer" element={<KillerHomePage />} />
 
       {can('createTest') && (
         <>
           <Route path="/new" element={<NewSessionPage />} />
+          <Route path="/killer/new" element={<KillerTestPage />} />
           <Route path="/challenge" element={<ChallengePage />} />
           <Route path="/challenge-results" element={<ChallengeResultsPage />} />
           <Route path="/compare/:id1/:id2" element={<CompareSessionsPage />} />
@@ -64,8 +74,10 @@ const AppRoutes: React.FC<Props> = ({ role, onLogout }) => {
         <Route path="/settings" element={<SettingsPage />} />
       )}
 
+      <Route path="/killer/:id" element={<KillerResultsPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </>
   );
 };
 

@@ -75,6 +75,10 @@ async function loadAccounts(): Promise<Account[]> {
     return snap.docs.map(d => d.data() as Account);
   }
 
+  // Empty result from the offline cache says nothing about the server: don't migrate
+  // (a write would just sit in the queue and could duplicate accounts later).
+  if (snap.metadata.fromCache) return [];
+
   // Firestore empty — migrate from localStorage
   const local = loadLocalAccounts();
   if (local.length > 0) {

@@ -2,10 +2,15 @@ import type { AppState, Player, PlayerProfile, TestSession, AppSettings } from '
 
 const KEY = 'tpt_v1';
 
-const DEFAULT_SETTINGS: AppSettings = {
+export const DEFAULT_SETTINGS: AppSettings = {
   stdDevMode: 'sample',
   precisionTimeStrategy: 'A',
   scoreScale: 'radar',
+  killerTarget: 100,
+  killerZone: 'libera',
+  killerDepth: 'libera',
+  promotionTargets: { u10_u12: 7.5, terza: 8, seconda: 8, prima: 8.5 },
+  promotionConsecutive: 2,
 };
 
 export function loadState(): AppState {
@@ -17,11 +22,26 @@ export function loadState(): AppState {
       players: parsed.players ?? [],
       playerProfiles: parsed.playerProfiles ?? [],
       sessions: parsed.sessions ?? [],
-      settings: { ...DEFAULT_SETTINGS, ...parsed.settings },
+      settings: normalizeSettings(parsed.settings),
     };
   } catch {
     return { players: [], playerProfiles: [], sessions: [], settings: DEFAULT_SETTINGS };
   }
+}
+
+/** Fills in defaults for settings saved by older versions of the app (deep-merges nested objects). */
+export function normalizeSettings(raw: Partial<AppSettings> | undefined | null): AppSettings {
+  const s = raw ?? {};
+  const target = Number(s.killerTarget);
+  const consecutive = Number(s.promotionConsecutive);
+  return {
+    ...DEFAULT_SETTINGS,
+    ...s,
+    killerTarget: Number.isFinite(target) && target >= 1 ? Math.round(target) : DEFAULT_SETTINGS.killerTarget,
+    promotionConsecutive:
+      Number.isFinite(consecutive) && consecutive >= 1 ? Math.round(consecutive) : DEFAULT_SETTINGS.promotionConsecutive,
+    promotionTargets: { ...DEFAULT_SETTINGS.promotionTargets, ...(s.promotionTargets ?? {}) },
+  };
 }
 
 export function saveState(state: AppState): void {

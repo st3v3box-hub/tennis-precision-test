@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { HistoryList } from '../components/history/HistoryList';
+import { ClubFilter, useClubFilter } from '../components/ui/ClubFilter';
 import { useAppData } from '../contexts/AppDataContext';
 import { logout, getCredentials, ROLE_LABELS } from '../lib/auth';
 import type { UserRole } from '../lib/auth';
@@ -19,7 +20,7 @@ interface Props {
 
 export const HomePage: React.FC<Props> = ({ role, onLogout }) => {
   const navigate = useNavigate();
-  const { sessions, settings } = useAppData();
+  const { sessions, settings, players } = useAppData();
 
   const handleLogout = () => {
     logout();
@@ -27,6 +28,7 @@ export const HomePage: React.FC<Props> = ({ role, onLogout }) => {
   };
 
   const [view, setView] = useState<'home' | 'history'>('home');
+  const { club, clubs, setClub, matchesPlayer } = useClubFilter(players);
   const badge = ROLE_BADGE[role];
 
   if (view === 'history') {
@@ -36,8 +38,9 @@ export const HomePage: React.FC<Props> = ({ role, onLogout }) => {
           <button onClick={() => setView('home')} className="text-gray-500 hover:text-gray-700 text-xl">←</button>
           <h1 className="text-lg font-bold text-gray-900">Storico Sessioni</h1>
         </div>
-        <div className="max-w-2xl mx-auto px-4 py-6">
-          <HistoryList sessions={sessions} settings={settings} />
+        <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
+          <ClubFilter club={club} clubs={clubs} onChange={setClub} />
+          <HistoryList sessions={sessions.filter(s => matchesPlayer(s.playerId))} settings={settings} />
         </div>
       </div>
     );
@@ -94,6 +97,9 @@ export const HomePage: React.FC<Props> = ({ role, onLogout }) => {
               <Button variant="secondary" size="lg" className="w-full justify-center" onClick={() => navigate('/challenge')}>
                 ⚔️ Sfide
               </Button>
+              <Button variant="secondary" size="lg" className="w-full justify-center" onClick={() => navigate('/killer')}>
+                🎯 Killer
+              </Button>
               <Button variant="secondary" size="lg" className="w-full justify-center" onClick={() => navigate('/players')}>
                 👤 Giocatori
               </Button>
@@ -121,8 +127,11 @@ export const HomePage: React.FC<Props> = ({ role, onLogout }) => {
               <Button variant="secondary" size="lg" className="w-full justify-center" onClick={() => navigate('/players')}>
                 👤 Giocatori
               </Button>
-              <Button variant="secondary" size="lg" className="w-full justify-center col-span-2" onClick={() => setView('history')}>
-                📋 Storico Sessioni
+              <Button variant="secondary" size="lg" className="w-full justify-center" onClick={() => setView('history')}>
+                📋 Storico
+              </Button>
+              <Button variant="secondary" size="lg" className="w-full justify-center" onClick={() => navigate('/killer')}>
+                🎯 Killer
               </Button>
             </div>
           </>

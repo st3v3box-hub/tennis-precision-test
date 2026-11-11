@@ -126,6 +126,59 @@ export interface AppSettings {
   stdDevMode: StdDevMode;
   precisionTimeStrategy: PrecisionTimeStrategy;
   scoreScale: ScoreScale;
+  /** Killer: default number of consecutive balls to complete the test */
+  killerTarget: number;
+  /** Killer: default court restriction for each stroke */
+  killerZone: KillerZone;
+  /** Killer: default depth restriction */
+  killerDepth: KillerDepth;
+  /**
+   * Objectives: average score (0–10, on every tested stroke) needed in a category
+   * to be considered ready for the next one. Converted to % with the chosen scale.
+   */
+  promotionTargets: Record<Category, number>;
+  /** Objectives: how many consecutive tests at or above target are required */
+  promotionConsecutive: number;
+}
+
+// ─── Killer test ─────────────────────────────────────────────────────────────
+
+/** Where the ball must land, by stroke */
+export type KillerZone = 'libera' | 'pari_dispari';
+/** How deep the ball must land */
+export type KillerDepth = 'libera' | 'oltre_servizio';
+
+/**
+ * One run of the Killer test, from a (re)start until an error or the target.
+ * Ball order inside a run is fixed: 1 = forehand, 2 = backhand, 3 = forehand…
+ */
+export interface KillerAttempt {
+  /** Consecutive good balls in this run */
+  balls: number;
+  /** Stroke of the missed ball (ball number balls+1); null if the run did not end with an error */
+  errorStroke: 'fh' | 'bh' | null;
+  /** Active playing time of this run (clock stopped while picking up balls) */
+  playMs: number;
+  /** Time spent picking up balls after this run's error */
+  pickupMs: number;
+}
+
+export interface KillerSession {
+  id: string;
+  playerId: string;
+  playerName: string;
+  date: string;
+  category: Category;
+  coach: string;
+  /** Consecutive balls required to finish */
+  target: number;
+  zone: KillerZone;
+  depth: KillerDepth;
+  note?: string;
+  /** true when a run reached the target; false when the coach stopped the test early */
+  completed: boolean;
+  attempts: KillerAttempt[];
+  createdAt: string;
 }
 
 export interface AppState {

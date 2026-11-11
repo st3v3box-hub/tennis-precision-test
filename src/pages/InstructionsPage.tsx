@@ -388,6 +388,31 @@ export const InstructionsPage: React.FC = () => {
           </div>
         </div>
 
+        <div className="bg-black text-white rounded-2xl p-5 space-y-3">
+          <p className="text-xs font-bold uppercase tracking-widest text-brand-500">Test Killer</p>
+          <h2 className="text-lg font-black">Consistenza, pazienza, concentrazione</h2>
+          <p className="text-sm text-neutral-300 leading-relaxed">
+            Il maestro alimenta palle semplici, senza peso: una di dritto e una di rovescio. All'errore il test si interrompe,
+            il giocatore raccoglie le palle e si <strong className="text-white">riparte da zero</strong>. Il test finisce quando il
+            giocatore completa tutte le palle di fila (100 di default, modificabile nelle Impostazioni o test per test).
+            Si possono aggiungere vincoli: dritto nella metà del pari e rovescio in quella del dispari, oppure palle oltre la linea del servizio.
+          </p>
+          <div className="grid grid-cols-1 gap-2 text-sm">
+            <div className="bg-white/10 rounded-xl p-3">
+              <p className="font-bold">In campo</p>
+              <p className="text-neutral-300">Tocca lo schermo a ogni palla buona, oppure, all'errore, scrivi a che palla è successo. Dritto o rovescio si ricavano dal numero (dispari = dritto). Durante la raccolta il cronometro di gioco è fermo.</p>
+            </div>
+            <div className="bg-white/10 rounded-xl p-3">
+              <p className="font-bold">Indice Killer (0–100)</p>
+              <p className="text-neutral-300">Palle utili diviso palle giocate. 100 = nessun errore. Un errore alla palla 90 costa molto più di un errore alla palla 5: è il prezzo della concentrazione persa. Calcolato solo sui test completati.</p>
+            </div>
+            <div className="bg-white/10 rounded-xl p-3">
+              <p className="font-bold">Cosa misura</p>
+              <p className="text-neutral-300">Dove arrivano gli errori (partenza = tensione, seconda metà = calo di concentrazione, ultimo 10% = pressione), le ricadute subito dopo un errore, il lato che cede per primo, i tempi di gioco e di raccolta.</p>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   );

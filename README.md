@@ -27,6 +27,21 @@ Il deploy avviene in automatico su **GitHub Pages** a ogni push sul branch `main
 
 ---
 
+## Funzioni principali
+
+- **Test di precisione** a moduli (groundstrokes, combined, return, servizio, volley) con radar, % ideale, sfide e classifiche.
+- **Test Killer** (`/killer`): N palle consecutive alternate dritto/rovescio; all'errore si raccolgono le palle e si riparte da zero.
+  Schermata da campo con contatore, pulsante errore, cronometro di gioco che si ferma durante la raccolta, ripresa automatica
+  se il telefono si blocca. Indice Killer = palle utili / palle giocate × 100 (solo test completati) e tutte le metriche di
+  consistenza, concentrazione e tempi (`src/lib/killer.ts`).
+- **Obiettivi di categoria**: media colpi richiesta per passare alla categoria successiva (Impostazioni), test consecutivi
+  richiesti, avviso "fermo da 3 test" (`src/lib/objectives.ts`).
+- **Confronto con il gruppo**: ultimo test del giocatore contro l'ultimo test degli altri giocatori della stessa categoria (minimo 3).
+- **Scheda giocatore PDF** (`/players/:id/report`): pagina A4 stampabile con "Salva come PDF"; esclude telefono ed email.
+- **Filtro per circolo** su giocatori, classifiche, storico e Killer.
+- **Offline**: cache locale Firestore (IndexedDB) con scritture in coda e indicatore di sincronizzazione; app installabile
+  (manifest + `public/sw.js`, network-first per le pagine così un dispositivo online riceve sempre l'ultima versione).
+
 ## Setup rapido
 
 ```bash
@@ -69,7 +84,9 @@ src/
 └── pages/                  # HomePage, NewSessionPage, SessionResultsPage, CompareSessionsPage, SettingsPage
 tests/
 ├── formulas.test.ts        # Unit test formule + protocollo
-└── fixes.test.ts           # % ideale su test parziali, scala lineare, strategia B
+├── fixes.test.ts           # % ideale su test parziali, scala lineare, strategia B
+├── killer.test.ts          # metriche Killer e macchina a stati del test in campo
+└── objectives.test.ts      # obiettivi di categoria e confronto con il gruppo
 ```
 
 ---

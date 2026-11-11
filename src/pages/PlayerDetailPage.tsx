@@ -10,9 +10,14 @@ import { percentToStars, renderStars, STAR_LABELS } from '../lib/stars';
 import { StarPicker } from '../components/ui/StarPicker';
 import { Card } from '../components/ui/Card';
 import type { InitialAssessment } from '../types';
+import { playerObjective, compareWithGroup } from '../lib/objectives';
+import { ObjectiveCard } from '../components/player/ObjectiveCard';
+import { GroupComparisonCard } from '../components/player/GroupComparisonCard';
+import { KillerSummaryCard } from '../components/player/KillerSummaryCard';
 
-function calcAge(dob: string, ref = new Date()): number {
+function calcAge(dob: string, ref = new Date()): number | null {
   const d = new Date(dob);
+  if (!dob || Number.isNaN(d.getTime())) return null;
   let age = ref.getFullYear() - d.getFullYear();
   if (
     ref.getMonth() < d.getMonth() ||
@@ -43,7 +48,7 @@ export const PlayerDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const canEdit = can('editPlayers');
   const canTest = can('createTest');
-  const { getPlayer, sessions: allSessions, settings } = useAppData();
+  const { getPlayer, sessions: allSessions, killerSessions, settings } = useAppData();
 
   const profile = id ? getPlayer(id) : undefined;
 
@@ -82,6 +87,13 @@ export const PlayerDetailPage: React.FC = () => {
     [sessionResults]
   );
 
+  const playerKiller = useMemo(() => killerSessions.filter(k => k.playerId === id), [killerSessions, id]);
+  const objective = useMemo(() => playerObjective(sessions, settings), [sessions, settings]);
+  const comparison = useMemo(
+    () => (sessions.length ? compareWithGroup(sessions[sessions.length - 1], allSessions, settings) : null),
+    [sessions, allSessions, settings]
+  );
+
   if (!profile) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -111,6 +123,12 @@ export const PlayerDetailPage: React.FC = () => {
         <h1 className="text-lg font-bold text-gray-900 flex-1 truncate">
           {profile.lastName} {profile.firstName}
         </h1>
+        <button
+          onClick={() => navigate(`/players/${profile.id}/report`)}
+          className="text-xs text-white bg-brand-600 hover:bg-brand-700 font-semibold px-3 py-1.5 rounded-lg"
+        >
+          📄 Scheda
+        </button>
         {canEdit && (
           <button
             onClick={() => navigate(`/players/${profile.id}/edit`)}
@@ -130,7 +148,7 @@ export const PlayerDetailPage: React.FC = () => {
                 {profile.lastName} {profile.firstName}
               </h2>
               <p className="text-sm text-gray-500">
-                {age} anni · {profile.dateOfBirth}
+                {age !== null ? `${age} anni · ${profile.dateOfBirth}` : 'Data di nascita non inserita'}
               </p>
               {profile.club && <p className="text-sm text-gray-600">🏟 {profile.club}</p>}
               {profile.fitRanking && <p className="text-sm text-blue-600 font-medium">FIT: {profile.fitRanking}</p>}
@@ -156,6 +174,9 @@ export const PlayerDetailPage: React.FC = () => {
             </p>
           )}
         </Card>
+
+        <ObjectiveCard objective={objective} />
+        <GroupComparisonCard comparison={comparison} />
 
         {profile.initialAssessment && Object.keys(profile.initialAssessment).some(
           k => k !== 'coachNotes' && k !== 'assessmentDate' && profile.initialAssessment![k as keyof InitialAssessment] !== undefined
@@ -195,8 +216,10 @@ export const PlayerDetailPage: React.FC = () => {
                   formatter={(value: number) => [`${value}%`, '% Ideale']}
                   labelFormatter={(label: string) => `Data: ${label}`}
                 />
-                <ReferenceLine y={50} stroke="#d4d4d4" strokeDasharray="4 4" />
-                <ReferenceLine y={80} stroke="#a3a3a3" strokeDasharray="4 4" />
+                {objective.target > 0 && (
+                  <ReferenceLine y={objective.target} stroke="#16a34a" strokeDasharray="4 4"
+                    label={{ value: `obiettivo ${objective.target.toFixed(0)}%`, fontSize: 9, fill: '#16a34a', position: 'insideTopRight' }} />
+                )}
                 <Line
                   type="monotone"
                   dataKey="pct"
@@ -209,6 +232,9 @@ export const PlayerDetailPage: React.FC = () => {
             </ResponsiveContainer>
           </Card>
         )}
+
+        <KillerSummaryCard tests={playerKiller}
+          onNew={canTest ? () => navigate('/killer/new', { state: { profileId: profile.id } }) : undefined} />
 
         {canTest && <Card title="Avvia Test Rapido">
           <p className="text-xs text-gray-500 mb-3">

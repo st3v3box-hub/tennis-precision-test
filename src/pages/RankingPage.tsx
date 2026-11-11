@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import type { Category } from '../types';
 import { useAppData } from '../contexts/AppDataContext';
 import { computeSessionResults } from '../lib/formulas';
+import { ClubFilter, useClubFilter } from '../components/ui/ClubFilter';
 
 type Tab = Category | 'generale';
 
@@ -33,17 +34,18 @@ const categoryLabel: Record<Category, string> = {
 export const RankingPage: React.FC = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<Tab>('generale');
-  const { sessions, settings } = useAppData();
+  const { sessions, settings, players } = useAppData();
+  const { club, clubs, setClub, matchesPlayer } = useClubFilter(players);
 
   const ranked = useMemo(() =>
     sessions
-      .filter(s => s.completed)
+      .filter(s => s.completed && matchesPlayer(s.playerId))
       .map(s => ({
         session: s,
         pct: computeSessionResults(s, settings).percentOfIdeal,
       }))
       .sort((a, b) => b.pct - a.pct),
-    [sessions, settings]
+    [sessions, settings, matchesPlayer]
   );
 
   const byCategory = (cat: Category) =>
@@ -244,6 +246,7 @@ export const RankingPage: React.FC = () => {
       </div>
 
       <div className="max-w-2xl mx-auto px-4 py-5">
+        <ClubFilter club={club} clubs={clubs} onChange={setClub} className="mb-4" />
         {activeTab === 'u10_u12' && renderCategoryRows('u10_u12')}
         {activeTab === 'terza' && renderCategoryRows('terza')}
         {activeTab === 'seconda' && renderCategoryRows('seconda')}
