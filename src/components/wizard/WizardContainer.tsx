@@ -4,7 +4,9 @@ import type { WizardState, WizardPlayerData, Category, SeriesResult, TestSession
 import { uid } from '../../lib/storage';
 import { useAppData } from '../../contexts/AppDataContext';
 import { ProgressSteps } from '../ui/ProgressSteps';
-import { WIZARD_STEPS, MODULE_STEP_ORDER, detectedModules } from '../../lib/protocol';
+import { WIZARD_STEPS, MODULE_STEP_ORDER, DEFAULT_MODULES, detectedModules, detectedDirection } from '../../lib/protocol';
+import { resolveSessionZones } from '../../lib/zones';
+import { StepSingleStroke } from './StepSingleStroke';
 import { StepMeta } from './StepMeta';
 import { StepGroundstrokes } from './StepGroundstrokes';
 import { StepCombined } from './StepCombined';
@@ -13,7 +15,18 @@ import { StepServe } from './StepServe';
 import { StepVolley } from './StepVolley';
 import { StepReview } from './StepReview';
 
-const ALL_MODULES = MODULE_STEP_ORDER;
+const ALL_MODULES = DEFAULT_MODULES;
+
+const DEFAULT_DIRECTIONS: WizardState['strokeDirections'] = { forehand: 'cross', backhand: 'cross' };
+
+/** Directions used by an existing (draft) session */
+const directionsOf = (series: SeriesResult[]): WizardState['strokeDirections'] => ({
+  forehand: detectedDirection(series, 'forehand'),
+  backhand: detectedDirection(series, 'backhand'),
+});
+
+/** Custom zones of a saved session become the player's choice again on resume */
+const zonesOf = (s: TestSession): WizardPlayerData['zones'] => (s.zones && !s.zones.standard ? s.zones : undefined);
 
 const makePlayer = (): WizardPlayerData => ({
   id: uid(),
@@ -25,7 +38,7 @@ const makePlayer = (): WizardPlayerData => ({
 export const WizardContainer: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { lastCoach, saveLastCoach, upsertPlayer, upsertSession, sessions: allSessions } = useAppData();
+  const { lastCoach, saveLastCoach, upsertPlayer, upsertSession, sessions: allSessions, settings } = useAppData();
 
   // Quick-start payload from PlayerDetailPage
   const quickStart = (location.state as Record<string, unknown> | null)?.quickStart as {
@@ -67,6 +80,7 @@ export const WizardContainer: React.FC = () => {
         }],
         challengeMode: 'none',
         selectedModules: [...ALL_MODULES],
+        strokeDirections: { ...DEFAULT_DIRECTIONS },
       };
     }
 
@@ -80,6 +94,7 @@ export const WizardContainer: React.FC = () => {
         players: Array.from({ length: count }, () => makePlayer()),
         challengeMode: challengeSetup.challengeMode,
         selectedModules: [...ALL_MODULES],
+        strokeDirections: { ...DEFAULT_DIRECTIONS },
         challengeId: uid(),  // generate challenge ID at start
       };
     }
@@ -105,9 +120,11 @@ export const WizardContainer: React.FC = () => {
           category: resumeSession.category,
           note: resumeSession.note,
           series: [...resumeSession.series],
+          zones: zonesOf(resumeSession),
         }],
         challengeMode: 'none',
         selectedModules,
+        strokeDirections: directionsOf(resumeSession.series),
         draftSessionIds: [resumeSession.id],
       };
     }
@@ -133,6 +150,7 @@ export const WizardContainer: React.FC = () => {
         category: s.category,
         note: s.note,
         series: [...s.series],
+        zones: zonesOf(s),
       }));
 
       return {
@@ -143,6 +161,7 @@ export const WizardContainer: React.FC = () => {
         players,
         challengeMode: resumeChallenge.mode,
         selectedModules,
+        strokeDirections: directionsOf(challengeSessions[0]?.series ?? []),
         challengeId: resumeChallenge.challengeId,
         draftSessionIds: challengeSessions.map(s => s.id),
       };
@@ -156,6 +175,7 @@ export const WizardContainer: React.FC = () => {
       players: [makePlayer()],
       challengeMode: 'none',
       selectedModules: [...ALL_MODULES],
+      strokeDirections: { ...DEFAULT_DIRECTIONS },
     };
   });
 
@@ -229,10 +249,13 @@ export const WizardContainer: React.FC = () => {
     note: p.note,
     completed,
     createdAt: now,
-    series: p.series,
-    selectedModules: state.selectedModules.length < ALL_MODULES.length
-      ? [...state.selectedModules]
-      : undefined,
+    // Only the series of the selected modules (e.g. after switching groundstrokes → solo dritto)
+    series: p.series.filter(r => state.selectedModules.includes(r.testType)),
+    // Saved unless it is exactly the original full protocol (older sessions have no field)
+    selectedModules: sameModules(state.selectedModules, ALL_MODULES)
+      ? undefined
+      : MODULE_STEP_ORDER.filter(m => state.selectedModules.includes(m)), // canonical order
+    zones: resolveSessionZones(p.category, p.zones, settings.zoneDefaults),
     ...(state.challengeId ? { challengeId: state.challengeId } : {}),
   });
 
@@ -319,7 +342,7 @@ export const WizardContainer: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="sticky top-0 z-20 shadow-sm">
-        <div className="bg-black px-4 py-2 flex items-center gap-3">
+        <div className="bg-pitch px-4 py-2 flex items-center gap-3">
           <button onClick={() => navigate('/')} className="flex-shrink-0">
             <img src="./logo.png" alt="Gladiators Training — Home" className="h-8 w-8" />
           </button>
@@ -333,6 +356,8 @@ export const WizardContainer: React.FC = () => {
       <div className="max-w-2xl mx-auto px-4 py-6">
         {currentStepId === 'meta' && <StepMeta {...stepProps} />}
         {currentStepId === 'groundstrokes' && <StepGroundstrokes {...stepProps} />}
+        {currentStepId === 'forehand' && <StepSingleStroke key="fh" module="forehand" {...stepProps} />}
+        {currentStepId === 'backhand' && <StepSingleStroke key="bh" module="backhand" {...stepProps} />}
         {currentStepId === 'combined' && <StepCombined {...stepProps} />}
         {currentStepId === 'return' && <StepReturn {...stepProps} />}
         {currentStepId === 'serve' && <StepServe {...stepProps} />}
@@ -351,3 +376,7 @@ export const WizardContainer: React.FC = () => {
     </div>
   );
 };
+
+function sameModules(a: string[], b: string[]): boolean {
+  return a.length === b.length && b.every(m => a.includes(m));
+}

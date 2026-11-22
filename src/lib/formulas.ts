@@ -9,6 +9,7 @@ import type {
   ScoreScale,
   AppSettings,
 } from '../types';
+import { MODULE_PASS } from './protocol';
 
 // ─── Primitives ─────────────────────────────────────────────────────────────
 
@@ -90,30 +91,38 @@ export function computeStrokeStats(
 ): StrokeStats[] {
   const { series } = session;
 
-  const scores = (type: TestSession['series'][0]['testType'], dir?: string): number[] =>
+  type S = TestSession['series'][0];
+  const scores = (pred: (s: S) => boolean): number[] =>
     series
-      .filter(s => s.testType === type && (dir === undefined || s.direction === dir))
-      .sort((a, b) => a.seriesIndex - b.seriesIndex)
+      .filter(pred)
+      .sort((a, b) => a.testType.localeCompare(b.testType) || a.seriesIndex - b.seriesIndex)
       .map(s => s.score);
 
-  const make = (stroke: StrokeName, raw: number[]): StrokeStats => ({
+  // Perfect series needed for each stroke = half of the series foreseen by the protocol
+  // (not of the series actually played: a module can stop early once passed).
+  const make = (stroke: StrokeName, raw: number[], threshold: number): StrokeStats => ({
     stroke,
     label: STROKE_LABELS[stroke],
     scores: raw,
     ave: mean(raw),
     dev: stdDev(raw, mode),
     perfectCount: raw.filter(s => s === 10).length,
-    // Pass threshold: 50% of total series (e.g. 5/10, 3/6)
-    passThreshold: Math.floor(raw.length / 2),
+    passThreshold: threshold,
   });
 
+  // Forehand / backhand axis = average of every series of that stroke:
+  // alternating groundstrokes AND the single-stroke module (cross or down the line).
+  const has = (t: S['testType']) => series.some(s => s.testType === t);
+  const fhThreshold = has('forehand') ? MODULE_PASS.forehand : MODULE_PASS.groundstrokes / 2;
+  const bhThreshold = has('backhand') ? MODULE_PASS.backhand : MODULE_PASS.groundstrokes / 2;
+
   return [
-    make('serve', scores('serve')),
-    make('forehand', scores('groundstrokes', 'fh_cross')),
-    make('combined', scores('combined')),
-    make('return', scores('return')),
-    make('backhand', scores('groundstrokes', 'bh_cross')),
-    make('volley', scores('volley')),
+    make('serve', scores(s => s.testType === 'serve'), MODULE_PASS.serve),
+    make('forehand', scores(s => s.testType === 'forehand' || (s.testType === 'groundstrokes' && s.direction === 'fh_cross')), fhThreshold),
+    make('combined', scores(s => s.testType === 'combined'), MODULE_PASS.combined),
+    make('return', scores(s => s.testType === 'return'), MODULE_PASS.return),
+    make('backhand', scores(s => s.testType === 'backhand' || (s.testType === 'groundstrokes' && s.direction === 'bh_cross')), bhThreshold),
+    make('volley', scores(s => s.testType === 'volley'), MODULE_PASS.volley),
   ];
 }
 

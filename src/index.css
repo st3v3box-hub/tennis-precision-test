@@ -5,22 +5,39 @@
 @layer base {
   html {
     -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
   }
   body {
-    @apply bg-gray-50 text-gray-900 min-h-screen;
+    @apply bg-paper text-ink min-h-screen font-sans antialiased;
+    font-feature-settings: 'tnum' 1; /* aligned digits everywhere: scores, tables, clocks */
+  }
+  h1, h2, h3 {
+    @apply font-display tracking-tight;
+  }
+  :focus-visible {
+    @apply outline-none ring-2 ring-brand-500 ring-offset-2 ring-offset-paper;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
   }
 }
 
 @layer components {
   .score-btn {
-    @apply flex items-center justify-center rounded-xl font-bold text-lg transition-all duration-150
+    @apply flex items-center justify-center rounded-xl font-display font-bold text-xl transition-all duration-150
            border-2 select-none cursor-pointer active:scale-95;
     min-height: 3rem;
   }
   .score-btn.selected {
-    @apply bg-brand-600 border-brand-600 text-white shadow-lg scale-105;
+    @apply bg-brand-600 border-brand-600 text-white shadow-md scale-105;
   }
   .score-btn.unselected {
-    @apply bg-white border-gray-300 text-gray-700 hover:border-brand-500 hover:text-brand-700;
+    @apply bg-white border-gray-200 text-ink hover:border-brand-400 hover:text-brand-700;
+  }
+  /* Dark court surface with faint chalk lines, used by the hero areas */
+  .court-surface {
+    background-color: theme('colors.pitch.DEFAULT');
+    background-image:
+      linear-gradient(180deg, rgba(6, 42, 23, 0) 0%, rgba(6, 42, 23, 0.65) 100%);
   }
 }

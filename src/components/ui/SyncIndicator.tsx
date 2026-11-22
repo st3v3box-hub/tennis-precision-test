@@ -29,8 +29,8 @@ export const SyncIndicator: React.FC = () => {
     : `Sincronizzazione in corso (${sync.pending})…`;
 
   return (
-    <div role="status" className="fixed inset-x-3 bottom-3 z-50 mx-auto max-w-md rounded-full bg-neutral-900/95 text-white shadow-lg px-4 py-2 text-xs flex items-center gap-2">
-      <span className={`h-2 w-2 flex-shrink-0 rounded-full ${sync.online ? 'bg-amber-400 animate-pulse' : 'bg-brand-500'}`} />
+    <div role="status" className="fixed inset-x-3 bottom-3 z-50 mx-auto max-w-md rounded-full bg-pitch-deep/95 text-white shadow-lg px-4 py-2 text-xs flex items-center gap-2">
+      <span className={`h-2 w-2 flex-shrink-0 rounded-full ${sync.online ? 'bg-amber-400 animate-pulse' : 'bg-red-400'}`} />
       <span>{text}</span>
     </div>
   );

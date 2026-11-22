@@ -13,6 +13,8 @@ interface Props {
 const directionLabel: Record<string, string> = {
   fh_cross: '🎾 FH Incrociato',
   bh_cross: '🎾 BH Incrociato',
+  fh_line: '🎾 Dritto lungolinea',
+  bh_line: '🎾 Rovescio lungolinea',
   lungolinea: '➡️ Lungolinea',
   diagonale: '↗️ Diagonale',
   right: '→ Da Destra',

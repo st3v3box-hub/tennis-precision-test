@@ -1,3 +1,5 @@
+import { CourtLines } from '../components/brand/CourtLines';
+import { CATEGORY_TARGETS } from '../lib/protocol';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
@@ -8,9 +10,9 @@ import { logout, getCredentials, ROLE_LABELS } from '../lib/auth';
 import type { UserRole } from '../lib/auth';
 
 const ROLE_BADGE: Record<UserRole, { label: string; cls: string }> = {
-  admin: { label: '🔑 Amministratore', cls: 'bg-brand-600 text-white' },
-  coach: { label: '🎾 Maestro', cls: 'bg-white text-neutral-900' },
-  viewer: { label: '👤 Visualizzatore', cls: 'bg-neutral-700 text-white' },
+  admin: { label: 'Amministratore', cls: 'bg-white/10 text-chalk ring-1 ring-white/20' },
+  coach: { label: 'Maestro', cls: 'bg-white/10 text-chalk ring-1 ring-white/20' },
+  viewer: { label: 'Genitore / allievo', cls: 'bg-white/10 text-chalk ring-1 ring-white/20' },
 };
 
 interface Props {
@@ -49,28 +51,24 @@ export const HomePage: React.FC<Props> = ({ role, onLogout }) => {
   const recentSessions = [...sessions].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 3);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Hero */}
-      <div className="bg-gradient-to-br from-neutral-900 via-black to-black text-white px-6 pt-10 pb-8">
-        <div className="max-w-2xl mx-auto flex items-center gap-5">
-          <img src="./logo.png" alt="Gladiators Training" className="h-20 w-20 flex-shrink-0 drop-shadow-[0_0_18px_rgba(225,6,0,0.35)]" />
-          <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-black tracking-tight">Tennis Precision Test</h1>
-            <p className="text-neutral-300 text-sm mt-1">Profilo tecnico · Analisi precisione</p>
-            <span className={`inline-block mt-2 text-xs font-semibold px-2 py-0.5 rounded-full ${badge.cls}`}>
-              {badge.label}
-            </span>
+    <div className="min-h-screen bg-paper">
+      {/* Hero: court from above, emblem, title */}
+      <div className="court-surface relative overflow-hidden text-white">
+        <CourtLines className="absolute -right-24 -top-10 h-[150%] w-auto opacity-[0.13] rotate-[8deg] pointer-events-none" />
+        <div className="relative max-w-2xl mx-auto px-5 pt-8 pb-7">
+          <div className="flex items-start justify-between gap-4">
+            <img src="./logo.png" alt="Gladiators Training" className="h-[88px] w-[88px] drop-shadow-[0_10px_24px_rgba(0,0,0,0.45)]" />
+            <button
+              onClick={handleLogout}
+              className="text-chalk/80 hover:text-white text-xs font-medium flex items-center gap-1.5 rounded-full px-3 py-1.5 ring-1 ring-white/20"
+              title="Esci"
+            >
+              {getCredentials()?.username ?? ''} · Esci
+            </button>
           </div>
-          <button
-            onClick={handleLogout}
-            className="flex-shrink-0 text-neutral-300 hover:text-white text-xs font-medium flex flex-col items-center gap-0.5 transition-colors"
-            title="Esci"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-            </svg>
-            <span>{getCredentials()?.username ?? ''}</span>
-          </button>
+          <p className="mt-5 text-chalk/70 text-sm">Gladiators Training Academy</p>
+          <h1 className="font-display font-extrabold text-[2.4rem] leading-[0.95] mt-1">Tennis Precision Test</h1>
+          <span className={`inline-block mt-3 text-xs font-semibold px-2.5 py-1 rounded-full ${badge.cls}`}>{badge.label}</span>
         </div>
       </div>
 
@@ -78,38 +76,26 @@ export const HomePage: React.FC<Props> = ({ role, onLogout }) => {
 
         {(role === 'admin' || role === 'coach') && (
           <>
-            <Button
-              size="lg"
-              className="w-full text-base justify-center"
+            <button
               onClick={() => navigate('/new')}
-              icon="+"
+              className="w-full -mt-10 relative rounded-2xl bg-brand-600 hover:bg-brand-700 text-white px-5 py-4 text-left shadow-[0_12px_30px_-12px_rgba(11,58,33,0.7)] flex items-center justify-between gap-4"
             >
-              Nuovo Test
-            </Button>
+              <span>
+                <span className="block font-display font-extrabold text-2xl leading-none">Nuovo test</span>
+                <span className="block text-sm text-brand-100 mt-1">Precisione: groundstrokes, dritto, rovescio, volée, servizio…</span>
+              </span>
+              <span className="text-3xl leading-none" aria-hidden>+</span>
+            </button>
 
-            <div className="grid grid-cols-2 gap-3">
-              <Button variant="secondary" size="lg" className="w-full justify-center" onClick={() => setView('history')}>
-                📋 Storico
-              </Button>
-              <Button variant="secondary" size="lg" className="w-full justify-center" onClick={() => navigate('/ranking')}>
-                🏆 Classifiche
-              </Button>
-              <Button variant="secondary" size="lg" className="w-full justify-center" onClick={() => navigate('/challenge')}>
-                ⚔️ Sfide
-              </Button>
-              <Button variant="secondary" size="lg" className="w-full justify-center" onClick={() => navigate('/killer')}>
-                🎯 Killer
-              </Button>
-              <Button variant="secondary" size="lg" className="w-full justify-center" onClick={() => navigate('/players')}>
-                👤 Giocatori
-              </Button>
-              <Button variant="secondary" size="lg" className="w-full justify-center" onClick={() => navigate('/instructions')}>
-                📖 Istruzioni
-              </Button>
+            <div className="grid grid-cols-2 gap-2.5">
+              <HomeTile title="Killer" text="100 palle di fila" onClick={() => navigate('/killer')} />
+              <HomeTile title="Sfide" text="1 vs 1, 2 vs 2, tutti" onClick={() => navigate('/challenge')} />
+              <HomeTile title="Giocatori" text="Schede e progressi" onClick={() => navigate('/players')} />
+              <HomeTile title="Classifiche" text="Per categoria" onClick={() => navigate('/ranking')} />
+              <HomeTile title="Storico" text="Tutti i test" onClick={() => setView('history')} />
+              <HomeTile title="Istruzioni" text="Protocollo e zone" onClick={() => navigate('/instructions')} />
               {role === 'admin' && (
-                <Button variant="secondary" size="lg" className="w-full justify-center" onClick={() => navigate('/settings')}>
-                  ⚙️ Impostazioni
-                </Button>
+                <HomeTile title="Impostazioni" text="Zone, obiettivi, account" onClick={() => navigate('/settings')} wide />
               )}
             </div>
           </>
@@ -120,19 +106,11 @@ export const HomePage: React.FC<Props> = ({ role, onLogout }) => {
             <div className="bg-blue-50 border border-blue-200 rounded-2xl px-4 py-3 text-sm text-blue-700">
               Benvenuto, <strong>{getCredentials()?.username ?? ''}</strong>. Qui puoi visualizzare risultati e classifiche.
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <Button variant="secondary" size="lg" className="w-full justify-center" onClick={() => navigate('/ranking')}>
-                🏆 Classifiche
-              </Button>
-              <Button variant="secondary" size="lg" className="w-full justify-center" onClick={() => navigate('/players')}>
-                👤 Giocatori
-              </Button>
-              <Button variant="secondary" size="lg" className="w-full justify-center" onClick={() => setView('history')}>
-                📋 Storico
-              </Button>
-              <Button variant="secondary" size="lg" className="w-full justify-center" onClick={() => navigate('/killer')}>
-                🎯 Killer
-              </Button>
+            <div className="grid grid-cols-2 gap-2.5">
+              <HomeTile title="Classifiche" text="Per categoria" onClick={() => navigate('/ranking')} />
+              <HomeTile title="Giocatori" text="Schede e progressi" onClick={() => navigate('/players')} />
+              <HomeTile title="Storico" text="Tutti i test" onClick={() => setView('history')} />
+              <HomeTile title="Killer" text="Consistenza" onClick={() => navigate('/killer')} />
             </div>
           </>
         )}
@@ -140,9 +118,9 @@ export const HomePage: React.FC<Props> = ({ role, onLogout }) => {
         {recentSessions.length > 0 && (
           <div>
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-bold text-gray-600 uppercase tracking-wide">Recenti</h2>
-              <button onClick={() => setView('history')} className="text-xs text-brand-600 font-medium">
-                Vedi tutti →
+              <h2 className="font-display font-bold text-xl text-ink">Ultimi test</h2>
+              <button onClick={() => setView('history')} className="text-sm text-brand-700 font-semibold">
+                Vedi tutti
               </button>
             </div>
             <div className="space-y-2">
@@ -157,8 +135,8 @@ export const HomePage: React.FC<Props> = ({ role, onLogout }) => {
                       <span className="font-semibold text-gray-900">{s.playerName}</span>
                       <span className="text-gray-400 text-xs ml-2">{s.date}</span>
                     </div>
-                    <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-medium">
-                      {s.category}
+                    <span className="text-xs bg-chalk text-brand-800 px-2 py-0.5 rounded-full font-semibold">
+                      {CATEGORY_TARGETS[s.category].label}
                     </span>
                   </div>
                   <p className="text-xs text-gray-500 mt-1">Coach: {s.coach}</p>
@@ -170,9 +148,8 @@ export const HomePage: React.FC<Props> = ({ role, onLogout }) => {
 
         {recentSessions.length === 0 && (
           <div className="text-center py-10 text-gray-400">
-            <div className="text-4xl mb-2">📊</div>
             <p className="text-sm">
-              {role === 'viewer' ? 'Nessun test disponibile.' : 'Nessun test ancora. Inizia con "Nuovo Test"!'}
+              {role === 'viewer' ? 'Nessun test disponibile.' : 'Nessun test ancora: inizia da "Nuovo test".'}
             </p>
           </div>
         )}
@@ -180,3 +157,13 @@ export const HomePage: React.FC<Props> = ({ role, onLogout }) => {
     </div>
   );
 };
+
+const HomeTile: React.FC<{ title: string; text: string; onClick: () => void; wide?: boolean }> = ({ title, text, onClick, wide }) => (
+  <button
+    onClick={onClick}
+    className={`bg-white rounded-2xl border border-black/[0.06] px-4 py-3.5 text-left hover:border-brand-300 active:bg-chalk transition-colors ${wide ? 'col-span-2' : ''}`}
+  >
+    <span className="block font-display font-bold text-lg leading-tight text-ink">{title}</span>
+    <span className="block text-xs text-gray-500 mt-0.5">{text}</span>
+  </button>
+);

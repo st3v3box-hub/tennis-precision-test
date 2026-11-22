@@ -1,3 +1,4 @@
+import { CourtLines } from '../components/brand/CourtLines';
 import React, { useState, useEffect } from 'react';
 import { isFirstRun, login, setupAccount } from '../lib/auth';
 
@@ -123,13 +124,15 @@ export const LoginPage: React.FC<Props> = ({ onSuccess }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-neutral-900 via-black to-black flex flex-col items-center justify-center px-4">
-      <div className="w-full max-w-sm">
+    <div className="min-h-screen court-surface flex flex-col items-center justify-center px-4 relative overflow-hidden">
+      <CourtLines className="absolute inset-0 w-full h-full opacity-[0.12] pointer-events-none" />
+      <div className="w-full max-w-sm relative">
         {/* Logo + title */}
         <div className="flex flex-col items-center mb-8">
-          <img src="./logo-wordmark.png" alt="Gladiators Training — Tennis & Padel Academy" className="w-full max-w-xs h-auto mb-5" />
-          <h1 className="text-2xl font-black text-white tracking-tight">Tennis Precision Test</h1>
-          <p className="text-neutral-300 text-sm mt-1">
+          <img src="./logo.png" alt="Gladiators Training" className="w-32 h-32 mb-5 drop-shadow-[0_10px_30px_rgba(0,0,0,0.45)]" />
+          <p className="text-chalk/70 text-sm">Gladiators Training</p>
+          <h1 className="text-[2.1rem] leading-none font-display font-extrabold text-white mt-1">Tennis Precision Test</h1>
+          <p className="text-chalk/80 text-sm mt-1">
             {firstRun ? 'Primo accesso — configura le credenziali' : 'Accedi per continuare'}
           </p>
         </div>
@@ -143,7 +146,7 @@ export const LoginPage: React.FC<Props> = ({ onSuccess }) => {
 
         {/* First-run info */}
         {firstRun && isSecure && (
-          <div className="mb-4 bg-brand-600 bg-opacity-50 text-neutral-200 text-xs px-4 py-3 rounded-2xl border border-brand-400">
+          <div className="mb-4 bg-white/10 text-chalk text-xs px-4 py-3 rounded-2xl border border-brand-400">
             Inserisci le credenziali che vuoi usare su questo dispositivo. Se hai già un account su un altro dispositivo, usa le stesse credenziali.
           </div>
         )}
@@ -195,7 +198,7 @@ export const LoginPage: React.FC<Props> = ({ onSuccess }) => {
         </div>
 
         {firstRun && isSecure && (
-          <p className="text-center text-neutral-400 text-xs mt-4">
+          <p className="text-center text-chalk/60 text-xs mt-4">
             I dati vengono sincronizzati nel cloud su tutti i dispositivi.
           </p>
         )}

@@ -32,10 +32,10 @@ export const KillerSummaryCard: React.FC<{ tests: KillerSession[]; print?: boole
     <Card title="Killer" subtitle="Consistenza · pazienza · concentrazione" className={print ? 'break-inside-avoid' : ''}
       actions={!print && onNew ? <button onClick={onNew} className="text-xs font-bold text-brand-600">+ Nuovo</button> : undefined}>
       <div className="grid grid-cols-3 gap-2 text-center">
-        <button onClick={() => !print && navigate(`/killer/${last.k.id}`)} className="rounded-xl bg-black text-white py-2.5">
+        <button onClick={() => !print && navigate(`/killer/${last.k.id}`)} className="rounded-xl bg-pitch text-white py-2.5">
           <p className="text-[10px] uppercase tracking-wider text-neutral-400">Ultimo</p>
           <p className="text-2xl font-black">{last.s.index !== null ? Math.round(last.s.index) : '—'}</p>
-          <p className="text-[10px] text-brand-400 font-semibold">{last.s.rating}</p>
+          <p className="text-[10px] text-ball font-semibold">{last.s.rating}</p>
         </button>
         <div className="rounded-xl bg-gray-50 py-2.5">
           <p className="text-[10px] uppercase tracking-wider text-gray-500">Migliore</p>
@@ -56,7 +56,7 @@ export const KillerSummaryCard: React.FC<{ tests: KillerSession[]; print?: boole
               <XAxis dataKey="date" tick={{ fontSize: 9 }} tickLine={false} />
               <YAxis domain={[0, 100]} tick={{ fontSize: 9 }} tickLine={false} />
               {!print && <Tooltip formatter={(v: number) => [v, 'Indice Killer']} />}
-              <Line type="monotone" dataKey="index" stroke="#111111" strokeWidth={2} dot={{ r: 3, fill: '#e10600' }} isAnimationActive={!print} />
+              <Line type="monotone" dataKey="index" stroke="#0b3a21" strokeWidth={2} dot={{ r: 3, fill: '#17663e' }} isAnimationActive={!print} />
             </LineChart>
           </ResponsiveContainer>
         </div>

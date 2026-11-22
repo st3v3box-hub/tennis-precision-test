@@ -1,4 +1,5 @@
-import type { AppState, Player, PlayerProfile, TestSession, AppSettings } from '../types';
+import type { AppState, Player, PlayerProfile, TestSession, AppSettings, ZoneCategory, ZoneMeasures } from '../types';
+import { PROTOCOL_ZONES, ZONE_CATEGORIES, clampMeasures } from './zones';
 
 const KEY = 'tpt_v1';
 
@@ -11,6 +12,9 @@ export const DEFAULT_SETTINGS: AppSettings = {
   killerDepth: 'libera',
   promotionTargets: { u10_u12: 7.5, terza: 8, seconda: 8, prima: 8.5 },
   promotionConsecutive: 2,
+  zoneDefaults: PROTOCOL_ZONES,
+  zoneLog: [],
+  includeCustomZones: false,
 };
 
 export function loadState(): AppState {
@@ -41,7 +45,19 @@ export function normalizeSettings(raw: Partial<AppSettings> | undefined | null):
     promotionConsecutive:
       Number.isFinite(consecutive) && consecutive >= 1 ? Math.round(consecutive) : DEFAULT_SETTINGS.promotionConsecutive,
     promotionTargets: { ...DEFAULT_SETTINGS.promotionTargets, ...(s.promotionTargets ?? {}) },
+    zoneDefaults: normalizeZoneDefaults(s.zoneDefaults),
+    zoneLog: Array.isArray(s.zoneLog) ? s.zoneLog : [],
+    includeCustomZones: s.includeCustomZones === true,
   };
+}
+
+function normalizeZoneDefaults(raw: Partial<Record<ZoneCategory, Partial<ZoneMeasures>>> | undefined): Record<ZoneCategory, ZoneMeasures> {
+  const out = {} as Record<ZoneCategory, ZoneMeasures>;
+  for (const c of ZONE_CATEGORIES) {
+    const merged = { ...PROTOCOL_ZONES[c], ...(raw?.[c] ?? {}) } as ZoneMeasures;
+    out[c] = clampMeasures(merged, c);
+  }
+  return out;
 }
 
 export function saveState(state: AppState): void {

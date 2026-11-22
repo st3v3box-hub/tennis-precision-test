@@ -8,8 +8,7 @@ import {
   COMBINED_SERIES,
   RETURN_SERIES,
   SERVE_SERIES,
-  VOLLEY_SERIES,
-} from '../../lib/protocol';
+  VOLLEY_SERIES, singleStrokeSeries, modulePasses } from '../../lib/protocol';
 
 interface Props {
   state: WizardState;
@@ -44,6 +43,8 @@ function makeRows(player: WizardPlayerData, selectedModules: TestType[]): Summar
   const allRows: SummaryRow[] = [
     make('Groundstrokes FH', 'groundstrokes', GROUNDSTROKES_SERIES.filter(s => s.direction === 'fh_cross')),
     make('Groundstrokes BH', 'groundstrokes', GROUNDSTROKES_SERIES.filter(s => s.direction === 'bh_cross')),
+    make('Solo dritto', 'forehand', singleStrokeSeries('forehand', 'cross')),
+    make('Solo rovescio', 'backhand', singleStrokeSeries('backhand', 'cross')),
     make('Combined', 'combined', COMBINED_SERIES),
     make('Return', 'return', RETURN_SERIES),
     make('Servizio', 'serve', SERVE_SERIES),
@@ -59,7 +60,10 @@ const PlayerSummary: React.FC<{ player: WizardPlayerData; label: string; selecte
   selectedModules,
 }) => {
   const rows = makeRows(player, selectedModules);
-  const allDone = rows.every(r => r.done === r.total);
+  // A module can end early once passed (perfect-series threshold reached)
+  const passed = new Set(modulePasses(player.series).filter(m => m.passed).map(m => m.module));
+  const rowOk = (r: SummaryRow) => r.done === r.total || passed.has(r.testType);
+  const allDone = rows.every(rowOk);
 
   return (
     <div>
@@ -78,9 +82,10 @@ const PlayerSummary: React.FC<{ player: WizardPlayerData; label: string; selecte
               <tr key={i} className="border-b border-gray-100 last:border-0">
                 <td className="px-3 py-2 font-medium">{row.label}</td>
                 <td className="px-3 py-2 text-center">
-                  <span className={`font-bold ${row.done === row.total ? 'text-ok-600' : 'text-red-500'}`}>
+                  <span className={`font-bold ${rowOk(row) ? 'text-ok-600' : 'text-red-500'}`}>
                     {row.done}/{row.total}
                   </span>
+                  {passed.has(row.testType) && <span className="ml-1 text-[10px] font-semibold text-ok-700">superato</span>}
                 </td>
                 <td className="px-3 py-2 text-center font-bold text-gray-700">
                   {row.avg !== null ? row.avg.toFixed(1) : '—'}

@@ -1,3 +1,4 @@
+import { sessionPassed } from '../lib/protocol';
 import React, { useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { can } from '../lib/auth';
@@ -223,9 +224,9 @@ export const PlayerDetailPage: React.FC = () => {
                 <Line
                   type="monotone"
                   dataKey="pct"
-                  stroke="#e10600"
+                  stroke="#17663e"
                   strokeWidth={2}
-                  dot={{ fill: '#e10600', r: 4 }}
+                  dot={{ fill: '#17663e', r: 4 }}
                   activeDot={{ r: 6 }}
                 />
               </LineChart>
@@ -326,6 +327,12 @@ export const PlayerDetailPage: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <span className="font-semibold text-gray-800 text-sm">{session.date}</span>
+                      {session.zones && !session.zones.standard && (
+                        <span className="ml-1.5 text-[10px] font-semibold text-ball-ink bg-ball rounded-full px-1.5 py-0.5 align-middle">zone pers.</span>
+                      )}
+                      {!sessionPassed(session.series) && (
+                        <span className="ml-1.5 text-[10px] font-semibold text-amber-800 bg-amber-100 rounded-full px-1.5 py-0.5 align-middle">non superato</span>
+                      )}
                       <span className="ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
                         {CATEGORY_LABEL[session.category] ?? session.category}
                       </span>

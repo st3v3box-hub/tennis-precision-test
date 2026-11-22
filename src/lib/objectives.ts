@@ -1,6 +1,7 @@
 import type { AppSettings, Category, ScoreScale, StrokeName, TestSession } from '../types';
 import { computeSessionResults, type ResultOptions } from './formulas';
-import { CATEGORY_TARGETS } from './protocol';
+import { CATEGORY_TARGETS, sessionPassed } from './protocol';
+import { countsForRankings } from './zones';
 
 /** Progression order: each category's objective unlocks the next one. */
 export const CATEGORY_ORDER: Category[] = ['u10_u12', 'terza', 'seconda', 'prima'];
@@ -28,8 +29,10 @@ export interface PlayerObjective {
   best: number | null;
   /** Points still missing from the latest test to the objective (0 if reached) */
   gap: number;
-  /** Consecutive most recent tests at or above the objective */
+  /** Consecutive most recent tests at or above the objective AND passed */
   streak: number;
+  /** Most recent tests at or above the objective that were not passed (10 perfect series rule) */
+  notPassedAbove: number;
   required: number;
   testsInCategory: number;
   /** Short sentence for the UI and the parent report */
@@ -43,18 +46,20 @@ const byDate = (a: TestSession, b: TestSession) => (a.date + a.createdAt).locale
  * (the category of their most recent completed test).
  */
 export function playerObjective(sessions: TestSession[], settings: AppSettings): PlayerObjective {
-  const done = sessions.filter(s => s.completed).sort(byDate);
+  // Tests with custom zones are left out unless the setting says otherwise
+  const done = sessions.filter(s => s.completed && countsForRankings(s, settings)).sort(byDate);
   const opts: ResultOptions = settings;
   const required = Math.max(1, settings.promotionConsecutive);
   if (done.length === 0) {
     return {
       status: 'nessun_dato', category: null, next: null, target: 0, latest: null, best: null,
-      gap: 0, streak: 0, required, testsInCategory: 0, message: 'Nessun test completato.',
+      gap: 0, streak: 0, notPassedAbove: 0, required, testsInCategory: 0, message: 'Nessun test completato.',
     };
   }
   const category = done[done.length - 1].category;
   const inCat = done.filter(s => s.category === category);
   const pcts = inCat.map(s => computeSessionResults(s, opts).percentOfIdeal);
+  const passed = inCat.map(s => sessionPassed(s.series));
   const target = targetPercent(settings.promotionTargets[category], settings.scoreScale);
   const latest = pcts[pcts.length - 1];
   const best = Math.max(...pcts);
@@ -62,8 +67,11 @@ export function playerObjective(sessions: TestSession[], settings: AppSettings):
   // Tolerance: exactly reaching the objective must count (8.0 avg → 64% vs 64.00000000000001)
   const EPS = 1e-6;
   const reached = (v: number) => v >= target - EPS;
+  // "Ready to move up" needs tests that reach the objective AND are passed (perfect-series rule)
   let streak = 0;
-  for (let i = pcts.length - 1; i >= 0 && reached(pcts[i]); i--) streak++;
+  for (let i = pcts.length - 1; i >= 0 && reached(pcts[i]) && passed[i]; i--) streak++;
+  let notPassedAbove = 0;
+  for (let i = pcts.length - 1; i >= 0 && reached(pcts[i]); i--) if (!passed[i]) notPassedAbove++;
 
   const last3 = pcts.slice(-3);
   const stalled = last3.length === 3 && !reached(latest) && last3[2] - last3[0] <= 1;
@@ -81,13 +89,15 @@ export function playerObjective(sessions: TestSession[], settings: AppSettings):
       : `Obiettivo ${catLabel} raggiunto in ${streak} test di fila.`;
   } else if (status === 'fermo') {
     message = `Fermo da 3 test in ${catLabel}: mancano ${gap.toFixed(0)} punti all'obiettivo.`;
+  } else if (gap === 0 && !passed[passed.length - 1]) {
+    message = `Media da obiettivo ${catLabel}, ma l'ultimo test non è superato (servono le serie perfette): non conta per salire di categoria.`;
   } else if (gap === 0) {
     message = `Obiettivo ${catLabel} raggiunto nell'ultimo test (${streak}/${required} di fila richiesti).`;
   } else {
     message = `Mancano ${gap.toFixed(0)} punti all'obiettivo ${catLabel} (${target.toFixed(0)}%).`;
   }
 
-  return { status, category, next, target, latest, best, gap, streak, required, testsInCategory: inCat.length, message };
+  return { status, category, next, target, latest, best, gap, streak, notPassedAbove, required, testsInCategory: inCat.length, message };
 }
 
 // ─── Comparison with the group ───────────────────────────────────────────────
@@ -123,10 +133,15 @@ function percentileOf(value: number, others: number[]): number {
  * Compares a session with the latest completed session of every OTHER player in the
  * same category, stroke by stroke. Returns null when the group is too small.
  */
-export function compareWithGroup(session: TestSession, all: TestSession[], opts: ResultOptions = {}): GroupComparison | null {
+export function compareWithGroup(
+  session: TestSession,
+  all: TestSession[],
+  opts: ResultOptions & { includeCustomZones?: boolean } = {}
+): GroupComparison | null {
   const latestByPlayer = new Map<string, TestSession>();
   for (const s of all) {
     if (!s.completed || s.category !== session.category || s.playerId === session.playerId) continue;
+    if (!countsForRankings(s, { includeCustomZones: opts.includeCustomZones === true })) continue;
     const cur = latestByPlayer.get(s.playerId);
     if (!cur || byDate(cur, s) < 0) latestByPlayer.set(s.playerId, s);
   }

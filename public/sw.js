@@ -7,8 +7,8 @@
  * - Other same-origin files (logo, images, manifest): stale-while-revalidate.
  * - Firebase / Google requests are NOT touched: Firestore has its own offline cache.
  */
-const CACHE = 'gt-precision-v1';
-const SHELL = ['./', './index.html', './manifest.webmanifest', './logo.png', './logo-wordmark.png', './favicon.png'];
+const CACHE = 'gt-precision-v2';
+const SHELL = ['./', './index.html', './manifest.webmanifest', './logo.png', './favicon.png'];
 
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));

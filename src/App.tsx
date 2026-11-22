@@ -32,10 +32,10 @@ const AppRoutes: React.FC<Props> = ({ role, onLogout }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-neutral-900 via-black to-black flex items-center justify-center">
+      <div className="min-h-screen court-surface flex items-center justify-center">
         <div className="text-center text-white">
-          <img src="./logo-wordmark.png" alt="Gladiators Training" className="w-64 max-w-[80vw] h-auto mx-auto mb-4" />
-          <p className="text-neutral-300 text-sm font-medium">Caricamento dati...</p>
+          <img src="./logo.png" alt="Gladiators Training" className="w-28 h-28 mx-auto mb-4 animate-pulse" />
+          <p className="text-chalk/80 text-sm font-medium">Caricamento dati…</p>
         </div>
       </div>
     );

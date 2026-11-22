@@ -30,6 +30,15 @@ Il deploy avviene in automatico su **GitHub Pages** a ogni push sul branch `main
 ## Funzioni principali
 
 - **Test di precisione** a moduli (groundstrokes, combined, return, servizio, volley) con radar, % ideale, sfide e classifiche.
+- **Solo dritto / Solo rovescio**: moduli da 20 serie dello stesso colpo, direzione (incrociato o lungolinea) scelta per tutto
+  il test; non combinabili con il Groundstrokes alternato. Alimentano gli assi Forehand/Backhand del radar (media con le altre serie).
+- **Regola di superamento**: metà delle serie del protocollo perfette (10/10) — 10 su 20 per i colpi da fondo (nel Groundstrokes
+  alternato 10 in totale tra dritto e rovescio), 5 su 10, 3 su 6 per il servizio. Un test "non superato" conta nel radar ma non per
+  "pronto a salire di categoria" (`modulePasses`, `sessionPassed` in `src/lib/protocol.ts`).
+- **Zone bersaglio** (`src/lib/zones.ts`): misure del protocollo per categoria (colpi da fondo = distanze dalla linea centrale e dalla
+  linea del servizio; volée e servizio = larghezza strisce). Modificabili nelle Impostazioni con registro di chi/quando; nel test si
+  scelgono per giocatore (livello di un'altra categoria, cursore facile↔difficile, misure libere). Ogni test salva le zone usate;
+  quelli con zone personalizzate restano fuori da classifiche/obiettivi/confronto salvo interruttore in Impostazioni.
 - **Test Killer** (`/killer`): N palle consecutive alternate dritto/rovescio; all'errore si raccolgono le palle e si riparte da zero.
   Schermata da campo con contatore, pulsante errore, cronometro di gioco che si ferma durante la raccolta, ripresa automatica
   se il telefono si blocca. Indice Killer = palle utili / palle giocate × 100 (solo test completati) e tutte le metriche di

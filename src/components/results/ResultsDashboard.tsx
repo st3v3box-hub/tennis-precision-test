@@ -1,3 +1,5 @@
+import { SessionOutcome } from './SessionOutcome';
+import { MODULE_LABELS, CATEGORY_TARGETS } from '../../lib/protocol';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { TestSession, AppSettings, SessionResults } from '../../types';
@@ -28,12 +30,12 @@ export const ResultsDashboard: React.FC<Props> = ({ session, settings, compareSe
     : undefined;
 
   const fhScores = session.series
-    .filter(s => s.testType === 'groundstrokes' && s.direction === 'fh_cross')
+    .filter(s => s.testType === 'forehand' || (s.testType === 'groundstrokes' && s.direction === 'fh_cross'))
     .sort((a, b) => a.seriesIndex - b.seriesIndex)
     .map(s => s.score);
 
   const bhScores = session.series
-    .filter(s => s.testType === 'groundstrokes' && s.direction === 'bh_cross')
+    .filter(s => s.testType === 'backhand' || (s.testType === 'groundstrokes' && s.direction === 'bh_cross'))
     .sort((a, b) => a.seriesIndex - b.seriesIndex)
     .map(s => s.score);
 
@@ -57,7 +59,7 @@ export const ResultsDashboard: React.FC<Props> = ({ session, settings, compareSe
           <div>
             <h2 className="text-lg font-bold text-gray-900">{session.playerName}</h2>
             <p className="text-sm text-gray-500">
-              {session.date} · {session.category} · Coach: {session.coach}
+              {session.date} · {CATEGORY_TARGETS[session.category].label} · Coach: {session.coach}
               {session.dateOfBirth && (() => {
                 const dob = new Date(session.dateOfBirth);
                 const ref = new Date(session.date);
@@ -66,9 +68,9 @@ export const ResultsDashboard: React.FC<Props> = ({ session, settings, compareSe
                 return ` · ${age} anni`;
               })()}
             </p>
-            {session.selectedModules && session.selectedModules.length < 5 && (
-              <span className="inline-block mt-1.5 bg-blue-100 text-blue-700 text-xs font-semibold px-2.5 py-0.5 rounded-full">
-                Test Parziale ({session.selectedModules.length}/5 moduli)
+            {session.selectedModules && (
+              <span className="inline-block mt-1.5 bg-chalk text-brand-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">
+                Moduli: {session.selectedModules.map(m => MODULE_LABELS[m]).join(', ')}
               </span>
             )}
             {session.note && (
@@ -94,6 +96,8 @@ export const ResultsDashboard: React.FC<Props> = ({ session, settings, compareSe
           </div>
         </div>
       </div>
+
+      <SessionOutcome session={session} />
 
       {/* Tab bar */}
       <div className="flex overflow-x-auto bg-white rounded-2xl border border-gray-200 shadow-sm p-1 gap-1">

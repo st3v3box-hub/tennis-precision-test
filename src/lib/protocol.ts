@@ -1,4 +1,4 @@
-import type { Category, Direction, ServeType, TestType, TargetStrip, SeriesResult } from '../types';
+import type { Category, Direction, ServeType, StrokeDirection, TestType, TargetStrip, SeriesResult } from '../types';
 
 export interface SeriesSpec {
   testType: TestType;
@@ -15,6 +15,29 @@ export const GROUNDSTROKES_SERIES: SeriesSpec[] = Array.from({ length: 20 }, (_,
   direction: (i % 2 === 0 ? 'fh_cross' : 'bh_cross') as Direction,
   label: `Serie ${i + 1} — ${i % 2 === 0 ? 'FH Incrociato' : 'BH Incrociato'}`,
 }));
+
+/** Single-stroke modules: 20 series of the same stroke, direction chosen for the whole test */
+export function singleStrokeSeries(module: 'forehand' | 'backhand', dir: StrokeDirection): SeriesSpec[] {
+  const direction: Direction = module === 'forehand'
+    ? (dir === 'line' ? 'fh_line' : 'fh_cross')
+    : (dir === 'line' ? 'bh_line' : 'bh_cross');
+  const stroke = module === 'forehand' ? 'Dritto' : 'Rovescio';
+  const where = dir === 'line' ? 'lungolinea' : 'incrociato';
+  return Array.from({ length: 20 }, (_, i) => ({
+    testType: module,
+    seriesIndex: i,
+    direction,
+    label: `Serie ${i + 1} — ${stroke} ${where}`,
+  }));
+}
+
+export const DIRECTION_LABEL: Record<StrokeDirection, string> = { cross: 'Incrociato', line: 'Lungolinea' };
+
+/** Direction used by a single-stroke module in an existing series list (defaults to cross) */
+export function detectedDirection(series: SeriesResult[], module: 'forehand' | 'backhand'): StrokeDirection {
+  const d = series.find(s => s.testType === module)?.direction;
+  return d === 'fh_line' || d === 'bh_line' ? 'line' : 'cross';
+}
 
 export const COMBINED_SERIES: SeriesSpec[] = Array.from({ length: 10 }, (_, i) => ({
   testType: 'combined',
@@ -73,31 +96,31 @@ export interface CategoryTarget {
 export const CATEGORY_TARGETS: Record<Category, CategoryTarget> = {
   u10_u12: {
     label: 'U10/U12',
-    groundstroke: 'Area Pari (rossa) / Dispari (verde)',
-    volley: 'Area Pari / Dispari',
-    serve: 'Area Pari / Dispari',
-    description: 'Due zone a destra — PARI (rosso) FH/Cross, DISPARI (verde) Rovescio',
+    groundstroke: 'Area pari / dispari',
+    volley: 'Area pari / dispari',
+    serve: 'Area pari / dispari',
+    description: 'Due aree: PARI per il dritto, DISPARI per il rovescio',
   },
   terza: {
     label: '3ª Categoria',
-    groundstroke: '1m × 1m',
-    volley: '1.5m',
-    serve: '2.06m + 2.06m + rif. 1m',
-    description: 'Zone ampie per principianti avanzati',
+    groundstroke: '1 m dalla centrale · 1 m dal servizio',
+    volley: 'striscia 1,5 m',
+    serve: '2 strisce da 2,06 m',
+    description: 'Zone più ampie',
   },
   seconda: {
     label: '2ª Categoria',
-    groundstroke: '1.5m × 2m',
-    volley: '1.2m',
-    serve: '1.2m × 3 strisce',
-    description: 'Zone intermedie per giocatori competitivi',
+    groundstroke: '1,5 m dalla centrale · 2 m dal servizio',
+    volley: 'striscia 1,2 m',
+    serve: '3 strisce da 1,2 m',
+    description: 'Zone intermedie',
   },
   prima: {
     label: '1ª Categoria',
-    groundstroke: '2m × 3m',
-    volley: '0.7m',
-    serve: '0.7m × 3 strisce',
-    description: 'Zone precise per giocatori agonisti',
+    groundstroke: '2 m dalla centrale · 3 m dal servizio',
+    volley: 'striscia 0,7 m',
+    serve: '3 strisce da 0,7 m',
+    description: 'Zone più piccole',
   },
 };
 
@@ -109,7 +132,75 @@ export const CATEGORY_OPTIONS: { value: Category; label: string }[] = [
 ];
 
 /** Canonical order of test modules (used for step routing) */
-export const MODULE_STEP_ORDER: TestType[] = ['groundstrokes', 'combined', 'return', 'serve', 'volley'];
+export const MODULE_STEP_ORDER: TestType[] = ['groundstrokes', 'forehand', 'backhand', 'combined', 'return', 'serve', 'volley'];
+
+/** Modules selected by default in a new session (the original full protocol) */
+export const DEFAULT_MODULES: TestType[] = ['groundstrokes', 'combined', 'return', 'serve', 'volley'];
+
+/** Groundstrokes (alternating) cannot be combined with the single-stroke modules in one session */
+export const EXCLUSIVE_WITH: Partial<Record<TestType, TestType[]>> = {
+  groundstrokes: ['forehand', 'backhand'],
+  forehand: ['groundstrokes'],
+  backhand: ['groundstrokes'],
+};
+
+export const MODULE_LABELS: Record<TestType, string> = {
+  groundstrokes: 'Groundstrokes (dritto + rovescio)',
+  forehand: 'Solo dritto',
+  backhand: 'Solo rovescio',
+  combined: 'Combined',
+  return: 'Return',
+  serve: 'Servizio',
+  volley: 'Volley',
+};
+
+/** Series in the protocol for each module */
+export const MODULE_SERIES: Record<TestType, number> = {
+  groundstrokes: 20,
+  forehand: 20,
+  backhand: 20,
+  combined: 10,
+  return: 10,
+  serve: 6,
+  volley: 10,
+};
+
+/**
+ * Perfect series (10/10) needed to pass each module: half of the protocol series.
+ * Groundstrokes: 10 in total between forehand and backhand.
+ */
+export const MODULE_PASS: Record<TestType, number> = {
+  groundstrokes: 10,
+  forehand: 10,
+  backhand: 10,
+  combined: 5,
+  return: 5,
+  serve: 3,
+  volley: 5,
+};
+
+export interface ModulePass {
+  module: TestType;
+  played: number;
+  perfect: number;
+  required: number;
+  passed: boolean;
+}
+
+/** Pass/fail of every module present in a session */
+export function modulePasses(series: SeriesResult[]): ModulePass[] {
+  return detectedModules(series).map(module => {
+    const own = series.filter(s => s.testType === module);
+    const perfect = own.filter(s => s.score === 10).length;
+    return { module, played: own.length, perfect, required: MODULE_PASS[module], passed: perfect >= MODULE_PASS[module] };
+  });
+}
+
+/** A session passes when every module it contains is passed (false when no module was played) */
+export function sessionPassed(series: SeriesResult[]): boolean {
+  const mods = modulePasses(series);
+  return mods.length > 0 && mods.every(m => m.passed);
+}
 
 /** Returns the modules present in a series array, in canonical order */
 export function detectedModules(series: SeriesResult[]): TestType[] {
@@ -121,6 +212,8 @@ export function detectedModules(series: SeriesResult[]): TestType[] {
 export const WIZARD_STEPS = [
   { id: 'meta', label: 'Info', title: 'Sessione & Categoria' },
   { id: 'groundstrokes', label: 'Groundstrokes', title: 'Groundstrokes (20 serie)' },
+  { id: 'forehand', label: 'Dritto', title: 'Solo dritto (20 serie)' },
+  { id: 'backhand', label: 'Rovescio', title: 'Solo rovescio (20 serie)' },
   { id: 'combined', label: 'Combined', title: 'Combined (10 serie)' },
   { id: 'return', label: 'Return', title: 'Return (10 serie)' },
   { id: 'serve', label: 'Servizio', title: 'Servizio (6 serie)' },

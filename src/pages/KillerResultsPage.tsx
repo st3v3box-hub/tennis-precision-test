@@ -66,14 +66,14 @@ export const KillerResultsPage: React.FC = () => {
       />
       <div className="max-w-2xl mx-auto px-4 py-4 space-y-4">
         {/* Headline */}
-        <div className="bg-black text-white rounded-2xl p-5 flex items-center gap-5">
+        <div className="bg-pitch text-white rounded-2xl p-5 flex items-center gap-5">
           <div className="text-center">
-            <p className="text-[11px] uppercase tracking-widest text-neutral-400">Indice Killer</p>
+            <p className="text-[11px] uppercase tracking-widest text-chalk/60">Indice Killer</p>
             <p className="text-5xl font-black tabular-nums">{stats.index !== null ? Math.round(stats.index) : '—'}</p>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xl font-black text-brand-500">{stats.rating}</p>
-            <p className="text-sm text-neutral-300 mt-1">
+            <p className="text-xl font-display font-extrabold text-ball">{stats.rating}</p>
+            <p className="text-sm text-chalk/80 mt-1">
               {stats.completed
                 ? stats.errors === 0
                   ? `${session.target} di fila al primo tentativo.`

@@ -1,3 +1,4 @@
+import { BrandLockup } from '../components/brand/BrandLockup';
 import React, { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
@@ -7,7 +8,7 @@ import {
 import { useAppData } from '../contexts/AppDataContext';
 import { computeSessionResults } from '../lib/formulas';
 import { percentToStars, renderStars, STAR_LABELS } from '../lib/stars';
-import { CATEGORY_TARGETS } from '../lib/protocol';
+import { CATEGORY_TARGETS, sessionPassed } from '../lib/protocol';
 import { playerObjective, compareWithGroup } from '../lib/objectives';
 import { ObjectiveCard } from '../components/player/ObjectiveCard';
 import { GroupComparisonCard } from '../components/player/GroupComparisonCard';
@@ -125,11 +126,11 @@ export const PlayerReportPage: React.FC = () => {
 
       {/* A4 sheet */}
       <div className="report-sheet mx-auto my-6 bg-white shadow-xl w-[210mm] max-w-full p-[10mm] text-gray-900 space-y-4">
-        <header className="bg-black text-white rounded-2xl px-5 py-4 flex items-center gap-4 break-inside-avoid">
-          <img src="./logo-wordmark.png" alt="Gladiators Training" className="h-14 w-auto" />
+        <header className="bg-pitch text-white rounded-2xl px-5 py-4 flex items-center gap-4 break-inside-avoid">
+          <BrandLockup size={56} />
           <div className="ml-auto text-right">
-            <p className="text-xs uppercase tracking-widest text-neutral-400">Scheda giocatore</p>
-            <p className="text-sm text-neutral-200">{todayIt()}</p>
+            <p className="font-display font-bold text-ball">Scheda giocatore</p>
+            <p className="text-sm text-chalk/80">{todayIt()}</p>
           </div>
         </header>
 
@@ -163,11 +164,11 @@ export const PlayerReportPage: React.FC = () => {
                     <PolarAngleAxis dataKey="stroke" tick={{ fontSize: 10, fill: '#404040' }} />
                     <PolarRadiusAxis domain={[0, 10]} tick={false} axisLine={false} />
                     {first && <Radar dataKey="first" stroke="#a3a3a3" fill="#a3a3a3" fillOpacity={0.15} strokeDasharray="4 3" isAnimationActive={false} />}
-                    <Radar dataKey="value" stroke="#e10600" fill="#e10600" fillOpacity={0.25} strokeWidth={2} isAnimationActive={false} />
+                    <Radar dataKey="value" stroke="#17663e" fill="#17663e" fillOpacity={0.25} strokeWidth={2} isAnimationActive={false} />
                   </RadarChart>
                 </div>
               </Card>
-              <Card title="Colpo per colpo" subtitle={`Test del ${latest.s.date}`}>
+              <Card title="Colpo per colpo" subtitle={`Test del ${latest.s.date}${latest.s.zones && !latest.s.zones.standard ? ' · zone personalizzate' : ''}${sessionPassed(latest.s.series) ? '' : ' · non superato'}`}>
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="text-[11px] text-gray-500 text-left">
@@ -192,8 +193,8 @@ export const PlayerReportPage: React.FC = () => {
                     {strengths.map(s => <p key={s.stroke}>{s.label} · {s.ave.toFixed(1)}</p>)}
                   </div>
                   {toImprove.length > 0 && (
-                    <div className="rounded-xl bg-brand-50 border border-brand-200 p-2.5">
-                      <p className="font-bold text-brand-700 mb-1">Da migliorare</p>
+                    <div className="rounded-xl bg-amber-50 border border-amber-200 p-2.5">
+                      <p className="font-bold text-amber-800 mb-1">Da migliorare</p>
                       {toImprove.map(s => <p key={s.stroke}>{s.label} · {s.ave.toFixed(1)}</p>)}
                     </div>
                   )}
@@ -212,7 +213,7 @@ export const PlayerReportPage: React.FC = () => {
                       <ReferenceLine y={objective.target} stroke="#16a34a" strokeDasharray="4 4"
                         label={{ value: `obiettivo ${objective.target.toFixed(0)}%`, fontSize: 9, fill: '#16a34a', position: 'insideTopRight' }} />
                     )}
-                    <Line type="monotone" dataKey="pct" stroke="#e10600" strokeWidth={2} dot={{ r: 3, fill: '#e10600' }} isAnimationActive={false} />
+                    <Line type="monotone" dataKey="pct" stroke="#17663e" strokeWidth={2} dot={{ r: 3, fill: '#17663e' }} isAnimationActive={false} />
                   </LineChart>
                 </div>
               </Card>

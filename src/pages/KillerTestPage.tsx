@@ -375,36 +375,36 @@ const LiveTest: React.FC<LiveProps> = ({ draft, onDraftChange, onFinish }) => {
 
   if (saving) {
     return (
-      <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center gap-3 px-6 text-center">
+      <div className="min-h-screen bg-pitch-deep text-white flex flex-col items-center justify-center gap-3 px-6 text-center">
         <div className="text-5xl">{live.completed ? '🏆' : '⏹'}</div>
         <p className="text-xl font-black">{live.completed ? `${live.target} di fila!` : 'Test terminato'}</p>
-        <p className="text-neutral-400 text-sm">Salvataggio…</p>
+        <p className="text-chalk/60 text-sm">Salvataggio…</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col select-none">
+    <div className="min-h-screen bg-pitch-deep text-white flex flex-col select-none">
       {/* Top bar */}
       <div className="px-4 pt-3 pb-2 flex items-center gap-3 border-b border-white/10">
         <img src="./logo.png" alt="" className="h-8 w-8" />
         <div className="flex-1 min-w-0">
           <p className="font-bold truncate">{setup.name}</p>
-          <p className="text-[11px] text-neutral-400 truncate">
+          <p className="text-[11px] text-chalk/60 truncate">
             Killer {setup.target} · {setup.zone === 'libera' ? 'campo libero' : 'pari/dispari'}{setup.depth === 'oltre_servizio' ? ' · oltre servizio' : ''}
           </p>
         </div>
         <div className="text-right">
-          <p className="text-[11px] text-neutral-400">Gioco</p>
+          <p className="text-[11px] text-chalk/60">Gioco</p>
           <p className="font-mono font-bold tabular-nums">{formatDuration(clock.playMs)}</p>
         </div>
       </div>
 
       {/* Stats strip */}
-      <div className="grid grid-cols-3 text-center py-2 bg-neutral-950 border-b border-white/10">
-        <div><p className="text-[11px] text-neutral-400">Partenza</p><p className="font-bold">{live.attempts.length + (live.phase === 'playing' ? 1 : 0)}</p></div>
-        <div><p className="text-[11px] text-neutral-400">Errori</p><p className="font-bold text-brand-400">{errors}</p></div>
-        <div><p className="text-[11px] text-neutral-400">Serie migliore</p><p className="font-bold">{best}</p></div>
+      <div className="grid grid-cols-3 text-center py-2 bg-pitch border-b border-white/10">
+        <div><p className="text-[11px] text-chalk/60">Partenza</p><p className="font-bold">{live.attempts.length + (live.phase === 'playing' ? 1 : 0)}</p></div>
+        <div><p className="text-[11px] text-chalk/60">Errori</p><p className="font-bold text-red-400">{errors}</p></div>
+        <div><p className="text-[11px] text-chalk/60">Serie migliore</p><p className="font-bold">{best}</p></div>
       </div>
 
       {live.phase === 'playing' && (
@@ -416,11 +416,11 @@ const LiveTest: React.FC<LiveProps> = ({ draft, onDraftChange, onFinish }) => {
             className="flex-1 flex flex-col items-center justify-center px-4 active:bg-white/5 transition-colors"
             aria-label="Palla buona"
           >
-            <p className="text-neutral-400 text-sm">tocca a ogni palla buona</p>
-            <p className="text-[7rem] leading-none font-black tabular-nums mt-2">{live.count}</p>
-            <p className="text-neutral-400 font-semibold">su {live.target}</p>
+            <p className="text-chalk/60 text-sm">tocca a ogni palla buona</p>
+            <p className="text-[7rem] leading-none font-display font-extrabold tabular-nums mt-2 text-ball">{live.count}</p>
+            <p className="text-chalk/60 font-semibold">su {live.target}</p>
             <div className="w-full max-w-xs h-2 bg-white/10 rounded-full mt-4 overflow-hidden">
-              <div className="h-full bg-brand-600 transition-all" style={{ width: `${progress}%` }} />
+              <div className="h-full bg-ball transition-all" style={{ width: `${progress}%` }} />
             </div>
             <p className={`mt-5 px-4 py-1.5 rounded-full text-sm font-bold ${nextStroke === 'fh' ? 'bg-white text-black' : 'bg-neutral-700 text-white'}`}>
               Palla {nextBall} · {STROKE_LABEL[nextStroke].toUpperCase()}
@@ -431,7 +431,7 @@ const LiveTest: React.FC<LiveProps> = ({ draft, onDraftChange, onFinish }) => {
             <button
               type="button"
               onClick={() => { buzz(60); setErrorBall(nextBall); }}
-              className="w-full py-6 rounded-2xl bg-brand-600 active:bg-brand-700 text-2xl font-black tracking-wide shadow-lg"
+              className="w-full py-6 rounded-2xl bg-red-600 active:bg-red-700 text-2xl font-display font-extrabold tracking-wide shadow-lg"
             >
               ✕ ERRORE
             </button>
@@ -451,9 +451,9 @@ const LiveTest: React.FC<LiveProps> = ({ draft, onDraftChange, onFinish }) => {
 
       {live.phase === 'pickup' && (
         <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
-          <p className="text-brand-400 font-bold uppercase tracking-widest text-sm">Raccolta palle</p>
+          <p className="text-ball font-display font-bold text-lg">Raccolta palle</p>
           <p className="text-6xl font-black font-mono tabular-nums mt-3">{formatDuration(now - (live.pickupStartedAt ?? now))}</p>
-          <p className="text-neutral-400 text-xs mt-1">il cronometro di gioco è fermo</p>
+          <p className="text-chalk/60 text-xs mt-1">il cronometro di gioco è fermo</p>
           {lastRun && lastRun.errorStroke && (
             <p className="mt-6 text-lg">
               Errore alla palla <strong>{lastRun.balls + 1}</strong> · {STROKE_LABEL[lastRun.errorStroke].toLowerCase()}
@@ -465,7 +465,7 @@ const LiveTest: React.FC<LiveProps> = ({ draft, onDraftChange, onFinish }) => {
           </button>
           <button type="button" onClick={() => {
             if (window.confirm('Terminare il test adesso? Verrà salvato come non completato.')) dispatch({ type: 'stop', now: Date.now() });
-          }} className="mt-4 text-sm text-neutral-400 underline">Termina il test</button>
+          }} className="mt-4 text-sm text-chalk/60 underline">Termina il test</button>
         </div>
       )}
 
@@ -475,7 +475,7 @@ const LiveTest: React.FC<LiveProps> = ({ draft, onDraftChange, onFinish }) => {
           <div className="w-full bg-white text-black rounded-t-3xl p-5 pb-8" onClick={e => e.stopPropagation()}>
             <p className="text-center text-sm text-gray-500">Errore alla palla numero</p>
             <p className="text-center text-6xl font-black tabular-nums mt-1">{errorBall}</p>
-            <p className="text-center text-sm font-semibold text-brand-700 mt-1">{STROKE_LABEL[strokeForBall(errorBall)]}</p>
+            <p className="text-center text-sm font-semibold text-red-700 mt-1">{STROKE_LABEL[strokeForBall(errorBall)]}</p>
             <div className="grid grid-cols-4 gap-2 mt-4">
               {[-10, -1, +1, +10].map(d => (
                 <button key={d} type="button"
@@ -493,7 +493,7 @@ const LiveTest: React.FC<LiveProps> = ({ draft, onDraftChange, onFinish }) => {
               <button type="button" onClick={() => {
                 dispatch({ type: 'error', ball: errorBall, now: Date.now() });
                 setErrorBall(null);
-              }} className="py-4 rounded-2xl bg-brand-600 text-white font-black">Conferma errore</button>
+              }} className="py-4 rounded-2xl bg-red-600 text-white font-black">Conferma errore</button>
             </div>
           </div>
         </div>

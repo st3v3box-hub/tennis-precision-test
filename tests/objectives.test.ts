@@ -34,7 +34,8 @@ describe('playerObjective', () => {
     expect(playerObjective([], settings).status).toBe('nessun_dato');
   });
   it('pronto after the required consecutive tests above target', () => {
-    const o = playerObjective([sess('a', 'p', '2026-01-01', 7), sess('b', 'p', '2026-02-01', 8), sess('c', 'p', '2026-03-01', 9)], settings);
+    // 10/10 everywhere = every module passed; 8/10 and 9/10 would reach the % but never pass
+    const o = playerObjective([sess('a', 'p', '2026-01-01', 7), sess('b', 'p', '2026-02-01', 10), sess('c', 'p', '2026-03-01', 10)], settings);
     expect(o.target).toBeCloseTo(64, 6);
     expect(o.streak).toBe(2);
     expect(o.status).toBe('pronto');

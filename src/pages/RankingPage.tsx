@@ -4,6 +4,7 @@ import type { Category } from '../types';
 import { useAppData } from '../contexts/AppDataContext';
 import { computeSessionResults } from '../lib/formulas';
 import { ClubFilter, useClubFilter } from '../components/ui/ClubFilter';
+import { countsForRankings } from '../lib/zones';
 
 type Tab = Category | 'generale';
 
@@ -39,7 +40,7 @@ export const RankingPage: React.FC = () => {
 
   const ranked = useMemo(() =>
     sessions
-      .filter(s => s.completed && matchesPlayer(s.playerId))
+      .filter(s => s.completed && matchesPlayer(s.playerId) && countsForRankings(s, settings))
       .map(s => ({
         session: s,
         pct: computeSessionResults(s, settings).percentOfIdeal,

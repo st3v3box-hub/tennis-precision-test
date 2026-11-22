@@ -1,0 +1,96 @@
+import React, { useState } from 'react';
+import type { WizardState, SeriesResult } from '../../types';
+import { singleStrokeSeries, MODULE_PASS, DIRECTION_LABEL } from '../../lib/protocol';
+import { resolveSessionZones } from '../../lib/zones';
+import { useAppData } from '../../contexts/AppDataContext';
+import { Button } from '../ui/Button';
+import { Card } from '../ui/Card';
+import { SeriesInputBlock } from './SeriesInputBlock';
+import { PlayerTabBar } from './PlayerTabBar';
+import { CourtZones } from '../brand/CourtZones';
+
+interface Props {
+  module: 'forehand' | 'backhand';
+  state: WizardState;
+  setSeriesResult: (playerIdx: number, r: SeriesResult) => void;
+  onNext: () => void;
+  onPrev: () => void;
+}
+
+/**
+ * "Solo dritto" / "Solo rovescio": 20 series of the same stroke from the basket,
+ * direction chosen for the whole test. Passed with 10 perfect series (10/10);
+ * the coach can move on as soon as the 10th perfect series is reached.
+ */
+export const StepSingleStroke: React.FC<Props> = ({ module, state, setSeriesResult, onNext, onPrev }) => {
+  const { settings } = useAppData();
+  const [activeIdx, setActiveIdx] = useState(0);
+  const direction = state.strokeDirections[module];
+  const specs = singleStrokeSeries(module, direction);
+  const required = MODULE_PASS[module];
+  const strokeName = module === 'forehand' ? 'Solo dritto' : 'Solo rovescio';
+
+  const own = (pidx: number) => state.players[pidx].series.filter(r => r.testType === module);
+  const perfect = (pidx: number) => own(pidx).filter(r => r.score === 10).length;
+  const filled = (pidx: number) => specs.filter(s => own(pidx).some(r => r.seriesIndex === s.seriesIndex)).length;
+  const ready = (pidx: number) => filled(pidx) === specs.length || perfect(pidx) >= required;
+
+  const completedFlags = state.players.map((_, i) => ready(i));
+  const canContinue = completedFlags.every(Boolean);
+  const active = state.players[activeIdx];
+  const activePerfect = perfect(activeIdx);
+  const activeFilled = filled(activeIdx);
+  const zones = resolveSessionZones(active.category, active.zones, settings.zoneDefaults);
+  const playerLabel = state.playerCount > 1 ? ` — ${active.name || `Giocatore ${activeIdx + 1}`}` : '';
+
+  // Once passed, the series that would come after are not shown
+  const lastNeeded = activePerfect >= required ? activeFilled : specs.length;
+
+  return (
+    <div className="space-y-4">
+      <PlayerTabBar players={state.players} activeIdx={activeIdx} completedFlags={completedFlags} onChange={setActiveIdx} />
+
+      <Card title={`${strokeName} · ${DIRECTION_LABEL[direction].toLowerCase()}${playerLabel}`}
+        subtitle={`20 serie da 10 palle dal cesto · superato con ${required} serie perfette`}>
+        <div className="flex items-center gap-4 mb-4">
+          <CourtZones measures={zones.measures} level={zones.level} focus="groundstroke" mirror={direction === 'line'}
+            showLabels={false} className="h-24 w-auto flex-shrink-0" title="Zona bersaglio" />
+          <div className="flex-1">
+            <p className="text-xs text-gray-500">Serie perfette</p>
+            <p className="font-display text-4xl font-extrabold leading-none">
+              {activePerfect}<span className="text-gray-300 text-2xl"> / {required}</span>
+            </p>
+            <div className="mt-2 h-2 rounded-full bg-gray-100 overflow-hidden">
+              <div className="h-full bg-brand-600 transition-all" style={{ width: `${Math.min(100, (activePerfect / required) * 100)}%` }} />
+            </div>
+            <p className="text-xs text-gray-500 mt-1">{activeFilled} di 20 serie giocate</p>
+          </div>
+        </div>
+        <SeriesInputBlock
+          specs={specs.slice(0, Math.max(lastNeeded, 1))}
+          series={active.series}
+          onSet={r => setSeriesResult(activeIdx, r)}
+        />
+      </Card>
+
+      {activePerfect >= required && (
+        <div className="p-3 bg-ok-50 border border-ok-300 rounded-xl text-sm text-ok-800">
+          <strong>Test superato</strong> in {activeFilled} serie. Puoi passare al modulo successivo.
+        </div>
+      )}
+      {activeFilled === specs.length && activePerfect < required && (
+        <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
+          <strong>Test non superato</strong>: {activePerfect} serie perfette su {required}. I punteggi contano comunque nel radar.
+        </div>
+      )}
+
+      <div className="flex gap-3">
+        <Button variant="secondary" className="flex-1" onClick={onPrev}>Indietro</Button>
+        <Button className="flex-1" disabled={!canContinue} onClick={onNext}>Avanti</Button>
+      </div>
+      {!canContinue && state.playerCount > 1 && (
+        <p className="text-center text-xs text-gray-500">{completedFlags.filter(Boolean).length}/{state.playerCount} giocatori pronti</p>
+      )}
+    </div>
+  );
+};

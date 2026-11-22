@@ -53,11 +53,11 @@ export const RadarSpider: React.FC<Props> = ({ values, compareValues, compareLab
         <Radar
           name="Sessione"
           dataKey="value"
-          stroke="#e10600"
-          fill="#e10600"
+          stroke="#17663e"
+          fill="#17663e"
           fillOpacity={0.25}
           strokeWidth={2}
-          dot={{ r: 4, fill: '#e10600' }}
+          dot={{ r: 4, fill: '#17663e' }}
         />
         {compareValues && (
           <Radar

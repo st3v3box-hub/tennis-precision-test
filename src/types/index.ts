@@ -1,10 +1,16 @@
 export type Category = 'terza' | 'seconda' | 'prima' | 'u10_u12';
 
-export type TestType = 'groundstrokes' | 'combined' | 'return' | 'serve' | 'volley';
+/** forehand / backhand = single-stroke modules ("Solo dritto" / "Solo rovescio") */
+export type TestType = 'groundstrokes' | 'forehand' | 'backhand' | 'combined' | 'return' | 'serve' | 'volley';
+
+/** Direction chosen for a whole single-stroke module */
+export type StrokeDirection = 'cross' | 'line';
 
 export type Direction =
   | 'fh_cross'
   | 'bh_cross'
+  | 'fh_line'
+  | 'bh_line'
   | 'lungolinea'
   | 'diagonale'
   | 'right'
@@ -91,6 +97,42 @@ export interface TestSession {
   series: SeriesResult[];
   selectedModules?: TestType[];
   challengeId?: string;   // groups sessions belonging to the same challenge
+  /** Target zones used in this test (snapshot). Missing on tests made before zones existed = standard. */
+  zones?: SessionZones;
+}
+
+// ─── Target zones ────────────────────────────────────────────────────────────
+
+/**
+ * Zone measures in metres, as in the protocol slides.
+ * Groundstroke zone = back corner of the court; its inner edges are at `fromCenter` metres
+ * from the centre line and `fromService` metres behind the service line (bigger = smaller zone).
+ * Volley = width of the strip along the sideline; serve = width of each target strip.
+ */
+export interface ZoneMeasures {
+  gsFromCenter: number;
+  gsFromService: number;
+  volley: number;
+  serve: number;
+}
+
+export type ZoneCategory = Exclude<Category, 'u10_u12'>;
+
+export interface SessionZones {
+  /** Level the zones start from (a category) */
+  level: Category;
+  /** null for U10/U12 level (even/odd areas, no measures) */
+  measures: ZoneMeasures | null;
+  /** true when identical to the academy defaults of the player's category at test time */
+  standard: boolean;
+}
+
+export interface ZoneChangeLogEntry {
+  at: string;
+  by: string;
+  category: ZoneCategory;
+  before: ZoneMeasures;
+  after: ZoneMeasures;
 }
 
 export interface StrokeStats {
@@ -139,6 +181,12 @@ export interface AppSettings {
   promotionTargets: Record<Category, number>;
   /** Objectives: how many consecutive tests at or above target are required */
   promotionConsecutive: number;
+  /** Academy default zones per category (editable by admin and coaches) */
+  zoneDefaults: Record<ZoneCategory, ZoneMeasures>;
+  /** Who changed the default zones and when (latest first, capped) */
+  zoneLog: ZoneChangeLogEntry[];
+  /** Rankings, objectives and group comparison also count tests with custom zones */
+  includeCustomZones: boolean;
 }
 
 // ─── Killer test ─────────────────────────────────────────────────────────────
@@ -197,6 +245,8 @@ export interface WizardPlayerData {
   dateOfBirth?: string;
   note?: string;
   series: SeriesResult[];
+  /** Custom zones chosen for this player; undefined = defaults of the player's category */
+  zones?: SessionZones;
 }
 
 export interface WizardState {
@@ -207,6 +257,8 @@ export interface WizardState {
   players: WizardPlayerData[];
   challengeMode: 'none' | '1v1' | '2v2' | 'ffa';
   selectedModules: TestType[];
+  /** Direction of the single-stroke modules, chosen for the whole test */
+  strokeDirections: { forehand: StrokeDirection; backhand: StrokeDirection };
   challengeId?: string;       // generated at start for challenge sessions
   draftSessionIds?: string[]; // existing session IDs to update on resume
 }

@@ -2,6 +2,7 @@ import { ZONE_LABELS, DEPTH_LABELS } from '../lib/killer';
 import { CATEGORY_OPTIONS } from '../lib/protocol';
 import { targetPercent } from '../lib/objectives';
 import type { KillerZone, KillerDepth } from '../types';
+import { ZoneDefaultsEditor } from '../components/zones/ZoneDefaultsEditor';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { AppSettings } from '../types';
@@ -403,6 +404,23 @@ export const SettingsPage: React.FC = () => {
               </button>
             ))}
           </div>
+        </Card>
+
+        <Card title="Zone bersaglio predefinite" subtitle="Le zone da cui parte ogni test, per categoria. Nel test si possono cambiare giocatore per giocatore.">
+          <ZoneDefaultsEditor settings={settings} onSave={update} />
+        </Card>
+
+        <Card title="Test con zone personalizzate">
+          <label className="flex items-start gap-3">
+            <input type="checkbox" className="mt-1 h-5 w-5 accent-brand-600" checked={settings.includeCustomZones}
+              onChange={e => update({ includeCustomZones: e.target.checked })} />
+            <span className="text-sm text-gray-700">
+              Contali anche in classifiche, obiettivi di categoria e confronto con il gruppo.
+              <span className="block text-xs text-gray-500 mt-0.5">
+                Spento: contano solo i test con le zone predefinite della categoria. La scheda del giocatore li mostra sempre, segnalati.
+              </span>
+            </span>
+          </label>
         </Card>
 
         <Card title="Obiettivi di categoria">

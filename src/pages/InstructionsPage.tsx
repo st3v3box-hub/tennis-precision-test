@@ -1,3 +1,6 @@
+import { serveStripsFor } from '../lib/zones';
+import { useAppData } from '../contexts/AppDataContext';
+import { CourtZones } from '../components/brand/CourtZones';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Category } from '../types';
@@ -37,9 +40,9 @@ const CATEGORY_DATA: Record<Category, CategoryData> = {
     image: './images/court-terza.png',
     accentClass: 'border-brand-500 text-brand-700 bg-brand-50',
     zones: {
-      groundstroke: { width: '1 mt', depth: '1 mt' },
-      volley: '1.5 mt',
-      serve: '2.06 mt per lato',
+      groundstroke: { width: '1 m dalla centrale', depth: '1 m dal servizio' },
+      volley: 'striscia 1,5 m',
+      serve: '2 strisce da 2,06 m',
     },
     level: 'Principiante avanzato',
     levelDesc: 'Zone più ampie — focus sulla consistenza',
@@ -48,9 +51,9 @@ const CATEGORY_DATA: Record<Category, CategoryData> = {
     image: './images/court-seconda.png',
     accentClass: 'border-yellow-500 text-yellow-700 bg-yellow-50',
     zones: {
-      groundstroke: { width: '1.5 mt', depth: '2 mt' },
-      volley: '1.2 mt',
-      serve: '1.2 mt per lato',
+      groundstroke: { width: '1,5 m dalla centrale', depth: '2 m dal servizio' },
+      volley: 'striscia 1,2 m',
+      serve: '3 strisce da 1,2 m',
     },
     level: 'Giocatore competitivo',
     levelDesc: 'Zone intermedie — precisione e continuità',
@@ -59,9 +62,9 @@ const CATEGORY_DATA: Record<Category, CategoryData> = {
     image: './images/court-prima.png',
     accentClass: 'border-red-500 text-red-700 bg-red-50',
     zones: {
-      groundstroke: { width: '2 mt', depth: '3 mt' },
-      volley: '0.7 mt',
-      serve: '0.7 mt per lato',
+      groundstroke: { width: '2 m dalla centrale', depth: '3 m dal servizio' },
+      volley: 'striscia 0,7 m',
+      serve: '3 strisce da 0,7 m',
     },
     level: 'Agonista',
     levelDesc: 'Zone precise — elevata efficienza tecnica',
@@ -69,7 +72,9 @@ const CATEGORY_DATA: Record<Category, CategoryData> = {
 };
 
 const PROTOCOL_ROWS = [
-  { test: 'Groundstrokes', series: 20, balls: 10, soglia: '10/20', pattern: 'FH Incrociato / BH Incrociato (alternati)' },
+  { test: 'Groundstrokes', series: 20, balls: 10, soglia: '10/20', pattern: 'FH Incrociato / BH Incrociato (alternati) · 10 perfette in totale' },
+  { test: 'Solo dritto', series: 20, balls: 10, soglia: '10/20', pattern: 'Solo dritto, incrociato o lungolinea (scelto per tutto il test)' },
+  { test: 'Solo rovescio', series: 20, balls: 10, soglia: '10/20', pattern: 'Solo rovescio, incrociato o lungolinea (scelto per tutto il test)' },
   { test: 'Combined', series: 10, balls: 10, soglia: '5/10', pattern: 'Lungolinea / Diagonale (alternati)' },
   { test: 'Return', series: 10, balls: 10, soglia: '5/10', pattern: 'Da Destra (deuce) / Da Sinistra (ad) (alternati)' },
   { test: 'Servizio', series: 6, balls: 10, soglia: '3/6', pattern: '1ª Destra / 2ª Sinistra (alternati) + striscia target' },
@@ -108,10 +113,37 @@ const EXAMPLES = [
 ];
 
 export const InstructionsPage: React.FC = () => {
+  const { settings } = useAppData();
   const navigate = useNavigate();
   const [activeCategory, setActiveCategory] = useState<Category>('seconda');
 
-  const data = CATEGORY_DATA[activeCategory];
+  const staticData = CATEGORY_DATA[activeCategory];
+
+  // Zone measures follow the academy defaults set in Settings
+
+  const data = activeCategory === 'u10_u12' ? staticData : (() => {
+
+    const z = settings.zoneDefaults[activeCategory];
+
+    const f = (v: number) => v.toLocaleString('it-IT', { maximumFractionDigits: 2 });
+
+    return {
+
+      ...staticData,
+
+      zones: {
+
+        groundstroke: { width: `${f(z.gsFromCenter)} m dalla centrale`, depth: `${f(z.gsFromService)} m dal servizio` },
+
+        volley: `striscia ${f(z.volley)} m`,
+
+        serve: `${serveStripsFor(activeCategory)} strisce da ${f(z.serve)} m`,
+
+      },
+
+    };
+
+  })();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -157,7 +189,7 @@ export const InstructionsPage: React.FC = () => {
         </div>
 
         {/* Dimensione mentale, fisica e caratteriale */}
-        <div className="bg-gray-900 rounded-2xl p-5 text-white space-y-4">
+        <div className="bg-pitch rounded-2xl p-5 text-white space-y-4">
           <h2 className="text-sm font-bold uppercase tracking-wide text-gray-300">Il test è mentale, fisico e caratteriale</h2>
 
           <p className="text-sm leading-relaxed text-gray-100">
@@ -353,12 +385,18 @@ export const InstructionsPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Court diagram image */}
-          <img
-            src={data.image}
-            alt={`Schema campo ${activeCategory}`}
-            className="w-full object-contain"
-          />
+          {/* Court diagram: drawn from the academy default zones (photo for U10/U12) */}
+          {activeCategory === 'u10_u12' ? (
+            <img src={data.image} alt="Schema campo U10/U12" className="w-full object-contain" />
+          ) : (
+            <div className="bg-pitch p-4">
+              <CourtZones measures={settings.zoneDefaults[activeCategory]} level={activeCategory}
+                className="w-full max-w-sm mx-auto block" title={`Zone ${activeCategory}`} />
+              <p className="text-center text-xs text-chalk/80 mt-2">
+                Le misure sono distanze dalle linee: più sono alte, più la zona è piccola. Volée e servizio: larghezza delle strisce.
+              </p>
+            </div>
+          )}
 
           {/* Zone details */}
           <div className="p-4 space-y-3">
@@ -371,7 +409,7 @@ export const InstructionsPage: React.FC = () => {
               <div className="bg-gray-50 rounded-xl p-3 border border-gray-200">
                 <div className="text-gray-500 mb-1">Groundstroke</div>
                 <div className="font-bold text-gray-800">{data.zones.groundstroke.width}</div>
-                <div className="text-gray-500">× {data.zones.groundstroke.depth}</div>
+                <div className="text-gray-500">{data.zones.groundstroke.depth}</div>
                 <div className="text-gray-400 mt-1">largh. × prof.</div>
               </div>
               <div className="bg-gray-50 rounded-xl p-3 border border-gray-200">
@@ -388,8 +426,8 @@ export const InstructionsPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-black text-white rounded-2xl p-5 space-y-3">
-          <p className="text-xs font-bold uppercase tracking-widest text-brand-500">Test Killer</p>
+        <div className="bg-pitch text-white rounded-2xl p-5 space-y-3">
+          <p className="text-sm font-display font-bold text-ball">Test Killer</p>
           <h2 className="text-lg font-black">Consistenza, pazienza, concentrazione</h2>
           <p className="text-sm text-neutral-300 leading-relaxed">
             Il maestro alimenta palle semplici, senza peso: una di dritto e una di rovescio. All'errore il test si interrompe,

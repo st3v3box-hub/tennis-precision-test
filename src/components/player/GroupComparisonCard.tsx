@@ -28,7 +28,7 @@ export const GroupComparisonCard: React.FC<{ comparison: GroupComparison | null;
           <div key={s.stroke} className="flex items-center gap-3">
             <span className="w-24 text-sm text-gray-700 flex-shrink-0">{s.label}</span>
             <div className="flex-1 h-2.5 rounded-full bg-gray-100 relative overflow-hidden">
-              <div className={`h-full rounded-full ${s.percentile >= 60 ? 'bg-ok-500' : s.percentile >= 40 ? 'bg-neutral-400' : 'bg-brand-600'}`}
+              <div className={`h-full rounded-full ${s.percentile >= 60 ? 'bg-ok-500' : s.percentile >= 40 ? 'bg-neutral-400' : 'bg-amber-500'}`}
                 style={{ width: `${Math.max(4, s.percentile)}%` }} />
             </div>
             <span className="w-28 text-right text-xs text-gray-600 flex-shrink-0">

@@ -1,25 +1,18 @@
 import React, { useState, useMemo } from 'react';
-import type { WizardState, WizardPlayerData, Category, TestType } from '../../types';
+import type { WizardState, WizardPlayerData, TestType, StrokeDirection } from '../../types';
 import type { PlayerProfile } from '../../types';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
-import { CATEGORY_OPTIONS, CATEGORY_TARGETS, MODULE_STEP_ORDER } from '../../lib/protocol';
+import {
+  CATEGORY_OPTIONS, MODULE_STEP_ORDER, MODULE_LABELS, MODULE_SERIES, EXCLUSIVE_WITH, DIRECTION_LABEL,
+} from '../../lib/protocol';
 import { useAppData } from '../../contexts/AppDataContext';
+import { ZonePicker } from '../zones/ZonePicker';
 
-const MODULE_LABELS: Record<TestType, string> = {
-  groundstrokes: 'Groundstrokes (FH+BH)',
-  combined: 'Combined',
-  return: 'Return',
-  serve: 'Servizio',
-  volley: 'Volley',
-};
-
-const MODULE_SERIES: Record<TestType, number> = {
-  groundstrokes: 20,
-  combined: 10,
-  return: 10,
-  serve: 6,
-  volley: 10,
+const MODULE_HINT: Partial<Record<TestType, string>> = {
+  groundstrokes: 'Alterna una serie di dritto e una di rovescio incrociati',
+  forehand: '20 serie solo di dritto',
+  backhand: '20 serie solo di rovescio',
 };
 
 interface Props {
@@ -30,34 +23,10 @@ interface Props {
   onNext: () => void;
 }
 
-const CategoryDiagram: React.FC<{ cat: Category }> = ({ cat }) => {
-  const t = CATEGORY_TARGETS[cat];
-  return (
-    <div className="mt-3 bg-gray-50 rounded-xl p-3 text-sm">
-      <p className="font-semibold text-gray-700 mb-1">{t.label}</p>
-      <p className="text-gray-500 text-xs mb-2">{t.description}</p>
-      <div className="grid grid-cols-3 gap-2 text-center text-xs">
-        <div className="bg-white rounded-lg p-2 border border-gray-200">
-          <div className="text-gray-500 mb-1">Groundstroke</div>
-          <div className="font-semibold text-brand-700">{t.groundstroke}</div>
-        </div>
-        <div className="bg-white rounded-lg p-2 border border-gray-200">
-          <div className="text-gray-500 mb-1">Volley</div>
-          <div className="font-semibold text-blue-700">{t.volley}</div>
-        </div>
-        <div className="bg-white rounded-lg p-2 border border-gray-200">
-          <div className="text-gray-500 mb-1">Servizio</div>
-          <div className="font-semibold text-orange-700">{t.serve}</div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 export const StepMeta: React.FC<Props> = ({ state, update, updatePlayer, setPlayerCount, onNext }) => {
   const [pickerOpenIdx, setPickerOpenIdx] = useState<number | null>(null);
   const [pickerSearch, setPickerSearch] = useState('');
-  const { players: profiles } = useAppData();
+  const { players: profiles, settings } = useAppData();
 
   const canContinue =
     state.players.every(p => p.name.trim().length > 0) &&
@@ -70,9 +39,14 @@ export const StepMeta: React.FC<Props> = ({ state, update, updatePlayer, setPlay
     if (current.includes(m)) {
       update({ selectedModules: current.filter(x => x !== m) });
     } else {
-      update({ selectedModules: [...current, m] });
+      // Groundstrokes alternating and single-stroke modules exclude each other
+      const blocked = EXCLUSIVE_WITH[m] ?? [];
+      update({ selectedModules: [...current.filter(x => !blocked.includes(x)), m] });
     }
   };
+
+  const setDirection = (m: 'forehand' | 'backhand', d: StrokeDirection) =>
+    update({ strokeDirections: { ...state.strokeDirections, [m]: d } });
 
   const linkProfile = (playerIdx: number, profile: PlayerProfile) => {
     updatePlayer(playerIdx, {
@@ -136,32 +110,49 @@ export const StepMeta: React.FC<Props> = ({ state, update, updatePlayer, setPlay
       </Card>
 
       {/* Module selection */}
-      <Card title="Moduli del Test">
-        <p className="text-xs text-gray-500 mb-3">Seleziona i moduli da includere nel test</p>
+      <Card title="Moduli del test" subtitle="Groundstrokes e i test di solo dritto / solo rovescio non si fanno nella stessa sessione">
         <div className="space-y-2">
           {MODULE_STEP_ORDER.map(m => {
             const selected = state.selectedModules.includes(m);
+            const single = m === 'forehand' || m === 'backhand';
+            const excludedBy = (EXCLUSIVE_WITH[m] ?? []).find(x => state.selectedModules.includes(x));
             return (
-              <button
-                key={m}
-                type="button"
-                onClick={() => toggleModule(m)}
-                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 text-sm font-semibold transition-all
-                  ${selected
-                    ? 'bg-brand-600 border-brand-600 text-white'
-                    : 'bg-white border-gray-300 text-gray-700 hover:border-brand-400'
-                  }`}
-              >
-                <span>{MODULE_LABELS[m]}</span>
-                <span className={`text-xs font-normal ${selected ? 'text-brand-200' : 'text-gray-400'}`}>
-                  {MODULE_SERIES[m]} serie
-                </span>
-              </button>
+              <div key={m} className={`rounded-xl border-2 transition-colors ${selected ? 'border-brand-600 bg-brand-600' : 'border-gray-200 bg-white'}`}>
+                <button
+                  type="button"
+                  onClick={() => toggleModule(m)}
+                  aria-pressed={selected}
+                  className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left"
+                >
+                  <span className="min-w-0">
+                    <span className={`block text-sm font-semibold ${selected ? 'text-white' : 'text-ink'}`}>{MODULE_LABELS[m]}</span>
+                    {MODULE_HINT[m] && (
+                      <span className={`block text-xs ${selected ? 'text-brand-100' : 'text-gray-500'}`}>
+                        {!selected && excludedBy ? `Sostituisce ${MODULE_LABELS[excludedBy]}` : MODULE_HINT[m]}
+                      </span>
+                    )}
+                  </span>
+                  <span className={`text-xs flex-shrink-0 ${selected ? 'text-brand-100' : 'text-gray-400'}`}>{MODULE_SERIES[m]} serie</span>
+                </button>
+                {selected && single && (
+                  <div className="px-3 pb-3 grid grid-cols-2 gap-2">
+                    {(['cross', 'line'] as StrokeDirection[]).map(d => {
+                      const on = state.strokeDirections[m] === d;
+                      return (
+                        <button key={d} type="button" onClick={() => setDirection(m, d)} aria-pressed={on}
+                          className={`py-2 rounded-lg text-xs font-semibold border ${on ? 'bg-white text-brand-800 border-white' : 'bg-transparent text-white border-white/40 hover:border-white'}`}>
+                          {DIRECTION_LABEL[d]}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             );
           })}
         </div>
         {state.selectedModules.length === 0 && (
-          <p className="mt-2 text-xs text-red-600">Seleziona almeno un modulo per continuare.</p>
+          <p className="mt-2 text-xs text-red-600">Scegli almeno un modulo per iniziare.</p>
         )}
       </Card>
 
@@ -354,8 +345,14 @@ export const StepMeta: React.FC<Props> = ({ state, update, updatePlayer, setPlay
                   </button>
                 ))}
               </div>
-              {state.playerCount === 1 && <CategoryDiagram cat={p.category} />}
             </div>
+
+            <ZonePicker
+              category={p.category}
+              value={p.zones}
+              onChange={z => updatePlayer(i, { zones: z ? { ...z, standard: false } : undefined })}
+              defaults={settings.zoneDefaults}
+            />
 
             {/* DOB (only for unlinked players) */}
             {!p.profileId && (
