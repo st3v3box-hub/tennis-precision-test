@@ -1,11 +1,13 @@
 import React from 'react';
 import type { StrokeStats } from '../../types';
-import { IDEAL_AREA } from '../../lib/formulas';
+import { radarArea } from '../../lib/formulas';
 
 interface Props {
   stats: StrokeStats[];
   radarArea: number;
   percentOfIdeal: number;
+  /** Number of radar axes (6, or 7 with the Sventaglio) */
+  axes?: number;
 }
 
 const barColor = (v: number): string => {
@@ -14,7 +16,9 @@ const barColor = (v: number): string => {
   return 'bg-red-400';
 };
 
-export const StatsTable: React.FC<Props> = ({ stats, radarArea, percentOfIdeal }) => {
+export const StatsTable: React.FC<Props> = ({ stats: allStats, radarArea: area, percentOfIdeal, axes = 6 }) => {
+  // Sventaglio row only when it was tested
+  const stats = allStats.filter(s => s.stroke !== 'insideout' || s.scores.length > 0);
   const testedStats = stats.filter(s => s.scores.length > 0);
   const passedCount = testedStats.filter(s => s.perfectCount >= s.passThreshold).length;
   const testedCount = testedStats.length;
@@ -92,9 +96,9 @@ export const StatsTable: React.FC<Props> = ({ stats, radarArea, percentOfIdeal }
 
       <div className="grid grid-cols-3 gap-3">
         <div className="bg-gray-50 rounded-xl p-4 text-center border border-gray-200">
-          <div className="text-2xl font-black text-gray-800">{radarArea.toFixed(1)}</div>
+          <div className="text-2xl font-black text-gray-800">{area.toFixed(1)}</div>
           <div className="text-xs text-gray-500 mt-1">Area Radar</div>
-          <div className="text-xs text-gray-400 mt-0.5">Ideale: {IDEAL_AREA.toFixed(1)}</div>
+          <div className="text-xs text-gray-400 mt-0.5">Ideale: {radarArea(Array(axes).fill(10)).toFixed(1)}</div>
         </div>
 
         <div className={`rounded-xl p-4 text-center border ${

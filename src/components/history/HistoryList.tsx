@@ -121,7 +121,7 @@ export const HistoryList: React.FC<Props> = ({ sessions, settings }) => {
               </div>
 
               <div className="grid grid-cols-3 gap-2 mb-3">
-                {r.stats.slice(0, 6).map(s => (
+                {r.stats.filter(s => s.stroke !== 'insideout' || s.scores.length > 0).map(s => (
                   <div key={s.stroke} className="text-center bg-gray-50 rounded-lg py-1.5">
                     <div className="text-xs text-gray-500 truncate px-1">{s.label}</div>
                     <div className={`text-base font-black ${

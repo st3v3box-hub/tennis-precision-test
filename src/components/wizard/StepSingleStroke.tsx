@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { WizardState, SeriesResult } from '../../types';
-import { singleStrokeSeries, MODULE_PASS, DIRECTION_LABEL } from '../../lib/protocol';
+import { singleStrokeSeries, MODULE_PASS, MODULE_LABELS, directionLabel, targetMirrored, type SingleStrokeModule } from '../../lib/protocol';
 import { resolveSessionZones } from '../../lib/zones';
 import { useAppData } from '../../contexts/AppDataContext';
 import { Button } from '../ui/Button';
@@ -10,7 +10,7 @@ import { PlayerTabBar } from './PlayerTabBar';
 import { CourtZones } from '../brand/CourtZones';
 
 interface Props {
-  module: 'forehand' | 'backhand';
+  module: SingleStrokeModule;
   state: WizardState;
   setSeriesResult: (playerIdx: number, r: SeriesResult) => void;
   onNext: () => void;
@@ -25,10 +25,10 @@ interface Props {
 export const StepSingleStroke: React.FC<Props> = ({ module, state, setSeriesResult, onNext, onPrev }) => {
   const { settings } = useAppData();
   const [activeIdx, setActiveIdx] = useState(0);
-  const direction = state.strokeDirections[module];
+  const direction = state.strokeDirections[module] ?? 'cross';
   const specs = singleStrokeSeries(module, direction);
   const required = MODULE_PASS[module];
-  const strokeName = module === 'forehand' ? 'Solo dritto' : 'Solo rovescio';
+  const strokeName = MODULE_LABELS[module];
 
   const own = (pidx: number) => state.players[pidx].series.filter(r => r.testType === module);
   const perfect = (pidx: number) => own(pidx).filter(r => r.score === 10).length;
@@ -50,10 +50,12 @@ export const StepSingleStroke: React.FC<Props> = ({ module, state, setSeriesResu
     <div className="space-y-4">
       <PlayerTabBar players={state.players} activeIdx={activeIdx} completedFlags={completedFlags} onChange={setActiveIdx} />
 
-      <Card title={`${strokeName} · ${DIRECTION_LABEL[direction].toLowerCase()}${playerLabel}`}
-        subtitle={`20 serie da 10 palle dal cesto · superato con ${required} serie perfette`}>
+      <Card title={`${strokeName} · ${directionLabel(module, direction).toLowerCase()}${playerLabel}`}
+        subtitle={module === 'insideout'
+          ? `Palla dal cesto sul lato del rovescio, il giocatore gira intorno e colpisce di dritto · 20 serie · superato con ${required} perfette`
+          : `20 serie da 10 palle dal cesto · superato con ${required} serie perfette`}>
         <div className="flex items-center gap-4 mb-4">
-          <CourtZones measures={zones.measures} level={zones.level} focus="groundstroke" mirror={direction === 'line'}
+          <CourtZones measures={zones.measures} level={zones.level} focus="groundstroke" mirror={targetMirrored(module, direction)}
             showLabels={false} className="h-24 w-auto flex-shrink-0" title="Zona bersaglio" />
           <div className="flex-1">
             <p className="text-xs text-gray-500">Serie perfette</p>

@@ -4,7 +4,8 @@ import type { PlayerProfile } from '../../types';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import {
-  CATEGORY_OPTIONS, MODULE_STEP_ORDER, MODULE_LABELS, MODULE_SERIES, EXCLUSIVE_WITH, DIRECTION_LABEL,
+  CATEGORY_OPTIONS, MODULE_STEP_ORDER, MODULE_LABELS, MODULE_SERIES, EXCLUSIVE_WITH, isSingleStroke, directionLabel,
+  type SingleStrokeModule,
 } from '../../lib/protocol';
 import { useAppData } from '../../contexts/AppDataContext';
 import { ZonePicker } from '../zones/ZonePicker';
@@ -13,6 +14,7 @@ const MODULE_HINT: Partial<Record<TestType, string>> = {
   groundstrokes: 'Alterna una serie di dritto e una di rovescio incrociati',
   forehand: '20 serie solo di dritto',
   backhand: '20 serie solo di rovescio',
+  insideout: 'Gira intorno al rovescio e colpisce di dritto',
 };
 
 interface Props {
@@ -34,6 +36,7 @@ export const StepMeta: React.FC<Props> = ({ state, update, updatePlayer, setPlay
     state.coach.trim().length > 0 &&
     state.selectedModules.length > 0;
 
+  // `single` kept for readability of the module list below
   const toggleModule = (m: TestType) => {
     const current = state.selectedModules;
     if (current.includes(m)) {
@@ -45,7 +48,7 @@ export const StepMeta: React.FC<Props> = ({ state, update, updatePlayer, setPlay
     }
   };
 
-  const setDirection = (m: 'forehand' | 'backhand', d: StrokeDirection) =>
+  const setDirection = (m: SingleStrokeModule, d: StrokeDirection) =>
     update({ strokeDirections: { ...state.strokeDirections, [m]: d } });
 
   const linkProfile = (playerIdx: number, profile: PlayerProfile) => {
@@ -114,7 +117,7 @@ export const StepMeta: React.FC<Props> = ({ state, update, updatePlayer, setPlay
         <div className="space-y-2">
           {MODULE_STEP_ORDER.map(m => {
             const selected = state.selectedModules.includes(m);
-            const single = m === 'forehand' || m === 'backhand';
+            const single = isSingleStroke(m);
             const excludedBy = (EXCLUSIVE_WITH[m] ?? []).find(x => state.selectedModules.includes(x));
             return (
               <div key={m} className={`rounded-xl border-2 transition-colors ${selected ? 'border-brand-600 bg-brand-600' : 'border-gray-200 bg-white'}`}>
@@ -134,14 +137,14 @@ export const StepMeta: React.FC<Props> = ({ state, update, updatePlayer, setPlay
                   </span>
                   <span className={`text-xs flex-shrink-0 ${selected ? 'text-brand-100' : 'text-gray-400'}`}>{MODULE_SERIES[m]} serie</span>
                 </button>
-                {selected && single && (
+                {selected && isSingleStroke(m) && (
                   <div className="px-3 pb-3 grid grid-cols-2 gap-2">
                     {(['cross', 'line'] as StrokeDirection[]).map(d => {
-                      const on = state.strokeDirections[m] === d;
+                      const on = (state.strokeDirections[m] ?? 'cross') === d;
                       return (
                         <button key={d} type="button" onClick={() => setDirection(m, d)} aria-pressed={on}
                           className={`py-2 rounded-lg text-xs font-semibold border ${on ? 'bg-white text-brand-800 border-white' : 'bg-transparent text-white border-white/40 hover:border-white'}`}>
-                          {DIRECTION_LABEL[d]}
+                          {directionLabel(m, d)}
                         </button>
                       );
                     })}

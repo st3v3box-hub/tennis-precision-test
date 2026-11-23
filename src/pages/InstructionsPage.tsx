@@ -75,6 +75,7 @@ const PROTOCOL_ROWS = [
   { test: 'Groundstrokes', series: 20, balls: 10, soglia: '10/20', pattern: 'FH Incrociato / BH Incrociato (alternati) · 10 perfette in totale' },
   { test: 'Solo dritto', series: 20, balls: 10, soglia: '10/20', pattern: 'Solo dritto, incrociato o lungolinea (scelto per tutto il test)' },
   { test: 'Solo rovescio', series: 20, balls: 10, soglia: '10/20', pattern: 'Solo rovescio, incrociato o lungolinea (scelto per tutto il test)' },
+  { test: 'Sventaglio di dritto', series: 20, balls: 10, soglia: '10/20', pattern: 'Palla sul rovescio, gira intorno e colpisce di dritto: inside-out (sul rovescio avversario) o inside-in (lungolinea, sul dritto). Settimo asse del radar' },
   { test: 'Combined', series: 10, balls: 10, soglia: '5/10', pattern: 'Lungolinea / Diagonale (alternati)' },
   { test: 'Return', series: 10, balls: 10, soglia: '5/10', pattern: 'Da Destra (deuce) / Da Sinistra (ad) (alternati)' },
   { test: 'Servizio', series: 6, balls: 10, soglia: '3/6', pattern: '1ª Destra / 2ª Sinistra (alternati) + striscia target' },

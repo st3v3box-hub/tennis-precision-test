@@ -18,12 +18,13 @@ import { StepReview } from './StepReview';
 
 const ALL_MODULES = DEFAULT_MODULES;
 
-const DEFAULT_DIRECTIONS: WizardState['strokeDirections'] = { forehand: 'cross', backhand: 'cross' };
+const DEFAULT_DIRECTIONS: WizardState['strokeDirections'] = { forehand: 'cross', backhand: 'cross', insideout: 'cross' };
 
 /** Directions used by an existing (draft) session */
 const directionsOf = (series: SeriesResult[]): WizardState['strokeDirections'] => ({
   forehand: detectedDirection(series, 'forehand'),
   backhand: detectedDirection(series, 'backhand'),
+  insideout: detectedDirection(series, 'insideout'),
 });
 
 /** Custom zones of a saved session become the player's choice again on resume */
@@ -378,6 +379,7 @@ export const WizardContainer: React.FC = () => {
         {currentStepId === 'groundstrokes' && <StepGroundstrokes {...stepProps} />}
         {currentStepId === 'forehand' && <StepSingleStroke key="fh" module="forehand" {...stepProps} />}
         {currentStepId === 'backhand' && <StepSingleStroke key="bh" module="backhand" {...stepProps} />}
+        {currentStepId === 'insideout' && <StepSingleStroke key="io" module="insideout" {...stepProps} />}
         {currentStepId === 'combined' && <StepCombined {...stepProps} />}
         {currentStepId === 'return' && <StepReturn {...stepProps} />}
         {currentStepId === 'serve' && <StepServe {...stepProps} />}

@@ -1,3 +1,4 @@
+import { radarStrokes, radarValuesFor, strokeLabel } from '../../lib/formulas';
 import { SessionOutcome } from './SessionOutcome';
 import { MODULE_LABELS, CATEGORY_TARGETS } from '../../lib/protocol';
 import React, { useState } from 'react';
@@ -126,18 +127,20 @@ export const ResultsDashboard: React.FC<Props> = ({ session, settings, compareSe
             stats={results.stats}
             radarArea={results.radarArea}
             percentOfIdeal={results.percentOfIdeal}
+            axes={results.radarValues.length}
           />
         </Card>
       )}
 
       {activeTab === 'radar' && (
         <Card
-          title="Radar — 6 Colpi"
+          title={`Radar — ${radarStrokes(results.stats, compareResults?.stats).length} colpi`}
           subtitle={`Area: ${results.radarArea.toFixed(1)} · ${results.percentOfIdeal.toFixed(1)}% dell'ideale`}
         >
           <RadarSpider
-            values={results.radarValues}
-            compareValues={compareResults?.radarValues}
+            labels={radarStrokes(results.stats, compareResults?.stats).map(strokeLabel)}
+            values={radarValuesFor(results.stats, radarStrokes(results.stats, compareResults?.stats))}
+            compareValues={compareResults ? radarValuesFor(compareResults.stats, radarStrokes(results.stats, compareResults.stats)) : undefined}
             compareLabel={compareSession ? `${compareSession.playerName} (${compareSession.date})` : undefined}
           />
         </Card>

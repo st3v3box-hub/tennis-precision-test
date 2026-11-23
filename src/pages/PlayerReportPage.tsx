@@ -1,3 +1,4 @@
+import { radarStrokes } from '../lib/formulas';
 import { SeriesBars, StrokeMetricsTable, ZonesPanel } from '../components/report/ReportBlocks';
 import { BrandLockup } from '../components/brand/BrandLockup';
 import React, { useMemo, useState } from 'react';
@@ -75,11 +76,11 @@ export const PlayerReportPage: React.FC = () => {
   const toImprove = ranked.length > 2 ? ranked.slice(-2).reverse() : [];
 
   const radarData = latest
-    ? latest.r.stats.map((st, i) => ({
-        stroke: st.label,
-        value: Number(st.ave.toFixed(2)),
-        first: first ? Number(first.r.stats[i].ave.toFixed(2)) : undefined,
-      }))
+    ? radarStrokes(latest.r.stats, first?.r.stats).map(stroke => {
+        const st = latest.r.stats.find(s => s.stroke === stroke)!;
+        const f = first?.r.stats.find(s => s.stroke === stroke);
+        return { stroke: st.label, value: Number(st.ave.toFixed(2)), first: f ? Number(f.ave.toFixed(2)) : undefined };
+      })
     : [];
   const trend = results.map(x => ({ date: x.s.date, pct: Math.round(x.r.percentOfIdeal) }));
 

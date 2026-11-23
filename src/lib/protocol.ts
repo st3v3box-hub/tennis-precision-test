@@ -16,13 +16,46 @@ export const GROUNDSTROKES_SERIES: SeriesSpec[] = Array.from({ length: 20 }, (_,
   label: `Serie ${i + 1} — ${i % 2 === 0 ? 'FH Incrociato' : 'BH Incrociato'}`,
 }));
 
+/** Modules played with one stroke and one direction chosen for the whole test */
+export type SingleStrokeModule = 'forehand' | 'backhand' | 'insideout';
+export const SINGLE_STROKE_MODULES: SingleStrokeModule[] = ['forehand', 'backhand', 'insideout'];
+export const isSingleStroke = (m: TestType): m is SingleStrokeModule => (SINGLE_STROKE_MODULES as TestType[]).includes(m);
+
+const SINGLE_DIRECTIONS: Record<SingleStrokeModule, Record<StrokeDirection, Direction>> = {
+  forehand: { cross: 'fh_cross', line: 'fh_line' },
+  backhand: { cross: 'bh_cross', line: 'bh_line' },
+  insideout: { cross: 'io_cross', line: 'io_line' },
+};
+
+/** Direction names per module: sventaglio uses inside-out / inside-in */
+export function directionLabel(module: SingleStrokeModule, dir: StrokeDirection): string {
+  if (module === 'insideout') return dir === 'line' ? 'Inside-in' : 'Inside-out';
+  return dir === 'line' ? 'Lungolinea' : 'Incrociato';
+}
+
+/** Short explanation of a direction, for buttons */
+export function directionHint(module: SingleStrokeModule, dir: StrokeDirection): string {
+  if (module === 'insideout') return dir === 'line' ? 'lungolinea, sul dritto dell\'avversario' : 'incrociato, sul rovescio dell\'avversario';
+  return dir === 'line' ? 'lungo la linea' : 'in diagonale';
+}
+
+/**
+ * Which back corner is the target, seen as in the court drawing.
+ * false = the forehand-crosscourt corner; true = the opposite one.
+ * Inside-out and backhand crosscourt go to the opponent's backhand corner,
+ * forehand down the line too; inside-in goes to the forehand-crosscourt corner.
+ */
+export function targetMirrored(module: SingleStrokeModule, dir: StrokeDirection): boolean {
+  if (module === 'forehand') return dir === 'line';
+  if (module === 'backhand') return dir === 'cross';
+  return dir === 'cross';
+}
+
 /** Single-stroke modules: 20 series of the same stroke, direction chosen for the whole test */
-export function singleStrokeSeries(module: 'forehand' | 'backhand', dir: StrokeDirection): SeriesSpec[] {
-  const direction: Direction = module === 'forehand'
-    ? (dir === 'line' ? 'fh_line' : 'fh_cross')
-    : (dir === 'line' ? 'bh_line' : 'bh_cross');
-  const stroke = module === 'forehand' ? 'Dritto' : 'Rovescio';
-  const where = dir === 'line' ? 'lungolinea' : 'incrociato';
+export function singleStrokeSeries(module: SingleStrokeModule, dir: StrokeDirection): SeriesSpec[] {
+  const direction = SINGLE_DIRECTIONS[module][dir];
+  const stroke = module === 'forehand' ? 'Dritto' : module === 'backhand' ? 'Rovescio' : 'Sventaglio';
+  const where = directionLabel(module, dir).toLowerCase();
   return Array.from({ length: 20 }, (_, i) => ({
     testType: module,
     seriesIndex: i,
@@ -34,9 +67,16 @@ export function singleStrokeSeries(module: 'forehand' | 'backhand', dir: StrokeD
 export const DIRECTION_LABEL: Record<StrokeDirection, string> = { cross: 'Incrociato', line: 'Lungolinea' };
 
 /** Direction used by a single-stroke module in an existing series list (defaults to cross) */
-export function detectedDirection(series: SeriesResult[], module: 'forehand' | 'backhand'): StrokeDirection {
+export function detectedDirection(series: SeriesResult[], module: SingleStrokeModule): StrokeDirection {
   const d = series.find(s => s.testType === module)?.direction;
-  return d === 'fh_line' || d === 'bh_line' ? 'line' : 'cross';
+  return d === 'fh_line' || d === 'bh_line' || d === 'io_line' ? 'line' : 'cross';
+}
+
+/** Module name with its direction, e.g. "Sventaglio di dritto inside-out" */
+export function moduleDisplayName(series: SeriesResult[], module: TestType): string {
+  return isSingleStroke(module)
+    ? `${MODULE_LABELS[module]} ${directionLabel(module, detectedDirection(series, module)).toLowerCase()}`
+    : MODULE_LABELS[module];
 }
 
 export const COMBINED_SERIES: SeriesSpec[] = Array.from({ length: 10 }, (_, i) => ({
@@ -132,7 +172,7 @@ export const CATEGORY_OPTIONS: { value: Category; label: string }[] = [
 ];
 
 /** Canonical order of test modules (used for step routing) */
-export const MODULE_STEP_ORDER: TestType[] = ['groundstrokes', 'forehand', 'backhand', 'combined', 'return', 'serve', 'volley'];
+export const MODULE_STEP_ORDER: TestType[] = ['groundstrokes', 'forehand', 'backhand', 'insideout', 'combined', 'return', 'serve', 'volley'];
 
 /** Modules selected by default in a new session (the original full protocol) */
 export const DEFAULT_MODULES: TestType[] = ['groundstrokes', 'combined', 'return', 'serve', 'volley'];
@@ -148,6 +188,7 @@ export const MODULE_LABELS: Record<TestType, string> = {
   groundstrokes: 'Groundstrokes (dritto + rovescio)',
   forehand: 'Solo dritto',
   backhand: 'Solo rovescio',
+  insideout: 'Sventaglio di dritto',
   combined: 'Combined',
   return: 'Return',
   serve: 'Servizio',
@@ -159,6 +200,7 @@ export const MODULE_SERIES: Record<TestType, number> = {
   groundstrokes: 20,
   forehand: 20,
   backhand: 20,
+  insideout: 20,
   combined: 10,
   return: 10,
   serve: 6,
@@ -173,6 +215,7 @@ export const MODULE_PASS: Record<TestType, number> = {
   groundstrokes: 10,
   forehand: 10,
   backhand: 10,
+  insideout: 10,
   combined: 5,
   return: 5,
   serve: 3,
@@ -261,6 +304,7 @@ export const WIZARD_STEPS = [
   { id: 'groundstrokes', label: 'Groundstrokes', title: 'Groundstrokes (20 serie)' },
   { id: 'forehand', label: 'Dritto', title: 'Solo dritto (20 serie)' },
   { id: 'backhand', label: 'Rovescio', title: 'Solo rovescio (20 serie)' },
+  { id: 'insideout', label: 'Sventaglio', title: 'Sventaglio di dritto (20 serie)' },
   { id: 'combined', label: 'Combined', title: 'Combined (10 serie)' },
   { id: 'return', label: 'Return', title: 'Return (10 serie)' },
   { id: 'serve', label: 'Servizio', title: 'Servizio (6 serie)' },

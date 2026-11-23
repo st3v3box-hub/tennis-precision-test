@@ -88,12 +88,12 @@ export const ChallengeResultsPage: React.FC = () => {
       for (let b = a + 1; b < n; b++) {
         const rA = results[a];
         const rB = results[b];
-        const rows: StrokeRow[] = rA.stats.map((s, i) => ({
+        const rows: StrokeRow[] = rA.stats.map((s, i): StrokeRow => ({
           label: s.label,
           val1: s.ave,
           val2: rB.stats[i].ave,
           winner: s.ave > rB.stats[i].ave ? 1 : rB.stats[i].ave > s.ave ? 2 : 0,
-        }));
+        })).filter((_, i) => keepStroke(rA.stats[i], results));
         const strokesA = rows.filter(r => r.winner === 1).length;
         const strokesB = rows.filter(r => r.winner === 2).length;
         matchups.push({
@@ -141,7 +141,7 @@ export const ChallengeResultsPage: React.FC = () => {
         entry[RADAR_LABELS[ri]] = parseFloat(r.stats[si].ave.toFixed(2));
       });
       return entry;
-    });
+    }).filter((_, si) => keepStroke(results[0].stats[si], results));
 
     const medalFor = (rank: number) => ['🥇', '🥈', '🥉'][rank] ?? `${rank + 1}°`;
 
@@ -290,15 +290,15 @@ export const ChallengeResultsPage: React.FC = () => {
     name2 = sessions[1].playerName;
     pct1 = r1.percentOfIdeal;
     pct2 = r2.percentOfIdeal;
-    comparison = r1.stats.map((s, i) => {
+    comparison = r1.stats.map((s, i): StrokeRow => {
       const v2 = r2.stats[i].ave;
       return { label: s.label, val1: s.ave, val2: v2, winner: s.ave > v2 ? 1 : v2 > s.ave ? 2 : 0 };
-    });
+    }).filter((_, i) => keepStroke(r1.stats[i], results));
     radarData = r1.stats.map((s, i) => ({
       subject: s.label,
       A: parseFloat(s.ave.toFixed(2)),
       B: parseFloat(r2.stats[i].ave.toFixed(2)),
-    }));
+    })).filter((_, i) => keepStroke(r1.stats[i], results));
   } else {
     const rA1 = results[0];
     const rA2 = results[1] ?? results[0];
@@ -308,16 +308,16 @@ export const ChallengeResultsPage: React.FC = () => {
     name2 = `${sessions[2]?.playerName ?? ''} & ${sessions[3]?.playerName ?? ''}`;
     pct1 = (rA1.percentOfIdeal + rA2.percentOfIdeal) / 2;
     pct2 = (rB1.percentOfIdeal + rB2.percentOfIdeal) / 2;
-    comparison = rA1.stats.map((s, i) => {
+    comparison = rA1.stats.map((s, i): StrokeRow => {
       const v1 = (s.ave + rA2.stats[i].ave) / 2;
       const v2 = (rB1.stats[i].ave + rB2.stats[i].ave) / 2;
       return { label: s.label, val1: v1, val2: v2, winner: v1 > v2 ? 1 : v2 > v1 ? 2 : 0 };
-    });
+    }).filter((_, i) => keepStroke(rA1.stats[i], results));
     radarData = rA1.stats.map((s, i) => ({
       subject: s.label,
       A: parseFloat(((s.ave + rA2.stats[i].ave) / 2).toFixed(2)),
       B: parseFloat(((rB1.stats[i].ave + rB2.stats[i].ave) / 2).toFixed(2)),
-    }));
+    })).filter((_, i) => keepStroke(rA1.stats[i], results));
   }
 
   const score1 = comparison.filter(c => c.winner === 1).length;
@@ -459,3 +459,8 @@ export const ChallengeResultsPage: React.FC = () => {
     </div>
   );
 };
+
+/** The Sventaglio row/axis only appears in challenges where someone played it. */
+function keepStroke(s: { stroke: string }, all: { stats: { stroke: string; scores: number[] }[] }[]): boolean {
+  return s.stroke !== 'insideout' || all.some(r => r.stats.some(x => x.stroke === 'insideout' && x.scores.length > 0));
+}

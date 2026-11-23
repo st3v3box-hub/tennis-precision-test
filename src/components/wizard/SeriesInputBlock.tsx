@@ -15,6 +15,8 @@ const directionLabel: Record<string, string> = {
   bh_cross: '🎾 BH Incrociato',
   fh_line: '🎾 Dritto lungolinea',
   bh_line: '🎾 Rovescio lungolinea',
+  io_cross: '🎾 Sventaglio inside-out',
+  io_line: '🎾 Sventaglio inside-in',
   lungolinea: '➡️ Lungolinea',
   diagonale: '↗️ Diagonale',
   right: '→ Da Destra',

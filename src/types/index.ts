@@ -1,7 +1,7 @@
 export type Category = 'terza' | 'seconda' | 'prima' | 'u10_u12';
 
 /** forehand / backhand = single-stroke modules ("Solo dritto" / "Solo rovescio") */
-export type TestType = 'groundstrokes' | 'forehand' | 'backhand' | 'combined' | 'return' | 'serve' | 'volley';
+export type TestType = 'groundstrokes' | 'forehand' | 'backhand' | 'insideout' | 'combined' | 'return' | 'serve' | 'volley';
 
 /** Direction chosen for a whole single-stroke module */
 export type StrokeDirection = 'cross' | 'line';
@@ -11,6 +11,8 @@ export type Direction =
   | 'bh_cross'
   | 'fh_line'
   | 'bh_line'
+  | 'io_cross'  // sventaglio inside-out (toward the opponent's backhand)
+  | 'io_line'   // sventaglio inside-in (down the line, toward the opponent's forehand)
   | 'lungolinea'
   | 'diagonale'
   | 'right'
@@ -23,7 +25,8 @@ export type ServeType = 'prima' | 'seconda';
 export type TargetStrip = 'T' | 'body' | 'wide';
 
 /** Order: serve, forehand, combined, return, backhand, volley — matches radar order */
-export type StrokeName = 'serve' | 'forehand' | 'combined' | 'return' | 'backhand' | 'volley';
+/** insideout = "Sventaglio": 7th radar axis, shown only when tested */
+export type StrokeName = 'serve' | 'forehand' | 'insideout' | 'combined' | 'return' | 'backhand' | 'volley';
 
 export type StdDevMode = 'sample' | 'population';
 
@@ -260,7 +263,7 @@ export interface WizardState {
   challengeMode: 'none' | '1v1' | '2v2' | 'ffa';
   selectedModules: TestType[];
   /** Direction of the single-stroke modules, chosen for the whole test */
-  strokeDirections: { forehand: StrokeDirection; backhand: StrokeDirection };
+  strokeDirections: { forehand: StrokeDirection; backhand: StrokeDirection; insideout: StrokeDirection };
   challengeId?: string;       // generated at start for challenge sessions
   draftSessionIds?: string[]; // existing session IDs to update on resume
 }

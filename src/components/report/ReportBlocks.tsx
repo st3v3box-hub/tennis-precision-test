@@ -1,3 +1,4 @@
+import { radarStrokes } from '../../lib/formulas';
 import React from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Cell, ReferenceLine,
@@ -5,7 +6,7 @@ import {
 } from 'recharts';
 import type { SessionResults, TestSession } from '../../types';
 import {
-  MODULE_LABELS, MODULE_SERIES, OUTCOME_LABEL, DIRECTION_LABEL, detectedDirection, modulePasses,
+  MODULE_SERIES, OUTCOME_LABEL, detectedDirection, modulePasses, moduleDisplayName, isSingleStroke, targetMirrored,
   type ModulePass,
 } from '../../lib/protocol';
 import { CourtZones } from '../brand/CourtZones';
@@ -19,9 +20,7 @@ const GREEN = '#17663e';
 const PALE = '#b3d5bc';
 
 export function moduleTitle(session: TestSession, m: ModulePass['module']): string {
-  return m === 'forehand' || m === 'backhand'
-    ? `${MODULE_LABELS[m]} ${DIRECTION_LABEL[detectedDirection(session.series, m)].toLowerCase()}`
-    : MODULE_LABELS[m];
+  return moduleDisplayName(session.series, m);
 }
 
 const outcomeCls: Record<ModulePass['outcome'], string> = {
@@ -70,14 +69,20 @@ export const SeriesBars: React.FC<{ session: TestSession; width?: number }> = ({
 
 /** Radar of the stroke averages, optional comparison polygon (e.g. first test). */
 export const RadarPrint: React.FC<{ results: SessionResults; compare?: SessionResults; size?: number }> = ({ results, compare, size = 300 }) => {
-  const data = results.stats.map((st, i) => ({
-    // Strokes not in this test stay on the radar at 0, marked "n.t." (non testato)
-    stroke: st.scores.length > 0 ? st.label : `${st.label} (n.t.)`,
-    value: Number(st.ave.toFixed(2)),
-    compare: compare ? Number(compare.stats[i].ave.toFixed(2)) : undefined,
-  }));
+  // 6 axes, 7 when the Sventaglio is in this test or in the comparison
+  const axes = radarStrokes(results.stats, compare?.stats);
+  const data = axes.map(stroke => {
+    const st = results.stats.find(s => s.stroke === stroke)!;
+    const cmp = compare?.stats.find(s => s.stroke === stroke);
+    return {
+      // Strokes not in this test stay on the radar at 0, marked "n.t." (non testato)
+      stroke: st.scores.length > 0 ? st.label : `${st.label} (n.t.)`,
+      value: Number(st.ave.toFixed(2)),
+      compare: cmp ? Number(cmp.ave.toFixed(2)) : undefined,
+    };
+  });
   return (
-    <RadarChart width={size} height={size * 0.8} data={data} outerRadius={size * 0.29}>
+    <RadarChart width={size} height={size * 0.8} data={data} outerRadius={size * 0.27} margin={{ top: 4, right: 36, bottom: 4, left: 36 }}>
       <PolarGrid stroke="#e5e5e5" />
       <PolarAngleAxis dataKey="stroke" tick={{ fontSize: 10, fill: '#404040' }} />
       <PolarRadiusAxis domain={[0, 10]} tick={false} axisLine={false} />
@@ -130,7 +135,9 @@ export const ZonesPanel: React.FC<{ session: TestSession; width?: number }> = ({
     standard: true,
   };
   const d = describeZones(zones, session.category);
-  const lineFH = session.series.some(s => s.direction === 'fh_line' || s.direction === 'bh_line');
+  // Groundstroke box on the side targeted by the (first) single-stroke module, if any
+  const single = modulePasses(session.series).map(p => p.module).find(isSingleStroke);
+  const lineFH = single ? targetMirrored(single, detectedDirection(session.series, single)) : false;
   return (
     <div className="flex gap-4 items-start">
       <div style={{ width }} className="flex-shrink-0">

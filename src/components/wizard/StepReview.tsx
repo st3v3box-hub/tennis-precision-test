@@ -45,6 +45,7 @@ function makeRows(player: WizardPlayerData, selectedModules: TestType[]): Summar
     make('Groundstrokes BH', 'groundstrokes', GROUNDSTROKES_SERIES.filter(s => s.direction === 'bh_cross')),
     make('Solo dritto', 'forehand', singleStrokeSeries('forehand', 'cross')),
     make('Solo rovescio', 'backhand', singleStrokeSeries('backhand', 'cross')),
+    make('Sventaglio', 'insideout', singleStrokeSeries('insideout', 'cross')),
     make('Combined', 'combined', COMBINED_SERIES),
     make('Return', 'return', RETURN_SERIES),
     make('Servizio', 'serve', SERVE_SERIES),

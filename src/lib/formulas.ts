@@ -79,6 +79,7 @@ export function percentOfIdeal(values: number[]): number {
 const STROKE_LABELS: Record<StrokeName, string> = {
   serve: 'Servizio',
   forehand: 'Forehand',
+  insideout: 'Sventaglio',
   combined: 'Combined',
   return: 'Return',
   backhand: 'Backhand',
@@ -119,6 +120,8 @@ export function computeStrokeStats(
   return [
     make('serve', scores(s => s.testType === 'serve'), MODULE_PASS.serve),
     make('forehand', scores(s => s.testType === 'forehand' || (s.testType === 'groundstrokes' && s.direction === 'fh_cross')), fhThreshold),
+    // 7th axis, next to the forehand. Untested on older sessions: left out of radar and % (see radarStats).
+    make('insideout', scores(s => s.testType === 'insideout'), MODULE_PASS.insideout),
     make('combined', scores(s => s.testType === 'combined'), MODULE_PASS.combined),
     make('return', scores(s => s.testType === 'return'), MODULE_PASS.return),
     make('backhand', scores(s => s.testType === 'backhand' || (s.testType === 'groundstrokes' && s.direction === 'bh_cross')), bhThreshold),
@@ -184,6 +187,20 @@ export function computePrecisionTime(
 
 // ─── Full session results ────────────────────────────────────────────────────
 
+/** Axes shown on a radar: the 6 base strokes, plus Sventaglio when any of the lists has it */
+export function radarStrokes(...lists: (StrokeStats[] | undefined)[]): StrokeName[] {
+  const withInsideOut = lists.some(l => l?.some(s => s.stroke === 'insideout' && s.scores.length > 0));
+  const order = (lists.find(Boolean) ?? []).map(s => s.stroke);
+  return order.filter(st => st !== 'insideout' || withInsideOut);
+}
+
+/** Values of one stats list on the given axes (0 for missing) */
+export function radarValuesFor(stats: StrokeStats[] | undefined, axes: StrokeName[]): number[] {
+  return axes.map(a => stats?.find(s => s.stroke === a)?.ave ?? 0);
+}
+
+export const strokeLabel = (s: StrokeName) => STROKE_LABELS[s];
+
 export type ResultOptions = Partial<Pick<AppSettings, 'stdDevMode' | 'precisionTimeStrategy' | 'scoreScale'>>;
 
 /**
@@ -199,7 +216,8 @@ export function computeSessionResults(
   const scale: ScoreScale = options.scoreScale ?? 'radar';
 
   const stats = computeStrokeStats(session, mode);
-  const values = stats.map(s => s.ave);
+  // Radar values: 6 axes, 7 when the Sventaglio was tested (older tests stay identical)
+  const values = radarValuesFor(stats, radarStrokes(stats));
 
   // Partial tests: only strokes that actually have data count towards the %
   const testedValues = stats.filter(s => s.scores.length > 0).map(s => s.ave);

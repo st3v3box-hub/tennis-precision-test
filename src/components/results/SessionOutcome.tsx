@@ -1,6 +1,6 @@
 import React from 'react';
 import type { TestSession } from '../../types';
-import { MODULE_LABELS, modulePasses, detectedDirection, DIRECTION_LABEL, OUTCOME_LABEL } from '../../lib/protocol';
+import { MODULE_LABELS, modulePasses, moduleDisplayName, OUTCOME_LABEL } from '../../lib/protocol';
 import { describeZones, isStandardZones } from '../../lib/zones';
 import { useAppData } from '../../contexts/AppDataContext';
 import { CourtZones } from '../brand/CourtZones';
@@ -13,8 +13,7 @@ export const SessionOutcome: React.FC<{ session: TestSession }> = ({ session }) 
   const zones = session.zones ?? { level: session.category, measures: session.category === 'u10_u12' ? null : settings.zoneDefaults[session.category], standard: true };
   const d = describeZones(zones, session.category);
   const custom = !isStandardZones(session);
-  const label = (m: (typeof passes)[number]['module']) =>
-    m === 'forehand' || m === 'backhand' ? `${MODULE_LABELS[m]} ${DIRECTION_LABEL[detectedDirection(session.series, m)].toLowerCase()}` : MODULE_LABELS[m];
+  const label = (m: (typeof passes)[number]['module']) => moduleDisplayName(session.series, m);
 
   return (
     <div className="bg-white rounded-2xl border border-black/[0.06] p-4 grid grid-cols-[88px_minmax(0,1fr)] gap-4 items-start">

@@ -26,16 +26,19 @@ interface DataPoint {
 }
 
 interface Props {
-  values: number[]; // [serve, forehand, combined, return, backhand, volley]
+  /** Axis labels, aligned with values (6 strokes, 7 with the Sventaglio) */
+  labels?: string[];
+  values: number[];
   compareValues?: number[];
   compareLabel?: string;
 }
 
 const STROKE_ORDER = ['serve', 'forehand', 'combined', 'return', 'backhand', 'volley'];
 
-export const RadarSpider: React.FC<Props> = ({ values, compareValues, compareLabel }) => {
-  const data: DataPoint[] = STROKE_ORDER.map((stroke, i) => ({
-    stroke: STROKE_LABELS[stroke],
+export const RadarSpider: React.FC<Props> = ({ labels, values, compareValues, compareLabel }) => {
+  const axisLabels = labels ?? STROKE_ORDER.map(s => STROKE_LABELS[s]);
+  const data: DataPoint[] = axisLabels.map((label, i) => ({
+    stroke: label,
     value: Number((values[i] ?? 0).toFixed(2)),
     ideal: 10,
     compare: compareValues ? Number((compareValues[i] ?? 0).toFixed(2)) : undefined,

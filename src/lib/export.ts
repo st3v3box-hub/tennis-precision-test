@@ -19,7 +19,7 @@ export function exportSessionCSV(session: TestSession, options: ResultOptions = 
   lines.push('');
 
   lines.push(csvRow(['Stroke', 'Label', 'Ave', 'Dev', 'N Serie']));
-  for (const s of r.stats) {
+  for (const s of r.stats.filter(st => st.stroke !== 'insideout' || st.scores.length > 0)) {
     lines.push(csvRow([s.stroke, s.label, s.ave.toFixed(3), s.dev.toFixed(3), s.scores.length]));
   }
   lines.push('');
@@ -68,6 +68,8 @@ export function exportHistoryCSV(sessions: TestSession[], options: ResultOptions
       'BH_Dev',
       'Volley_Ave',
       'Volley_Dev',
+      'Sventaglio_Ave',
+      'Sventaglio_Dev',
       'Area',
       '%Ideale',
     ])
@@ -96,6 +98,8 @@ export function exportHistoryCSV(sessions: TestSession[], options: ResultOptions
         m.backhand?.dev.toFixed(3) ?? '',
         m.volley?.ave.toFixed(3) ?? '',
         m.volley?.dev.toFixed(3) ?? '',
+        m.insideout?.scores.length ? m.insideout.ave.toFixed(3) : '',
+        m.insideout?.scores.length ? m.insideout.dev.toFixed(3) : '',
         r.radarArea.toFixed(3),
         r.percentOfIdeal.toFixed(2) + '%',
       ])
