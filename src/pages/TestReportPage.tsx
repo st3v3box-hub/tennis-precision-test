@@ -144,10 +144,9 @@ export const TestReportPage: React.FC = () => {
         </Card>
 
         <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-4">
-          <Card title="Profilo tecnico" subtitle={previous && results.stats.filter(st => st.scores.length > 0).length >= 3 ? `Questo test (verde) e il precedente del ${previous.s.date} (grigio)` : 'Media per colpo, su 10'} className="break-inside-avoid">
-            {results.stats.filter(st => st.scores.length > 0).length >= 3
-              ? <div className="flex justify-center"><RadarPrint results={results} compare={previous?.r} size={300} /></div>
-              : <StrokeBarsPrint results={results} />}
+          <Card title="Profilo tecnico" subtitle={previous ? `Questo test (verde) e il precedente del ${previous.s.date} (grigio)` : 'Media per colpo, su 10'} className="break-inside-avoid">
+            <div className="flex justify-center"><RadarPrint results={results} compare={previous?.r} size={300} /></div>
+            {results.stats.filter(st => st.scores.length > 0).length < 3 && <StrokeBarsPrint results={results} />}
           </Card>
           <Card title="Metriche per colpo" className="break-inside-avoid">
             <StrokeMetricsTable results={results} />

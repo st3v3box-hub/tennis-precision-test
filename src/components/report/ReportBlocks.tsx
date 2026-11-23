@@ -71,7 +71,8 @@ export const SeriesBars: React.FC<{ session: TestSession; width?: number }> = ({
 /** Radar of the stroke averages, optional comparison polygon (e.g. first test). */
 export const RadarPrint: React.FC<{ results: SessionResults; compare?: SessionResults; size?: number }> = ({ results, compare, size = 300 }) => {
   const data = results.stats.map((st, i) => ({
-    stroke: st.label,
+    // Strokes not in this test stay on the radar at 0, marked "n.t." (non testato)
+    stroke: st.scores.length > 0 ? st.label : `${st.label} (n.t.)`,
     value: Number(st.ave.toFixed(2)),
     compare: compare ? Number(compare.stats[i].ave.toFixed(2)) : undefined,
   }));
@@ -176,6 +177,6 @@ export const StrokeBarsPrint: React.FC<{ results: SessionResults }> = ({ results
         </div>
       </div>
     ))}
-    <p className="text-[11px] text-gray-500">Il radar completo compare quando il test comprende almeno tre colpi.</p>
+    <p className="text-[11px] text-gray-500">n.t. = colpo non testato in questa sessione.</p>
   </div>
 );
