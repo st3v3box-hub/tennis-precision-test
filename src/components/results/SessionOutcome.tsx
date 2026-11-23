@@ -1,6 +1,6 @@
 import React from 'react';
 import type { TestSession } from '../../types';
-import { MODULE_LABELS, modulePasses, detectedDirection, DIRECTION_LABEL } from '../../lib/protocol';
+import { MODULE_LABELS, modulePasses, detectedDirection, DIRECTION_LABEL, OUTCOME_LABEL } from '../../lib/protocol';
 import { describeZones, isStandardZones } from '../../lib/zones';
 import { useAppData } from '../../contexts/AppDataContext';
 import { CourtZones } from '../brand/CourtZones';
@@ -33,12 +33,17 @@ export const SessionOutcome: React.FC<{ session: TestSession }> = ({ session }) 
             Fondo: {d.groundstroke}<br />Volée: {d.volley} · Servizio: {d.serve}
           </p>
         </div>
+        {session.plannedModules && (
+          <p className="text-xs text-gray-600">
+            Test chiuso prima della fine. Non fatti: {session.plannedModules.filter(m => !passes.some(p => p.module === m)).map(m => MODULE_LABELS[m]).join(', ')}.
+          </p>
+        )}
         {passes.length > 0 && (
           <ul className="flex flex-wrap gap-1.5">
             {passes.map(p => (
               <li key={p.module}
-                className={`text-xs rounded-lg px-2 py-1 border ${p.passed ? 'bg-ok-50 border-ok-200 text-ok-800' : 'bg-amber-50 border-amber-200 text-amber-800'}`}>
-                <strong>{label(p.module)}</strong> · {p.passed ? 'superato' : 'non superato'} ({p.perfect}/{p.required} perfette, {p.played} serie)
+                className={`text-xs rounded-lg px-2 py-1 border ${p.outcome === 'superato' ? 'bg-ok-50 border-ok-200 text-ok-800' : p.outcome === 'interrotto' ? 'bg-gray-50 border-gray-300 text-gray-700' : 'bg-amber-50 border-amber-200 text-amber-800'}`}>
+                <strong>{label(p.module)}</strong> · {OUTCOME_LABEL[p.outcome]} ({p.perfect}/{p.required} perfette, {p.played} serie)
               </li>
             ))}
           </ul>

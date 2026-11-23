@@ -179,21 +179,68 @@ export const MODULE_PASS: Record<TestType, number> = {
   volley: 5,
 };
 
+export type ModuleOutcome = 'superato' | 'non_superato' | 'interrotto';
+
 export interface ModulePass {
   module: TestType;
   played: number;
   perfect: number;
   required: number;
   passed: boolean;
+  /** Played to the end (all series) or stopped because passed */
+  complete: boolean;
+  /** superato = passed · non_superato = all series played without passing · interrotto = stopped before */
+  outcome: ModuleOutcome;
 }
+
+export const OUTCOME_LABEL: Record<ModuleOutcome, string> = {
+  superato: 'superato',
+  non_superato: 'non superato',
+  interrotto: 'interrotto',
+};
 
 /** Pass/fail of every module present in a session */
 export function modulePasses(series: SeriesResult[]): ModulePass[] {
   return detectedModules(series).map(module => {
     const own = series.filter(s => s.testType === module);
     const perfect = own.filter(s => s.score === 10).length;
-    return { module, played: own.length, perfect, required: MODULE_PASS[module], passed: perfect >= MODULE_PASS[module] };
+    const passed = perfect >= MODULE_PASS[module];
+    const complete = passed || own.length >= MODULE_SERIES[module];
+    return {
+      module, played: own.length, perfect, required: MODULE_PASS[module], passed, complete,
+      outcome: passed ? 'superato' : complete ? 'non_superato' : 'interrotto',
+    };
   });
+}
+
+/** A module is finished for a player when all its series are in or it has been passed */
+export function moduleDone(series: SeriesResult[], module: TestType): boolean {
+  const own = series.filter(s => s.testType === module);
+  return own.length >= MODULE_SERIES[module] || own.filter(s => s.score === 10).length >= MODULE_PASS[module];
+}
+
+/** Some module was stopped before its end (rain, darkness, time…) */
+export function sessionInterrupted(series: SeriesResult[]): boolean {
+  return modulePasses(series).some(m => m.outcome === 'interrotto');
+}
+
+/**
+ * Partial = the test does not cover every stroke of the full protocol
+ * (e.g. only "Solo dritto"). Its % is computed on the strokes actually tested.
+ */
+export function sessionPartial(series: SeriesResult[]): boolean {
+  const mods = new Set(detectedModules(series));
+  const fh = mods.has('groundstrokes') || mods.has('forehand');
+  const bh = mods.has('groundstrokes') || mods.has('backhand');
+  return !(fh && bh && mods.has('combined') && mods.has('return') && mods.has('serve') && mods.has('volley'));
+}
+
+/** Short label for lists and rankings, e.g. "parziale · Solo dritto" or "interrotto" */
+export function sessionScopeLabel(series: SeriesResult[]): string | null {
+  const parts: string[] = [];
+  if (sessionPartial(series)) parts.push(`parziale · ${detectedModules(series).map(m => MODULE_LABELS[m]).join(', ')}`);
+  if (sessionInterrupted(series)) parts.push('interrotto');
+  return parts.length ? parts.join(' · ') : null;
 }
 
 /** A session passes when every module it contains is passed (false when no module was played) */

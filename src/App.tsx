@@ -21,6 +21,7 @@ import { KillerHomePage } from './pages/KillerHomePage';
 import { KillerTestPage } from './pages/KillerTestPage';
 import { KillerResultsPage } from './pages/KillerResultsPage';
 import { PlayerReportPage } from './pages/PlayerReportPage';
+import { TestReportPage } from './pages/TestReportPage';
 
 interface Props {
   role: UserRole;
@@ -52,6 +53,7 @@ const AppRoutes: React.FC<Props> = ({ role, onLogout }) => {
       <Route path="/players/:id" element={<PlayerDetailPage />} />
       <Route path="/players/:id/report" element={<PlayerReportPage />} />
       <Route path="/results/:id" element={<SessionResultsPage />} />
+      <Route path="/results/:id/report" element={<TestReportPage />} />
       <Route path="/multi-results" element={<MultiResultsPage />} />
       <Route path="/killer" element={<KillerHomePage />} />
 

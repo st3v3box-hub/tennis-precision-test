@@ -96,6 +96,8 @@ export interface TestSession {
   createdAt: string;
   series: SeriesResult[];
   selectedModules?: TestType[];
+  /** Modules planned at the start, when the test was closed before doing all of them */
+  plannedModules?: TestType[];
   challengeId?: string;   // groups sessions belonging to the same challenge
   /** Target zones used in this test (snapshot). Missing on tests made before zones existed = standard. */
   zones?: SessionZones;

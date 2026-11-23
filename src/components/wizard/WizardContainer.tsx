@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import type { WizardState, WizardPlayerData, Category, SeriesResult, TestSession } from '../../types';
+import type { WizardState, WizardPlayerData, Category, SeriesResult, TestSession, TestType } from '../../types';
 import { uid } from '../../lib/storage';
 import { useAppData } from '../../contexts/AppDataContext';
 import { ProgressSteps } from '../ui/ProgressSteps';
 import { WIZARD_STEPS, MODULE_STEP_ORDER, DEFAULT_MODULES, detectedModules, detectedDirection } from '../../lib/protocol';
 import { resolveSessionZones } from '../../lib/zones';
 import { StepSingleStroke } from './StepSingleStroke';
+import { ModuleActions } from './ModuleActions';
 import { StepMeta } from './StepMeta';
 import { StepGroundstrokes } from './StepGroundstrokes';
 import { StepCombined } from './StepCombined';
@@ -237,7 +238,9 @@ export const WizardContainer: React.FC = () => {
     playerId: string,
     id: string,
     now: string,
-    completed: boolean
+    completed: boolean,
+    /** Modules to store; defaults to the selected ones. Used to close a test early. */
+    modules: TestType[] = state.selectedModules
   ) => ({
     id,
     playerId,
@@ -250,11 +253,13 @@ export const WizardContainer: React.FC = () => {
     completed,
     createdAt: now,
     // Only the series of the selected modules (e.g. after switching groundstrokes → solo dritto)
-    series: p.series.filter(r => state.selectedModules.includes(r.testType)),
+    series: p.series.filter(r => modules.includes(r.testType)),
     // Saved unless it is exactly the original full protocol (older sessions have no field)
-    selectedModules: sameModules(state.selectedModules, ALL_MODULES)
+    selectedModules: sameModules(modules, ALL_MODULES)
       ? undefined
-      : MODULE_STEP_ORDER.filter(m => state.selectedModules.includes(m)), // canonical order
+      : MODULE_STEP_ORDER.filter(m => modules.includes(m)), // canonical order
+    // What was planned, when the test was closed before doing every selected module
+    ...(sameModules(modules, state.selectedModules) ? {} : { plannedModules: MODULE_STEP_ORDER.filter(m => state.selectedModules.includes(m)) }),
     zones: resolveSessionZones(p.category, p.zones, settings.zoneDefaults),
     ...(state.challengeId ? { challengeId: state.challengeId } : {}),
   });
@@ -308,7 +313,22 @@ export const WizardContainer: React.FC = () => {
     }
   };
 
-  const save = async () => {
+  /**
+   * Close the test now: keep only the modules with at least one series (for any player),
+   * save as completed. Modules stopped half-way are shown as "interrotto".
+   */
+  const finishNow = async () => {
+    const played = MODULE_STEP_ORDER.filter(m =>
+      state.selectedModules.includes(m) && state.players.some(p => p.series.some(r => r.testType === m))
+    );
+    if (played.length === 0) {
+      setSaveError('Nessuna serie inserita: non c\'è niente da salvare.');
+      return;
+    }
+    await save(played);
+  };
+
+  const save = async (modules: TestType[] = state.selectedModules) => {
     setSaving(true);
     setSaveError(null);
     try {
@@ -320,7 +340,7 @@ export const WizardContainer: React.FC = () => {
         const p = state.players[pi];
         const playerId = await resolvePlayer(p, now);
         const id = state.draftSessionIds?.[pi] ?? uid();
-        await upsertSession(buildSessionPayload(p, playerId, id, now, true));
+        await upsertSession(buildSessionPayload(p, playerId, id, now, true, modules));
         ids.push(id);
       }
 
@@ -362,10 +382,23 @@ export const WizardContainer: React.FC = () => {
         {currentStepId === 'return' && <StepReturn {...stepProps} />}
         {currentStepId === 'serve' && <StepServe {...stepProps} />}
         {currentStepId === 'volley' && <StepVolley {...stepProps} />}
+        {currentStepId !== 'meta' && currentStepId !== 'review' && (
+          <ModuleActions
+            state={state}
+            module={currentStepId as TestType}
+            busy={saving || savingDraft}
+            onFinish={finishNow}
+            onPause={saveDraft}
+            onNext={next}
+          />
+        )}
+        {saveError && currentStepId !== 'review' && (
+          <p className="mt-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2">{saveError}</p>
+        )}
         {currentStepId === 'review' && (
           <StepReview
             {...stepProps}
-            onSave={save}
+            onSave={() => save()}
             saving={saving}
             saveError={saveError}
             onSaveDraft={saveDraft}

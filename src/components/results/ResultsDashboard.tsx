@@ -79,7 +79,10 @@ export const ResultsDashboard: React.FC<Props> = ({ session, settings, compareSe
               </p>
             )}
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap justify-end">
+            <Button size="sm" onClick={() => navigate(`/results/${session.id}/report`)}>
+              PDF del test
+            </Button>
             <Button
               size="sm"
               variant="secondary"

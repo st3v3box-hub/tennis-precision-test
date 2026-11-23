@@ -1,4 +1,4 @@
-import { CATEGORY_TARGETS } from '../../lib/protocol';
+import { CATEGORY_TARGETS, sessionScopeLabel } from '../../lib/protocol';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { TestSession, AppSettings } from '../../types';
@@ -104,6 +104,9 @@ export const HistoryList: React.FC<Props> = ({ sessions, settings }) => {
                       return ` · ${age} anni`;
                     })()}
                   </p>
+                  {sessionScopeLabel(session.series) && (
+                    <span className="inline-block mt-1 mr-1 text-[11px] font-semibold text-gray-700 bg-gray-100 rounded-full px-2 py-0.5">{sessionScopeLabel(session.series)}</span>
+                  )}
                   {session.zones && !session.zones.standard && (
                     <span className="inline-block mt-1 text-[11px] font-semibold text-ball-ink bg-ball rounded-full px-2 py-0.5">zone personalizzate</span>
                   )}

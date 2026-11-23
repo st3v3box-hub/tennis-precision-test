@@ -1,3 +1,4 @@
+import { sessionScopeLabel } from '../lib/protocol';
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Category } from '../types';
@@ -52,15 +53,20 @@ export const RankingPage: React.FC = () => {
   const byCategory = (cat: Category) =>
     ranked.filter(r => r.session.category === cat);
 
-  type GeneraleRow = { name: string; u10_u12: number | null; terza: number | null; seconda: number | null; prima: number | null };
+  type GeneraleRow = {
+    name: string; u10_u12: number | null; terza: number | null; seconda: number | null; prima: number | null;
+    /** Categories whose best result comes from a partial / interrupted test */
+    partial: Partial<Record<Category, boolean>>;
+  };
   const generalRows = useMemo(() => {
     const map = new Map<string, GeneraleRow>();
     ranked.forEach(({ session, pct }) => {
       const key = session.playerName.trim().toLowerCase();
-      const existing: GeneraleRow = map.get(key) ?? { name: session.playerName, u10_u12: null, terza: null, seconda: null, prima: null };
+      const existing: GeneraleRow = map.get(key) ?? { name: session.playerName, u10_u12: null, terza: null, seconda: null, prima: null, partial: {} };
       const cat = session.category;
       if (existing[cat] === null || pct > (existing[cat] as number)) {
         existing[cat] = pct;
+        existing.partial = { ...existing.partial, [cat]: sessionScopeLabel(session.series) !== null };
       }
       map.set(key, existing);
     });
@@ -104,6 +110,11 @@ export const RankingPage: React.FC = () => {
                 <p className="text-xs text-gray-400 mt-0.5">
                   {session.date} · Coach: {session.coach}
                 </p>
+                {sessionScopeLabel(session.series) && (
+                  <span className="inline-block mt-1 text-[11px] font-semibold text-gray-700 bg-gray-100 rounded-full px-2 py-0.5">
+                    {sessionScopeLabel(session.series)}
+                  </span>
+                )}
               </div>
               <div className="flex-shrink-0 text-right">
                 <div className={`text-xl font-black ${pct >= 80 ? 'text-ok-600' : pct >= 60 ? 'text-yellow-600' : 'text-red-500'}`}>
@@ -170,11 +181,16 @@ export const RankingPage: React.FC = () => {
                     {(['u10_u12', 'terza', 'seconda', 'prima'] as Category[]).map(cat => (
                       <td key={cat} className="px-2 py-3 text-center">
                         {row[cat] !== null ? (
-                          <span className={`font-bold text-sm ${
-                            (row[cat] as number) === best && best > 0 ? 'text-ok-700' : 'text-gray-700'
-                          }`}>
-                            {(row[cat] as number).toFixed(1)}%
-                          </span>
+                          <>
+                            <span className={`font-bold text-sm ${
+                              (row[cat] as number) === best && best > 0 ? 'text-ok-700' : 'text-gray-700'
+                            }`}>
+                              {(row[cat] as number).toFixed(1)}%
+                            </span>
+                            {row.partial[cat] && (
+                              <span className="block text-[10px] font-semibold text-gray-500 leading-none mt-0.5">parziale</span>
+                            )}
+                          </>
                         ) : (
                           <span className="text-gray-300 text-xs">—</span>
                         )}
@@ -209,6 +225,7 @@ export const RankingPage: React.FC = () => {
                       <div className="text-lg">{MEDAL[i]}</div>
                       <div className="text-xs font-bold text-gray-800 truncate">{session.playerName}</div>
                       <div className="text-sm font-black text-neutral-900">{pct.toFixed(1)}%</div>
+                      {sessionScopeLabel(session.series) && <div className="text-[10px] font-semibold text-gray-500">parziale</div>}
                     </button>
                   ))}
                 </div>

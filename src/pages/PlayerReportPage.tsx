@@ -1,3 +1,4 @@
+import { SeriesBars, StrokeMetricsTable, ZonesPanel } from '../components/report/ReportBlocks';
 import { BrandLockup } from '../components/brand/BrandLockup';
 import React, { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -157,7 +158,7 @@ export const PlayerReportPage: React.FC = () => {
         ) : (
           <>
             <section className="grid grid-cols-2 gap-4 break-inside-avoid">
-              <Card title="Profilo tecnico" subtitle={first ? `Ultimo test (rosso) e primo test in categoria (grigio)` : 'Media per colpo, su 10'}>
+              <Card title="Profilo tecnico" subtitle={first ? `Ultimo test (verde) e primo test in categoria (grigio)` : 'Media per colpo, su 10'}>
                 <div className="flex justify-center">
                   <RadarChart width={300} height={240} data={radarData} outerRadius={85}>
                     <PolarGrid stroke="#e5e5e5" />
@@ -169,24 +170,7 @@ export const PlayerReportPage: React.FC = () => {
                 </div>
               </Card>
               <Card title="Colpo per colpo" subtitle={`Test del ${latest.s.date}${latest.s.zones && !latest.s.zones.standard ? ' · zone personalizzate' : ''}${sessionPassed(latest.s.series) ? '' : ' · non superato'}`}>
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-[11px] text-gray-500 text-left">
-                      <th className="font-medium pb-1">Colpo</th>
-                      <th className="font-medium pb-1 text-right">Media</th>
-                      <th className="font-medium pb-1 text-right">10/10</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {tested.map(st => (
-                      <tr key={st.stroke} className="border-t border-gray-100">
-                        <td className="py-1.5">{st.label}</td>
-                        <td className={`py-1.5 text-right font-bold ${st.ave >= 8 ? 'text-ok-600' : st.ave >= 5 ? 'text-yellow-600' : 'text-red-500'}`}>{st.ave.toFixed(1)}</td>
-                        <td className="py-1.5 text-right text-gray-500">{st.perfectCount}/{st.scores.length}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <StrokeMetricsTable results={latest.r} />
                 <div className="grid grid-cols-2 gap-3 mt-3 text-xs">
                   <div className="rounded-xl bg-ok-50 border border-ok-200 p-2.5">
                     <p className="font-bold text-ok-700 mb-1">Punti di forza</p>
@@ -218,6 +202,14 @@ export const PlayerReportPage: React.FC = () => {
                 </div>
               </Card>
             )}
+
+            <Card title={`Ultimo test · ${latest.s.date}`} subtitle="Serie per serie: palle nel bersaglio su 10, in verde pieno le serie perfette" className="break-inside-avoid">
+              <SeriesBars session={latest.s} />
+            </Card>
+
+            <Card title="Zone bersaglio dell'ultimo test" className="break-inside-avoid">
+              <ZonesPanel session={latest.s} />
+            </Card>
 
             <div className="grid grid-cols-2 gap-4">
               <ObjectiveCard objective={objective} print />
