@@ -406,6 +406,25 @@ export const SettingsPage: React.FC = () => {
           </div>
         </Card>
 
+        <Card title="Match Test" subtitle="Il giocatore deve mettere N palle nella zona; ogni serie non perfetta è un punto per il campo.">
+          <NumberSetting label="Palle che il giocatore deve mettere dentro" value={settings.matchPlayerTarget} min={10} max={1000}
+            onSave={v => update({ matchPlayerTarget: v })} />
+          <p className="text-xs font-medium text-gray-600 mt-4 mb-1">Il campo vince a… (handicap di partenza per categoria)</p>
+          <div className="grid grid-cols-4 gap-2">
+            {CATEGORY_OPTIONS.map(o => (
+              <NumberSetting key={o.value} label={o.label} value={settings.matchCourtTargets[o.value]} min={1} max={100} compact
+                onSave={v => update({ matchCourtTargets: { ...settings.matchCourtTargets, [o.value]: v } })} />
+            ))}
+          </div>
+          <p className="text-xs font-medium text-gray-600 mt-4 mb-1">Match simulato sui test: la serie vale il punto da…</p>
+          <div className="grid grid-cols-4 gap-2">
+            {CATEGORY_OPTIONS.map(o => (
+              <NumberSetting key={o.value} label={o.label} value={settings.matchGameThresholds[o.value]} min={1} max={10} compact suffix="/10"
+                onSave={v => update({ matchGameThresholds: { ...settings.matchGameThresholds, [o.value]: v } })} />
+            ))}
+          </div>
+        </Card>
+
         <Card title="Zone bersaglio predefinite" subtitle="Le zone da cui parte ogni test, per categoria. Nel test si possono cambiare giocatore per giocatore.">
           <ZoneDefaultsEditor settings={settings} onSave={update} />
         </Card>
@@ -463,3 +482,19 @@ export const SettingsPage: React.FC = () => {
     </div>
   );
 };
+
+/** Integer field saved on blur; invalid input snaps back to the stored value. */
+const NumberSetting: React.FC<{
+  label: string; value: number; min: number; max: number; onSave: (v: number) => void; compact?: boolean; suffix?: string;
+}> = ({ label, value, min, max, onSave, compact, suffix }) => (
+  <label className="block">
+    <span className={`font-medium text-gray-600 ${compact ? 'text-[11px]' : 'text-xs'}`}>{label}{suffix ? ` (${suffix})` : ''}</span>
+    <input type="number" inputMode="numeric" min={min} max={max} defaultValue={value} key={`${label}-${value}`}
+      onBlur={e => {
+        const v = Math.round(Number(e.target.value));
+        if (Number.isFinite(v) && v >= min && v <= max && v !== value) onSave(v);
+        else e.target.value = String(value);
+      }}
+      className="mt-1 w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+  </label>
+);

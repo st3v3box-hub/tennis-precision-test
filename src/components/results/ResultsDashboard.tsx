@@ -1,5 +1,6 @@
 import { radarStrokes, radarValuesFor, strokeLabel } from '../../lib/formulas';
 import { SessionOutcome } from './SessionOutcome';
+import { GameSimCard } from './GameSimCard';
 import { MODULE_LABELS, CATEGORY_TARGETS } from '../../lib/protocol';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -102,6 +103,8 @@ export const ResultsDashboard: React.FC<Props> = ({ session, settings, compareSe
       </div>
 
       <SessionOutcome session={session} />
+
+      <GameSimCard session={session} />
 
       {/* Tab bar */}
       <div className="flex overflow-x-auto bg-white rounded-2xl border border-gray-200 shadow-sm p-1 gap-1">

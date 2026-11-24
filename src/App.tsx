@@ -22,6 +22,9 @@ import { KillerTestPage } from './pages/KillerTestPage';
 import { KillerResultsPage } from './pages/KillerResultsPage';
 import { PlayerReportPage } from './pages/PlayerReportPage';
 import { TestReportPage } from './pages/TestReportPage';
+import { MatchHomePage } from './pages/MatchHomePage';
+import { MatchPlayPage } from './pages/MatchPlayPage';
+import { MatchResultsPage } from './pages/MatchResultsPage';
 
 interface Props {
   role: UserRole;
@@ -56,11 +59,13 @@ const AppRoutes: React.FC<Props> = ({ role, onLogout }) => {
       <Route path="/results/:id/report" element={<TestReportPage />} />
       <Route path="/multi-results" element={<MultiResultsPage />} />
       <Route path="/killer" element={<KillerHomePage />} />
+      <Route path="/match" element={<MatchHomePage />} />
 
       {can('createTest') && (
         <>
           <Route path="/new" element={<NewSessionPage />} />
           <Route path="/killer/new" element={<KillerTestPage />} />
+          <Route path="/match/new" element={<MatchPlayPage />} />
           <Route path="/challenge" element={<ChallengePage />} />
           <Route path="/challenge-results" element={<ChallengeResultsPage />} />
           <Route path="/compare/:id1/:id2" element={<CompareSessionsPage />} />
@@ -77,6 +82,7 @@ const AppRoutes: React.FC<Props> = ({ role, onLogout }) => {
       )}
 
       <Route path="/killer/:id" element={<KillerResultsPage />} />
+      <Route path="/match/:id" element={<MatchResultsPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
     </>

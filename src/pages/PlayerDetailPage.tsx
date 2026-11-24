@@ -15,6 +15,7 @@ import { playerObjective, compareWithGroup } from '../lib/objectives';
 import { ObjectiveCard } from '../components/player/ObjectiveCard';
 import { GroupComparisonCard } from '../components/player/GroupComparisonCard';
 import { KillerSummaryCard } from '../components/player/KillerSummaryCard';
+import { MatchSummaryCard } from '../components/player/MatchSummaryCard';
 
 function calcAge(dob: string, ref = new Date()): number | null {
   const d = new Date(dob);
@@ -49,7 +50,7 @@ export const PlayerDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const canEdit = can('editPlayers');
   const canTest = can('createTest');
-  const { getPlayer, sessions: allSessions, killerSessions, settings } = useAppData();
+  const { getPlayer, sessions: allSessions, killerSessions, matchSessions, settings } = useAppData();
 
   const profile = id ? getPlayer(id) : undefined;
 
@@ -89,6 +90,7 @@ export const PlayerDetailPage: React.FC = () => {
   );
 
   const playerKiller = useMemo(() => killerSessions.filter(k => k.playerId === id), [killerSessions, id]);
+  const playerMatches = useMemo(() => matchSessions.filter(m => m.playerId === id), [matchSessions, id]);
   const objective = useMemo(() => playerObjective(sessions, settings), [sessions, settings]);
   const comparison = useMemo(
     () => (sessions.length ? compareWithGroup(sessions[sessions.length - 1], allSessions, settings) : null),
@@ -236,6 +238,8 @@ export const PlayerDetailPage: React.FC = () => {
 
         <KillerSummaryCard tests={playerKiller}
           onNew={canTest ? () => navigate('/killer/new', { state: { profileId: profile.id } }) : undefined} />
+        <MatchSummaryCard matches={playerMatches}
+          onNew={canTest ? () => navigate('/match/new', { state: { profileId: profile.id } }) : undefined} />
 
         {canTest && <Card title="Avvia Test Rapido">
           <p className="text-xs text-gray-500 mb-3">

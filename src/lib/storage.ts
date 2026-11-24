@@ -1,4 +1,4 @@
-import type { AppState, Player, PlayerProfile, TestSession, AppSettings, ZoneCategory, ZoneMeasures } from '../types';
+import type { Category, AppState, Player, PlayerProfile, TestSession, AppSettings, ZoneCategory, ZoneMeasures } from '../types';
 import { PROTOCOL_ZONES, ZONE_CATEGORIES, clampMeasures } from './zones';
 
 const KEY = 'tpt_v1';
@@ -15,7 +15,24 @@ export const DEFAULT_SETTINGS: AppSettings = {
   zoneDefaults: PROTOCOL_ZONES,
   zoneLog: [],
   includeCustomZones: false,
+  // From the simulation on the academy's real tests: these targets give
+  // roughly even matches for a typical player of each category.
+  matchPlayerTarget: 100,
+  matchCourtTargets: { u10_u12: 15, terza: 15, seconda: 12, prima: 9 },
+  matchGameThresholds: { u10_u12: 7, terza: 7, seconda: 8, prima: 9 },
 };
+
+function intIn(v: unknown, min: number, max: number, fallback: number): number {
+  const n = Math.round(Number(v));
+  return Number.isFinite(n) && n >= min && n <= max ? n : fallback;
+}
+
+function perCategory(raw: unknown, fallback: Record<Category, number>, min: number, max: number): Record<Category, number> {
+  const r = (raw && typeof raw === 'object' ? raw : {}) as Partial<Record<Category, unknown>>;
+  const out = {} as Record<Category, number>;
+  (Object.keys(fallback) as Category[]).forEach(c => { out[c] = intIn(r[c], min, max, fallback[c]); });
+  return out;
+}
 
 export function loadState(): AppState {
   try {
@@ -48,6 +65,9 @@ export function normalizeSettings(raw: Partial<AppSettings> | undefined | null):
     zoneDefaults: normalizeZoneDefaults(s.zoneDefaults),
     zoneLog: Array.isArray(s.zoneLog) ? s.zoneLog : [],
     includeCustomZones: s.includeCustomZones === true,
+    matchPlayerTarget: intIn(s.matchPlayerTarget, 10, 1000, DEFAULT_SETTINGS.matchPlayerTarget),
+    matchCourtTargets: perCategory(s.matchCourtTargets, DEFAULT_SETTINGS.matchCourtTargets, 1, 100),
+    matchGameThresholds: perCategory(s.matchGameThresholds, DEFAULT_SETTINGS.matchGameThresholds, 1, 10),
   };
 }
 

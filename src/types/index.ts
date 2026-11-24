@@ -192,6 +192,53 @@ export interface AppSettings {
   zoneLog: ZoneChangeLogEntry[];
   /** Rankings, objectives and group comparison also count tests with custom zones */
   includeCustomZones: boolean;
+  /** Match Test: balls the player must put in the zone to win */
+  matchPlayerTarget: number;
+  /** Match Test: points the court needs to win (handicap), per category */
+  matchCourtTargets: Record<Category, number>;
+  /** Game simulation of a test: minimum series score that wins the point, per category */
+  matchGameThresholds: Record<Category, number>;
+}
+
+// ─── Match Test ("Mezzogiorno" race) ─────────────────────────────────────────
+
+export type MatchStationId =
+  | 'fh_cross' | 'bh_cross' | 'fh_line' | 'bh_line'
+  | 'io_cross' | 'io_line'
+  | 'volley_fh' | 'volley_bh'
+  | 'return_r' | 'return_l';
+
+export interface MatchSeries {
+  station: MatchStationId;
+  testType: TestType;
+  direction: Direction;
+  score: number;
+}
+
+export type MatchResult = 'in_corso' | 'vinto' | 'perso' | 'interrotto';
+
+/** How the court target was chosen */
+export type MatchTargetMode = 'categoria' | 'storico' | 'manuale';
+
+export interface MatchSession {
+  id: string;
+  playerId: string;
+  playerName: string;
+  date: string;
+  category: Category;
+  coach: string;
+  note?: string;
+  playerTarget: number;
+  courtTarget: number;
+  targetMode: MatchTargetMode;
+  /** Win probability estimated at the start (0–1), from the player's history */
+  expectedWin?: number;
+  /** Strokes fed, in rotation */
+  stations: MatchStationId[];
+  series: MatchSeries[];
+  result: MatchResult;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // ─── Killer test ─────────────────────────────────────────────────────────────

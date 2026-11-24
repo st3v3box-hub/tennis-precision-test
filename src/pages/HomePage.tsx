@@ -89,13 +89,14 @@ export const HomePage: React.FC<Props> = ({ role, onLogout }) => {
 
             <div className="grid grid-cols-2 gap-2.5">
               <HomeTile title="Killer" text="100 palle di fila" onClick={() => navigate('/killer')} />
+              <HomeTile title="Match Test" text="Contro il campo" onClick={() => navigate('/match')} />
               <HomeTile title="Sfide" text="1 vs 1, 2 vs 2, tutti" onClick={() => navigate('/challenge')} />
               <HomeTile title="Giocatori" text="Schede e progressi" onClick={() => navigate('/players')} />
               <HomeTile title="Classifiche" text="Per categoria" onClick={() => navigate('/ranking')} />
               <HomeTile title="Storico" text="Tutti i test" onClick={() => setView('history')} />
-              <HomeTile title="Istruzioni" text="Protocollo e zone" onClick={() => navigate('/instructions')} />
+              <HomeTile title="Istruzioni" text="Protocollo e zone" onClick={() => navigate('/instructions')} wide={role !== 'admin'} />
               {role === 'admin' && (
-                <HomeTile title="Impostazioni" text="Zone, obiettivi, account" onClick={() => navigate('/settings')} wide />
+                <HomeTile title="Impostazioni" text="Zone, obiettivi, account" onClick={() => navigate('/settings')} />
               )}
             </div>
           </>
@@ -111,6 +112,7 @@ export const HomePage: React.FC<Props> = ({ role, onLogout }) => {
               <HomeTile title="Giocatori" text="Schede e progressi" onClick={() => navigate('/players')} />
               <HomeTile title="Storico" text="Tutti i test" onClick={() => setView('history')} />
               <HomeTile title="Killer" text="Consistenza" onClick={() => navigate('/killer')} />
+              <HomeTile title="Match Test" text="Contro il campo" onClick={() => navigate('/match')} wide />
             </div>
           </>
         )}

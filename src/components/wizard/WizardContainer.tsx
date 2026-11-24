@@ -8,6 +8,8 @@ import { WIZARD_STEPS, MODULE_STEP_ORDER, DEFAULT_MODULES, detectedModules, dete
 import { resolveSessionZones } from '../../lib/zones';
 import { StepSingleStroke } from './StepSingleStroke';
 import { ModuleActions } from './ModuleActions';
+import { liveSimLabel } from '../results/GameSimCard';
+import { gameThresholdFor } from '../../lib/match';
 import { StepMeta } from './StepMeta';
 import { StepGroundstrokes } from './StepGroundstrokes';
 import { StepCombined } from './StepCombined';
@@ -372,6 +374,20 @@ export const WizardContainer: React.FC = () => {
         <div className="bg-white border-b border-gray-200 px-4 py-2">
           <ProgressSteps currentStep={state.step} steps={activeSteps} />
         </div>
+        {currentStepId !== 'meta' && state.players.some(p => p.series.length > 0) && (
+          <div className="bg-chalk border-b border-black/[0.06] px-4 py-1.5 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-brand-900">
+            <span className="text-gray-500">Match simulato</span>
+            {state.players.map(p => {
+              const label = liveSimLabel(p.series, gameThresholdFor(p.category, settings.matchGameThresholds));
+              return label ? (
+                <span key={p.id} className="tabular-nums">
+                  {state.players.length > 1 && <span className="text-gray-500">{p.name.split(' ')[0] || 'Giocatore'} </span>}
+                  <strong>{label}</strong>
+                </span>
+              ) : null;
+            })}
+          </div>
+        )}
       </div>
 
       <div className="max-w-2xl mx-auto px-4 py-6">

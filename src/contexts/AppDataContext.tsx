@@ -3,7 +3,7 @@ import {
   collection, doc, setDoc, getDocsFromServer, getDocFromServer, onSnapshot, writeBatch,
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import type { PlayerProfile, TestSession, AppSettings, KillerSession } from '../types';
+import type { PlayerProfile, TestSession, AppSettings, KillerSession, MatchSession } from '../types';
 import { loadState, DEFAULT_SETTINGS, normalizeSettings } from '../lib/storage';
 
 /** Sync state shown in the UI so coaches know whether data reached the cloud. */
@@ -19,6 +19,7 @@ interface AppDataContextValue {
   players: PlayerProfile[];
   sessions: TestSession[];
   killerSessions: KillerSession[];
+  matchSessions: MatchSession[];
   settings: AppSettings;
   lastCoach: string;
   loading: boolean;
@@ -35,6 +36,8 @@ interface AppDataContextValue {
   deleteSession: (id: string) => Promise<void>;
   upsertKiller: (session: KillerSession) => Promise<void>;
   deleteKiller: (id: string) => Promise<void>;
+  upsertMatch: (session: MatchSession) => Promise<void>;
+  deleteMatch: (id: string) => Promise<void>;
   saveSettings: (s: AppSettings) => Promise<void>;
   saveLastCoach: (coach: string) => Promise<void>;
 }
@@ -67,6 +70,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [players, setPlayers] = useState<PlayerProfile[]>([]);
   const [sessions, setSessions] = useState<TestSession[]>([]);
   const [killerSessions, setKillerSessions] = useState<KillerSession[]>([]);
+  const [matchSessions, setMatchSessions] = useState<MatchSession[]>([]);
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [lastCoach, setLastCoachState] = useState('');
   const [loading, setLoading] = useState(true);
@@ -93,7 +97,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   // ── Live data (served from the device cache first, then kept in sync) ──────
   useEffect(() => {
     mounted.current = true;
-    const ready = { players: false, sessions: false, killer: false, meta: false };
+    const ready = { players: false, sessions: false, killer: false, match: false, meta: false };
     const markReady = (k: keyof typeof ready) => {
       ready[k] = true;
       if (Object.values(ready).every(Boolean) && mounted.current) setLoading(false);
@@ -122,6 +126,11 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
         countPending('killer', snap.docs.filter(d => d.metadata.hasPendingWrites).length);
         markReady('killer');
       }, onError('killer')),
+      onSnapshot(collection(db, 'match'), { includeMetadataChanges: true }, snap => {
+        setMatchSessions(snap.docs.map(d => d.data() as MatchSession));
+        countPending('match', snap.docs.filter(d => d.metadata.hasPendingWrites).length);
+        markReady('match');
+      }, onError('match')),
       onSnapshot(doc(db, 'meta', 'app'), snap => {
         if (snap.exists()) {
           const data = snap.data();
@@ -210,18 +219,20 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const refs = [
       ...sessions.filter(s => s.playerId === id).map(s => doc(db, 'sessions', s.id)),
       ...killerSessions.filter(k => k.playerId === id).map(k => doc(db, 'killer', k.id)),
+      ...matchSessions.filter(m => m.playerId === id).map(m => doc(db, 'match', m.id)),
       doc(db, 'players', id),
     ];
     setPlayers(prev => prev.filter(p => p.id !== id));
     setSessions(prev => prev.filter(s => s.playerId !== id));
     setKillerSessions(prev => prev.filter(k => k.playerId !== id));
+    setMatchSessions(prev => prev.filter(m => m.playerId !== id));
     // Firestore batches are limited to 500 writes
     for (let i = 0; i < refs.length; i += 450) {
       const batch = writeBatch(db);
       refs.slice(i, i + 450).forEach(r => batch.delete(r));
       await queueWrite(() => batch.commit(), 'Eliminazione giocatore');
     }
-  }, [sessions, killerSessions, queueWrite]);
+  }, [sessions, killerSessions, matchSessions, queueWrite]);
 
   const getPlayer = useCallback((id: string) => players.find(p => p.id === id), [players]);
   const getPlayerSessions = useCallback((playerId: string) => sessions.filter(s => s.playerId === playerId), [sessions]);
@@ -253,6 +264,18 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     await queueWrite(() => batch.commit(), 'Eliminazione test Killer');
   }, [queueWrite]);
 
+  const upsertMatch = useCallback(async (session: MatchSession) => {
+    setMatchSessions(prev => upsertLocal(prev, session));
+    await queueWrite(() => setDoc(doc(db, 'match', session.id), session), 'Match Test');
+  }, [queueWrite]);
+
+  const deleteMatch = useCallback(async (id: string) => {
+    setMatchSessions(prev => prev.filter(m => m.id !== id));
+    const batch = writeBatch(db);
+    batch.delete(doc(db, 'match', id));
+    await queueWrite(() => batch.commit(), 'Eliminazione Match Test');
+  }, [queueWrite]);
+
   const saveSettings = useCallback(async (newSettings: AppSettings) => {
     setSettings(newSettings);
     await queueWrite(() => setDoc(doc(db, 'meta', 'app'), { settings: newSettings }, { merge: true }), 'Impostazioni');
@@ -268,7 +291,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   return (
     <AppDataContext.Provider value={{
-      players, sessions, killerSessions, settings, lastCoach, loading,
+      players, sessions, killerSessions, matchSessions, settings, lastCoach, loading,
       sync: {
         online,
         pending: Math.max(pending, Object.values(pendingDocs).reduce((a, b) => a + b, 0)),
@@ -276,7 +299,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
       },
       clearSyncError,
       upsertPlayer, deletePlayer, getPlayer, getPlayerSessions, getChallengeSessions,
-      getSession, upsertSession, deleteSession, upsertKiller, deleteKiller, saveSettings, saveLastCoach,
+      getSession, upsertSession, deleteSession, upsertKiller, deleteKiller, upsertMatch, deleteMatch, saveSettings, saveLastCoach,
     }}>
       {children}
     </AppDataContext.Provider>
