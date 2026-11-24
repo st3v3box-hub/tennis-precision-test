@@ -3,7 +3,8 @@ import type { WizardState, WizardPlayerData, TestType } from '../../types';
 import type { PlayerProfile } from '../../types';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
-import { similarProfiles, profileName } from '../../lib/playerMatch';
+import { similarProfiles, profileName, normName, byRegistryName, splitName, joinName } from '../../lib/playerMatch';
+import { PlayerNameFields } from '../player/PlayerNameFields';
 import {
   CATEGORY_OPTIONS, MODULE_STEP_ORDER, MODULE_LABELS, DEFAULT_MODULES, MODULE_SERIES, EXCLUSIVE_WITH, MODULE_OPTIONS, MODULE_FAMILY,
   FAMILY_META, FAMILY_ORDER, isOptionModule, moduleOption, type OptionModule,
@@ -41,8 +42,12 @@ export const StepMeta: React.FC<Props> = ({ state, update, updatePlayer, setPlay
   const [pickerSearch, setPickerSearch] = useState('');
   const { players: profiles, settings } = useAppData();
 
+  // A linked profile, or a new player with both name and surname
+  const nameOk = (p: WizardPlayerData) => (p.profileId
+    ? p.name.trim().length > 0
+    : !!(p.firstName ?? splitName(p.name).firstName).trim() && !!(p.lastName ?? splitName(p.name).lastName).trim());
   const canContinue =
-    state.players.every(p => p.name.trim().length > 0) &&
+    state.players.every(nameOk) &&
     state.date.length > 0 &&
     state.coach.trim().length > 0 &&
     state.selectedModules.length > 0;
@@ -73,8 +78,12 @@ export const StepMeta: React.FC<Props> = ({ state, update, updatePlayer, setPlay
   };
 
   const unlinkProfile = (playerIdx: number) => {
-    updatePlayer(playerIdx, { profileId: undefined });
+    const p = state.players[playerIdx];
+    updatePlayer(playerIdx, { profileId: undefined, ...splitName(p.name) });
   };
+
+  const setNames = (playerIdx: number, firstName: string, lastName: string) =>
+    updatePlayer(playerIdx, { firstName, lastName, name: joinName(firstName, lastName) });
 
   const canChallenge = state.playerCount >= 2;
 
@@ -92,12 +101,13 @@ export const StepMeta: React.FC<Props> = ({ state, update, updatePlayer, setPlay
     return state.playerCount > 1 ? `Giocatore ${idx + 1}` : 'Dati Giocatore';
   };
 
+  // Alphabetical by surname, as in the registry
   const filteredProfiles = useMemo(() => {
-    const q = pickerSearch.toLowerCase();
-    return profiles.filter(p =>
-      `${p.firstName} ${p.lastName}`.toLowerCase().includes(q) ||
-      (p.club ?? '').toLowerCase().includes(q)
-    );
+    const q = normName(pickerSearch);
+    return profiles
+      .filter(p => !q || normName(`${p.firstName} ${p.lastName}`).includes(q) || normName(`${p.lastName} ${p.firstName}`).includes(q) ||
+        normName(p.club ?? '').includes(q))
+      .sort(byRegistryName);
   }, [profiles, pickerSearch]);
 
   return (
@@ -298,34 +308,8 @@ export const StepMeta: React.FC<Props> = ({ state, update, updatePlayer, setPlay
                 </button>
               </div>
             ) : (
-              /* Name input + profile picker */
+              /* Registry first (prominent), then a new player with name and surname */
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nome *</label>
-                <input
-                  type="text"
-                  value={p.name}
-                  onChange={e => updatePlayer(i, { name: e.target.value })}
-                  placeholder="Es. Mario Rossi"
-                  className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                />
-
-                {/* Same or similar name already in the registry: link it instead of creating a duplicate */}
-                {similarProfiles(p.name, profiles).length > 0 && (
-                  <div className="mt-2 rounded-xl border-2 border-amber-300 bg-amber-50 px-3 py-2.5">
-                    <p className="text-xs font-semibold text-amber-900">È già in anagrafica? Tocca per collegarlo ed evitare un doppione</p>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {similarProfiles(p.name, profiles).map(sp => (
-                        <button key={sp.id} type="button" onClick={() => linkProfile(i, sp)}
-                          className="px-3 py-1.5 rounded-lg bg-white border border-amber-300 text-sm font-semibold text-ink">
-                          {profileName(sp)}{sp.club ? <span className="text-gray-400 font-normal"> · {sp.club}</span> : null}
-                        </button>
-                      ))}
-                    </div>
-                    <p className="text-[11px] text-amber-800 mt-1.5">Se è un'altra persona, continua pure a scrivere il nome completo.</p>
-                  </div>
-                )}
-
-                {/* Profile picker toggle */}
                 {profiles.length > 0 && (
                   <button
                     type="button"
@@ -333,27 +317,32 @@ export const StepMeta: React.FC<Props> = ({ state, update, updatePlayer, setPlay
                       setPickerOpenIdx(pickerOpenIdx === i ? null : i);
                       setPickerSearch('');
                     }}
-                    className="mt-1.5 text-xs text-brand-600 hover:text-brand-800 font-medium flex items-center gap-1"
+                    aria-expanded={pickerOpenIdx === i}
+                    className={`w-full flex items-center justify-between gap-3 px-4 py-3.5 rounded-xl border-2 text-left transition-colors ${
+                      pickerOpenIdx === i ? 'border-brand-600 bg-brand-600 text-white' : 'border-brand-600 bg-brand-50 text-brand-800'}`}
                   >
-                    🔗 Seleziona da anagrafica ({profiles.length})
-                    <span className="text-gray-400">{pickerOpenIdx === i ? '▲' : '▼'}</span>
+                    <span className="min-w-0">
+                      <span className="block font-bold">Scegli dall'anagrafica</span>
+                      <span className={`block text-xs ${pickerOpenIdx === i ? 'text-white/80' : 'text-brand-700'}`}>{profiles.length} giocatori, in ordine alfabetico</span>
+                    </span>
+                    <span className="text-lg" aria-hidden>{pickerOpenIdx === i ? '▲' : '▼'}</span>
                   </button>
                 )}
 
                 {/* Inline profile picker */}
                 {pickerOpenIdx === i && (
-                  <div className="mt-2 border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                  <div className="mt-2 border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white">
                     <div className="p-2 border-b border-gray-100">
                       <input
-                        type="text"
+                        type="search"
                         value={pickerSearch}
                         onChange={e => setPickerSearch(e.target.value)}
-                        placeholder="Cerca per nome o club..."
-                        className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-500"
+                        placeholder="Cerca per nome, cognome o circolo…"
+                        className="w-full text-base px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-500"
                         autoFocus
                       />
                     </div>
-                    <div className="max-h-48 overflow-y-auto">
+                    <div className="max-h-72 overflow-y-auto overscroll-contain">
                       {filteredProfiles.length === 0 ? (
                         <p className="text-xs text-gray-400 text-center py-4">Nessun profilo trovato</p>
                       ) : (
@@ -362,7 +351,7 @@ export const StepMeta: React.FC<Props> = ({ state, update, updatePlayer, setPlay
                             key={profile.id}
                             type="button"
                             onClick={() => linkProfile(i, profile)}
-                            className="w-full text-left px-3 py-2.5 hover:bg-brand-50 border-b border-gray-50 last:border-0 transition-colors"
+                            className="w-full text-left px-3 py-3 hover:bg-brand-50 active:bg-brand-100 border-b border-gray-50 last:border-0 transition-colors"
                           >
                             <p className="text-sm font-semibold text-gray-800">
                               {profile.lastName} {profile.firstName}
@@ -378,6 +367,29 @@ export const StepMeta: React.FC<Props> = ({ state, update, updatePlayer, setPlay
                         ))
                       )}
                     </div>
+                  </div>
+                )}
+
+                <p className="text-xs text-gray-500 mt-4 mb-2">{profiles.length > 0 ? 'Oppure nuovo giocatore:' : 'Nuovo giocatore:'}</p>
+                <PlayerNameFields
+                  firstName={p.firstName ?? splitName(p.name).firstName}
+                  lastName={p.lastName ?? splitName(p.name).lastName}
+                  onChange={(f, l) => setNames(i, f, l)}
+                />
+
+                {/* Same or similar name already in the registry: link it instead of creating a duplicate */}
+                {similarProfiles(p.name, profiles).length > 0 && (
+                  <div className="mt-2 rounded-xl border-2 border-amber-300 bg-amber-50 px-3 py-2.5">
+                    <p className="text-xs font-semibold text-amber-900">È già in anagrafica? Tocca per collegarlo ed evitare un doppione</p>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {similarProfiles(p.name, profiles).map(sp => (
+                        <button key={sp.id} type="button" onClick={() => linkProfile(i, sp)}
+                          className="px-3 py-1.5 rounded-lg bg-white border border-amber-300 text-sm font-semibold text-ink">
+                          {profileName(sp)}{sp.club ? <span className="text-gray-400 font-normal"> · {sp.club}</span> : null}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-[11px] text-amber-800 mt-1.5">Se è un'altra persona, continua pure.</p>
                   </div>
                 )}
               </div>

@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import type { WizardState, WizardPlayerData, Category, SeriesResult, TestSession, TestType } from '../../types';
 import { uid } from '../../lib/storage';
-import { findExactProfile, profileName } from '../../lib/playerMatch';
+import { findExactProfile, profileName, splitName } from '../../lib/playerMatch';
 import { useAppData } from '../../contexts/AppDataContext';
 import { ProgressSteps } from '../ui/ProgressSteps';
 import { WIZARD_STEPS, MODULE_STEP_ORDER, DEFAULT_MODULES, detectedModules, detectedOption, OPTION_MODULES, isOptionModule, moduleOption } from '../../lib/protocol';
@@ -368,9 +368,12 @@ export const WizardContainer: React.FC = () => {
     const existing = findExactProfile(p.name, playersRef.current);
     if (existing) return existing.id;
     const playerId = uid();
-    const nameParts = p.name.trim().split(/\s+/);
-    const firstName = nameParts[0] ?? p.name;
-    const lastName = nameParts.slice(1).join(' ');
+    // Name and surname as typed in their two fields (older drafts: split the full name)
+    const typed = p.firstName !== undefined || p.lastName !== undefined
+      ? { firstName: (p.firstName ?? '').trim(), lastName: (p.lastName ?? '').trim() }
+      : splitName(p.name);
+    const firstName = typed.firstName || p.name.trim();
+    const lastName = typed.lastName;
     await upsertPlayer({
       id: playerId,
       firstName,

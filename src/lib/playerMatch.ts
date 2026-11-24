@@ -14,6 +14,19 @@ export function normName(s: string): string {
 
 export const profileName = (p: Pick<PlayerProfile, 'firstName' | 'lastName'>) => `${p.firstName} ${p.lastName}`.trim();
 
+/** Alphabetical by surname, then name (as the registry is shown) */
+export const byRegistryName = (a: Pick<PlayerProfile, 'firstName' | 'lastName'>, b: Pick<PlayerProfile, 'firstName' | 'lastName'>) =>
+  `${a.lastName} ${a.firstName}`.trim().localeCompare(`${b.lastName} ${b.firstName}`.trim(), 'it', { sensitivity: 'base' });
+
+/** Older drafts have only the full name: first word = name, the rest = surname */
+export function splitName(full: string): { firstName: string; lastName: string } {
+  const parts = full.trim().split(/\s+/).filter(Boolean);
+  return { firstName: parts[0] ?? '', lastName: parts.slice(1).join(' ') };
+}
+
+/** "Nome Cognome" with tidy spaces */
+export const joinName = (firstName: string, lastName: string) => `${firstName.trim()} ${lastName.trim()}`.trim();
+
 const tokens = (s: string) => normName(s).split(' ').filter(Boolean);
 
 /** Same person, written exactly the same way (case, accents and spaces ignored) */

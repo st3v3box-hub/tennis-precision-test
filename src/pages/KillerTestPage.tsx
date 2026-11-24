@@ -4,7 +4,8 @@ import { useAppData } from '../contexts/AppDataContext';
 import type { Category, KillerDepth, KillerSession, KillerZone } from '../types';
 import { CATEGORY_OPTIONS } from '../lib/protocol';
 import { uid } from '../lib/storage';
-import { findExactProfile } from '../lib/playerMatch';
+import { findExactProfile, splitName } from '../lib/playerMatch';
+import { PlayerPicker, emptyPick, pickFromProfile, pickedName, pickedValid, type PickedPlayer } from '../components/player/PlayerPicker';
 import {
   DEPTH_LABELS, ZONE_LABELS, STROKE_LABEL, formatDuration, killerClock, killerReducer,
   startKiller, strokeForBall, type KillerAction, type KillerLiveState,
@@ -18,6 +19,9 @@ import { Button } from '../components/ui/Button';
 interface KillerSetup {
   profileId?: string;
   name: string;
+  /** New players: name and surname as typed (missing on older drafts) */
+  firstName?: string;
+  lastName?: string;
   category: Category;
   coach: string;
   date: string;
@@ -94,11 +98,11 @@ export const KillerTestPage: React.FC = () => {
     let playerId = setup.profileId ?? findExactProfile(setup.name, players)?.id;
     if (!playerId) {
       playerId = uid();
-      const parts = setup.name.trim().split(/\s+/);
+      const parts = setup.firstName !== undefined ? { firstName: setup.firstName, lastName: setup.lastName ?? '' } : splitName(setup.name);
       await upsertPlayer({
         id: playerId,
-        firstName: parts[0] ?? setup.name.trim(),
-        lastName: parts.slice(1).join(' '),
+        firstName: parts.firstName || setup.name.trim(),
+        lastName: parts.lastName,
         dateOfBirth: '',
         autoCreated: true,
         createdAt: now,
@@ -195,8 +199,8 @@ interface SetupProps {
 
 const SetupForm: React.FC<SetupProps> = ({ initialProfileId, defaults, players, categoryHint, onStart }) => {
   const initialProfile = initialProfileId ? players.find(p => p.id === initialProfileId) : undefined;
-  const [query, setQuery] = useState(initialProfile ? `${initialProfile.firstName} ${initialProfile.lastName}`.trim() : '');
-  const [profileId, setProfileId] = useState<string | undefined>(initialProfile?.id);
+  const [pick, setPick] = useState<PickedPlayer>(initialProfile ? pickFromProfile(initialProfile) : { ...emptyPick });
+  const profileId = pick.profileId;
   const [category, setCategory] = useState<Category>(
     (initialProfile && categoryHint(initialProfile.id)) || 'seconda'
   );
@@ -207,17 +211,10 @@ const SetupForm: React.FC<SetupProps> = ({ initialProfileId, defaults, players, 
   const [depth, setDepth] = useState<KillerDepth>(defaults.depth);
   const [note, setNote] = useState('');
 
-  const suggestions = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q || profileId) return [];
-    return players
-      .filter(p => `${p.firstName} ${p.lastName}`.toLowerCase().includes(q) || `${p.lastName} ${p.firstName}`.toLowerCase().includes(q))
-      .slice(0, 6);
-  }, [query, players, profileId]);
 
   const targetNum = Math.round(Number(target));
   const targetValid = Number.isFinite(targetNum) && targetNum >= 2 && targetNum <= 1000;
-  const canStart = query.trim().length > 0 && targetValid;
+  const canStart = pickedValid(pick) && targetValid;
 
   const input = 'w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500';
 
@@ -227,39 +224,11 @@ const SetupForm: React.FC<SetupProps> = ({ initialProfileId, defaults, players, 
       <div className="max-w-2xl mx-auto px-4 py-5 space-y-4">
         <Card title="Giocatore">
           <div className="space-y-3">
-            <div className="relative">
-              <input
-                value={query}
-                onChange={e => { setQuery(e.target.value); setProfileId(undefined); }}
-                placeholder="Cerca in anagrafica o scrivi nome e cognome"
-                className={input}
-                autoComplete="off"
-              />
-              {profileId && <p className="text-xs text-ok-600 font-semibold mt-1">✓ Profilo collegato</p>}
-              {!profileId && query.trim() && suggestions.length === 0 && (
-                <p className="text-xs text-gray-500 mt-1">Nuovo giocatore: verrà creato un profilo al salvataggio.</p>
-              )}
-              {suggestions.length > 0 && (
-                <div className="mt-1 border border-gray-200 rounded-xl bg-white shadow-sm divide-y divide-gray-100 overflow-hidden">
-                  {suggestions.map(p => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => {
-                        setProfileId(p.id);
-                        setQuery(`${p.firstName} ${p.lastName}`.trim());
-                        const c = categoryHint(p.id);
-                        if (c) setCategory(c);
-                      }}
-                      className="w-full text-left px-3 py-2.5 text-sm hover:bg-brand-50"
-                    >
-                      <span className="font-semibold">{p.firstName} {p.lastName}</span>
-                      {p.club && <span className="text-gray-400 text-xs ml-2">{p.club}</span>}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            <PlayerPicker players={players} value={pick} onChange={(v, linked) => {
+              setPick(v);
+              const c = linked ? categoryHint(linked.id) : undefined;
+              if (c) setCategory(c);
+            }} />
             <div className="grid grid-cols-4 gap-2">
               {CATEGORY_OPTIONS.map(o => (
                 <button key={o.value} type="button" onClick={() => setCategory(o.value)}
@@ -312,7 +281,7 @@ const SetupForm: React.FC<SetupProps> = ({ initialProfileId, defaults, players, 
 
         <Button size="lg" className="w-full justify-center text-base" disabled={!canStart}
           onClick={() => onStart({
-            profileId, name: query.trim(), category, coach: coach.trim(), date,
+            profileId, name: pickedName(pick), firstName: pick.firstName.trim(), lastName: pick.lastName.trim(), category, coach: coach.trim(), date,
             target: targetNum, zone, depth, note,
           })}>
           ▶ Inizia il test

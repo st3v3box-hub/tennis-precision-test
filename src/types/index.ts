@@ -252,6 +252,8 @@ export interface MatchSession {
   playerTarget: number;
   courtTarget: number;
   targetMode: MatchTargetMode;
+  /** New player typed in the setup (draft only, not stored): name and surname for the profile */
+  newPlayerName?: { firstName: string; lastName: string };
   /** Win probability estimated at the start (0–1), from the player's history */
   expectedWin?: number;
   /** Strokes fed, in rotation */
@@ -313,7 +315,11 @@ export interface AppState {
 export interface WizardPlayerData {
   id: string;
   profileId?: string;   // linked PlayerProfile.id
+  /** Full name shown everywhere ("Nome Cognome") */
   name: string;
+  /** New players (not linked): first and last name typed separately, both required */
+  firstName?: string;
+  lastName?: string;
   category: Category;
   dateOfBirth?: string;
   note?: string;

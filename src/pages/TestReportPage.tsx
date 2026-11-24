@@ -91,7 +91,7 @@ export const TestReportPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="report-sheet mx-auto my-6 bg-white shadow-xl w-[210mm] max-w-full p-[10mm] text-ink space-y-4">
+      <div className="report-sheet mx-auto my-3 sm:my-6 bg-white shadow-xl w-full max-w-[210mm] p-4 sm:p-[10mm] print:p-0 text-ink space-y-4">
         <header className="bg-pitch text-white rounded-2xl px-5 py-4 flex items-center gap-4 break-inside-avoid">
           <BrandLockup size={56} />
           <div className="ml-auto text-right">
@@ -128,7 +128,7 @@ export const TestReportPage: React.FC = () => {
           </div>
         </section>
 
-        <section className="grid grid-cols-3 gap-2 break-inside-avoid">
+        <section className="grid grid-cols-1 min-[400px]:grid-cols-3 print:grid-cols-3 gap-2 break-inside-avoid">
           {[
             { label: 'Serie giocate', value: session.series.length },
             { label: 'Serie perfette (10/10)', value: perfect },
@@ -141,11 +141,11 @@ export const TestReportPage: React.FC = () => {
           ))}
         </section>
 
-        <Card title="Serie per serie" subtitle="Palle nel bersaglio su 10 in ogni serie. In verde pieno le serie perfette." className="break-inside-avoid">
+        <Card title="Serie per serie" subtitle="Palle nel bersaglio su 10 in ogni serie. In verde pieno le serie perfette.">
           <SeriesBars session={session} />
         </Card>
 
-        <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 print:grid-cols-2 gap-4">
           {baseTested > 0 ? (
             <Card title="Profilo tecnico" subtitle={previous ? `Questo test (verde) e il precedente del ${previous.s.date} (grigio)` : 'I 6 colpi base, media su 10'} className="break-inside-avoid">
               <div className="flex justify-center"><RadarPrint results={results} compare={previous?.r} size={300} /></div>

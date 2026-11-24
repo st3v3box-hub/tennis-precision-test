@@ -10,6 +10,7 @@ import {
   type ModulePass, type Family,
 } from '../../lib/protocol';
 import { CourtZones } from '../brand/CourtZones';
+import { useFitWidth } from '../../lib/useFit';
 import { describeZones, isStandardZones, withDropshot } from '../../lib/zones';
 import { CATEGORY_TARGETS } from '../../lib/protocol';
 import { useAppData } from '../../contexts/AppDataContext';
@@ -29,11 +30,18 @@ const outcomeCls: Record<ModulePass['outcome'], string> = {
   interrotto: 'bg-gray-50 text-gray-700 border-gray-300',
 };
 
+/** A chart that fits the phone screen but keeps its A4 size when printed */
+export const Fit: React.FC<{ printWidth: number; className?: string; children: (width: number) => React.ReactNode }> = ({ printWidth, className = 'w-full flex justify-center', children }) => {
+  const { ref, width } = useFitWidth(printWidth);
+  return <div ref={ref} className={className}>{children(width)}</div>;
+};
+
 /** Score of every series, module by module. Perfect series (10/10) in full green. */
-export const SeriesBars: React.FC<{ session: TestSession; width?: number }> = ({ session, width = 660 }) => {
+export const SeriesBars: React.FC<{ session: TestSession; width?: number }> = ({ session, width: printWidth = 660 }) => {
   const passes = modulePasses(session.series);
+  const { ref, width } = useFitWidth(printWidth);
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" ref={ref}>
       {passes.map(p => {
         const data = session.series
           .filter(s => s.testType === p.module)
@@ -45,7 +53,7 @@ export const SeriesBars: React.FC<{ session: TestSession; width?: number }> = ({
           data.find(d => d.n === i + 1) ?? { n: i + 1, score: null as number | null });
         return (
           <div key={p.module} className="break-inside-avoid">
-            <div className="flex items-baseline justify-between gap-3 mb-1">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 mb-1">
               <p className="font-display font-bold text-base">{moduleTitle(session, p.module)}</p>
               <span className={`text-[11px] font-semibold border rounded-full px-2 py-0.5 ${outcomeCls[p.outcome]}`}>
                 {OUTCOME_LABEL[p.outcome]} · {p.perfect}/{p.required} perfette · {p.played}/{total} serie
@@ -53,7 +61,8 @@ export const SeriesBars: React.FC<{ session: TestSession; width?: number }> = ({
             </div>
             <BarChart width={width} height={118} data={padded} margin={{ top: 4, right: 4, left: -28, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#eeeeee" vertical={false} />
-              <XAxis dataKey="n" tick={{ fontSize: 9 }} tickLine={false} interval={0} />
+              {/* On a narrow phone every other series number, so they don't overlap */}
+              <XAxis dataKey="n" tick={{ fontSize: 9 }} tickLine={false} interval={width < 420 && padded.length > 12 ? 1 : 0} />
               <YAxis domain={[0, 10]} ticks={[0, 5, 10]} tick={{ fontSize: 9 }} tickLine={false} />
               <ReferenceLine y={10} stroke="#d4d4d4" />
               <Bar dataKey="score" radius={[3, 3, 0, 0]} isAnimationActive={false}>
@@ -68,7 +77,8 @@ export const SeriesBars: React.FC<{ session: TestSession; width?: number }> = ({
 };
 
 /** General radar (6 base strokes), optional comparison polygon (e.g. first test). */
-export const RadarPrint: React.FC<{ results: SessionResults; compare?: SessionResults; size?: number }> = ({ results, compare, size = 300 }) => {
+export const RadarPrint: React.FC<{ results: SessionResults; compare?: SessionResults; size?: number }> = ({ results, compare, size: printSize = 300 }) => {
+  const { ref, width: size } = useFitWidth(printSize);
   const axes = radarStrokes(results.stats, compare?.stats);
   const data = axes.map(stroke => {
     const st = results.stats.find(s => s.stroke === stroke)!;
@@ -81,6 +91,7 @@ export const RadarPrint: React.FC<{ results: SessionResults; compare?: SessionRe
     };
   });
   return (
+    <div ref={ref} className="w-full flex justify-center">
     <RadarChart width={size} height={size * 0.8} data={data} outerRadius={size * 0.27} margin={{ top: 4, right: 36, bottom: 4, left: 36 }}>
       <PolarGrid stroke="#e5e5e5" />
       <PolarAngleAxis dataKey="stroke" tick={{ fontSize: 10, fill: '#404040' }} />
@@ -88,6 +99,7 @@ export const RadarPrint: React.FC<{ results: SessionResults; compare?: SessionRe
       {compare && <Radar dataKey="compare" stroke="#a3a3a3" fill="#a3a3a3" fillOpacity={0.15} strokeDasharray="4 3" isAnimationActive={false} />}
       <Radar dataKey="value" stroke={GREEN} fill={GREEN} fillOpacity={0.25} strokeWidth={2} isAnimationActive={false} />
     </RadarChart>
+    </div>
   );
 };
 
@@ -107,12 +119,13 @@ export const FamilyCharts: React.FC<{ results: SessionResults; compare?: Session
   );
 };
 
-const FamilyChart: React.FC<{ family: Family; results: SessionResults; compare?: SessionResults; size: number }> = ({ family, results, compare, size }) => {
+const FamilyChart: React.FC<{ family: Family; results: SessionResults; compare?: SessionResults; size: number }> = ({ family, results, compare, size: printSize }) => {
+  const { ref, width: size } = useFitWidth(printSize);
   const meta = FAMILY_META[family];
   const axes = familyAxes(family, results.stats, compare?.stats);
   const ave = (list: SessionResults | undefined, st: string) => list?.stats.find(s => s.stroke === st);
   return (
-    <div className="break-inside-avoid">
+    <div className="break-inside-avoid min-w-0" ref={ref}>
       <p className={`flex items-center gap-2 font-display font-bold ${meta.ink}`}>
         <span className={`w-2.5 h-2.5 rounded-full ${meta.dot}`} aria-hidden />{meta.label}
       </p>
@@ -162,7 +175,8 @@ const FamilyChart: React.FC<{ family: Family; results: SessionResults; compare?:
 export const StrokeMetricsTable: React.FC<{ results: SessionResults }> = ({ results }) => {
   const tested = results.stats.filter(st => st.scores.length > 0);
   return (
-    <table className="w-full text-sm">
+    <div className="overflow-x-auto -mx-1 px-1">
+    <table className="w-full text-xs sm:text-sm print:text-sm">
       <thead>
         <tr className="text-[11px] text-gray-500 text-left">
           <th className="font-medium pb-1">Colpo</th>
@@ -181,12 +195,13 @@ export const StrokeMetricsTable: React.FC<{ results: SessionResults }> = ({ resu
               <td className={`py-1.5 text-right font-bold ${st.ave >= 8 ? 'text-ok-600' : st.ave >= 5 ? 'text-yellow-600' : 'text-red-500'}`}>{f1(st.ave)}</td>
               <td className="py-1.5 text-right text-gray-600">{f1(st.dev)}</td>
               <td className="py-1.5 text-right text-gray-600">{st.perfectCount}/{st.scores.length}</td>
-              <td className="py-1.5 text-right text-gray-600">{inside}/{st.scores.length * 10} · {Math.round((inside / (st.scores.length * 10)) * 100)}%</td>
+              <td className="py-1.5 text-right text-gray-600 whitespace-nowrap">{inside}/{st.scores.length * 10}<span className="block text-[10px] text-gray-500">{Math.round((inside / (st.scores.length * 10)) * 100)}%</span></td>
             </tr>
           );
         })}
       </tbody>
     </table>
+    </div>
   );
 };
 
@@ -206,8 +221,8 @@ export const ZonesPanel: React.FC<{ session: TestSession; width?: number }> = ({
   const hasDropshot = played.includes('dropshot');
   const measures = zones.measures ? withDropshot(zones.measures, zones.level, settings.zoneDefaults) : null;
   return (
-    <div className="flex gap-4 items-start">
-      <div style={{ width }} className="flex-shrink-0">
+    <div className="flex flex-col min-[480px]:flex-row print:flex-row gap-4 items-start">
+      <div style={{ width }} className="flex-shrink-0 max-w-full self-center min-[480px]:self-start print:self-start">
         <CourtZones measures={measures} level={zones.level} mirror={lineFH} className="w-full" title="Zone del test"
           only={hasDropshot ? ['groundstroke', 'volley', 'serve', 'dropshot'] : undefined} />
       </div>

@@ -59,8 +59,8 @@ export const ResultsDashboard: React.FC<Props> = ({ session, settings, compareSe
     <div className="space-y-4">
       {/* Header */}
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
-        <div className="flex items-start justify-between">
-          <div>
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+          <div className="min-w-0">
             <h2 className="text-lg font-bold text-gray-900">{session.playerName}</h2>
             <p className="text-sm text-gray-500">
               {session.date} · {CATEGORY_TARGETS[session.category].label} · Coach: {session.coach}
@@ -83,7 +83,7 @@ export const ResultsDashboard: React.FC<Props> = ({ session, settings, compareSe
               </p>
             )}
           </div>
-          <div className="flex gap-2 flex-wrap justify-end">
+          <div className="flex gap-2 flex-wrap sm:justify-end">
             <Button size="sm" onClick={() => navigate(`/results/${session.id}/report`)}>
               PDF del test
             </Button>
@@ -114,7 +114,7 @@ export const ResultsDashboard: React.FC<Props> = ({ session, settings, compareSe
           <button
             key={t.id}
             onClick={() => setActiveTab(t.id)}
-            className={`flex-1 py-2 px-3 rounded-xl text-sm font-semibold transition-all whitespace-nowrap
+            className={`flex-1 py-2 px-2.5 sm:px-3 rounded-xl text-[13px] sm:text-sm font-semibold transition-all whitespace-nowrap
               ${activeTab === t.id
                 ? 'bg-brand-600 text-white shadow-sm'
                 : 'text-gray-600 hover:bg-gray-100'

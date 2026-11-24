@@ -59,3 +59,21 @@ describe('the Laura case', () => {
     expect(m).toMatchObject({ id: '5', firstName: 'Laura', lastName: 'Vaccaro', club: 'Casetta Bianca', dateOfBirth: '2014-06-07', notes: 'mancina', updatedAt: 'now' });
   });
 });
+
+describe('name and surname', () => {
+  it('split, join and alphabetical order by surname', async () => {
+    const { splitName, joinName, byRegistryName } = await import('../src/lib/playerMatch');
+    expect(splitName('  Laura   Vaccaro ')).toEqual({ firstName: 'Laura', lastName: 'Vaccaro' });
+    expect(splitName('Laura')).toEqual({ firstName: 'Laura', lastName: '' });
+    expect(joinName(' Maria Chiara ', ' Rossi ')).toBe('Maria Chiara Rossi');
+    const list = [P('1', 'Zeno', 'Abate'), P('2', 'Anna', 'Vaccaro'), P('3', 'Laura', 'vaccaro'), P('4', 'Luca', 'Ùrsini')];
+    expect([...list].sort(byRegistryName).map(p => p.id)).toEqual(['1', '4', '2', '3']);
+  });
+  it('a new player needs both fields; a registry profile is always fine', async () => {
+    const { pickedValid } = await import('../src/components/player/PlayerPicker');
+    expect(pickedValid({ firstName: 'Laura', lastName: '' })).toBe(false);
+    expect(pickedValid({ firstName: ' ', lastName: 'Vaccaro' })).toBe(false);
+    expect(pickedValid({ firstName: 'Laura', lastName: 'Vaccaro' })).toBe(true);
+    expect(pickedValid({ profileId: 'x', firstName: 'Laura', lastName: '' })).toBe(true);
+  });
+});

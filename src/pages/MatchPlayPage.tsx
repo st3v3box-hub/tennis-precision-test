@@ -4,7 +4,8 @@ import { useAppData } from '../contexts/AppDataContext';
 import type { Category, MatchSession, MatchStationId, MatchTargetMode } from '../types';
 import { CATEGORY_OPTIONS } from '../lib/protocol';
 import { uid } from '../lib/storage';
-import { findExactProfile } from '../lib/playerMatch';
+import { findExactProfile, splitName, profileName } from '../lib/playerMatch';
+import { PlayerPicker, emptyPick, pickFromProfile, pickedName, pickedValid, type PickedPlayer } from '../components/player/PlayerPicker';
 import {
   DEFAULT_STATIONS, MATCH_STATIONS, balancedCourtTarget, distributionOf, minutesLabel, playerHistory,
   raceOdds, raceState, stationForSeries, type PlayerHistory,
@@ -85,18 +86,20 @@ export const MatchPlayPage: React.FC = () => {
     if (players.some(p => p.id === m.playerId)) return m;
     // Same name already in the registry: attach the match to that profile
     const existing = findExactProfile(m.playerName, players);
-    if (existing) return { ...m, playerId: existing.id };
+    if (existing) return { ...m, playerId: existing.id, playerName: profileName(existing) };
     const now = new Date().toISOString();
-    const parts = m.playerName.trim().split(/\s+/);
+    const parts = m.newPlayerName ?? splitName(m.playerName);
     await upsertPlayer({
-      id: m.playerId, firstName: parts[0] ?? m.playerName, lastName: parts.slice(1).join(' '),
+      id: m.playerId, firstName: parts.firstName || m.playerName.trim(), lastName: parts.lastName,
       dateOfBirth: '', autoCreated: true, createdAt: now, updatedAt: now,
     });
     return m;
   };
 
   const store = async (m: MatchSession) => {
-    const saved = { ...(await ensurePlayer(m)), updatedAt: new Date().toISOString() };
+    const { newPlayerName: _typed, ...withPlayer } = await ensurePlayer(m);
+    void _typed;
+    const saved = { ...withPlayer, updatedAt: new Date().toISOString() };
     await saveLastCoach(saved.coach);
     await upsertMatch(saved); // queued on the device if offline
     setDraft(null);
@@ -172,8 +175,8 @@ interface SetupProps {
 const SetupForm: React.FC<SetupProps> = ({ initialProfileId, coach: coachDefault, categoryHint, history, playerTarget, categoryTargets, onStart }) => {
   const { players } = useAppData();
   const initialProfile = initialProfileId ? players.find(p => p.id === initialProfileId) : undefined;
-  const [query, setQuery] = useState(initialProfile ? `${initialProfile.firstName} ${initialProfile.lastName}`.trim() : '');
-  const [profileId, setProfileId] = useState<string | undefined>(initialProfile?.id);
+  const [pick, setPick] = useState<PickedPlayer>(initialProfile ? pickFromProfile(initialProfile) : { ...emptyPick });
+  const profileId = pick.profileId;
   const [category, setCategory] = useState<Category>((initialProfile && categoryHint(initialProfile.id)) || 'seconda');
   const [coach, setCoach] = useState(coachDefault);
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
@@ -182,13 +185,6 @@ const SetupForm: React.FC<SetupProps> = ({ initialProfileId, coach: coachDefault
   const [manual, setManual] = useState(categoryTargets.seconda);
   const [note, setNote] = useState('');
 
-  const suggestions = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q || profileId) return [];
-    return players
-      .filter(p => `${p.firstName} ${p.lastName}`.toLowerCase().includes(q) || `${p.lastName} ${p.firstName}`.toLowerCase().includes(q))
-      .slice(0, 6);
-  }, [query, players, profileId]);
 
   const hist = useMemo(() => history(profileId, stations), [history, profileId, stations]);
   const dist = useMemo(() => (hist ? distributionOf(hist.scores) : null), [hist]);
@@ -202,7 +198,7 @@ const SetupForm: React.FC<SetupProps> = ({ initialProfileId, coach: coachDefault
     setStations(prev => (prev.includes(id) ? (prev.length > 1 ? prev.filter(s => s !== id) : prev) : [...prev, id]));
 
   const input = 'w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500';
-  const canStart = query.trim().length > 0 && courtTarget >= 1;
+  const canStart = pickedValid(pick) && courtTarget >= 1;
 
   return (
     <div className="min-h-screen bg-gray-50 pb-10">
@@ -210,31 +206,11 @@ const SetupForm: React.FC<SetupProps> = ({ initialProfileId, coach: coachDefault
       <div className="max-w-2xl mx-auto px-4 py-5 space-y-4">
         <Card title="Giocatore">
           <div className="space-y-3">
-            <div>
-              <input value={query} onChange={e => { setQuery(e.target.value); setProfileId(undefined); }}
-                placeholder="Cerca in anagrafica o scrivi nome e cognome" className={input} autoComplete="off" />
-              {profileId && <p className="text-xs text-ok-600 font-semibold mt-1">✓ Profilo collegato</p>}
-              {!profileId && query.trim() && suggestions.length === 0 && (
-                <p className="text-xs text-gray-500 mt-1">Nuovo giocatore: verrà creato un profilo al salvataggio.</p>
-              )}
-              {suggestions.length > 0 && (
-                <div className="mt-1 border border-gray-200 rounded-xl bg-white shadow-sm divide-y divide-gray-100 overflow-hidden">
-                  {suggestions.map(p => (
-                    <button key={p.id} type="button"
-                      onClick={() => {
-                        setProfileId(p.id);
-                        setQuery(`${p.firstName} ${p.lastName}`.trim());
-                        const c = categoryHint(p.id);
-                        if (c) setCategory(c);
-                      }}
-                      className="w-full text-left px-3 py-2.5 text-sm hover:bg-brand-50">
-                      <span className="font-semibold">{p.firstName} {p.lastName}</span>
-                      {p.club && <span className="text-gray-400 text-xs ml-2">{p.club}</span>}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            <PlayerPicker players={players} value={pick} onChange={(v, linked) => {
+              setPick(v);
+              const c = linked ? categoryHint(linked.id) : undefined;
+              if (c) setCategory(c);
+            }} />
             <div className="grid grid-cols-4 gap-2">
               {CATEGORY_OPTIONS.map(o => (
                 <button key={o.value} type="button" onClick={() => setCategory(o.value)}
@@ -326,7 +302,8 @@ const SetupForm: React.FC<SetupProps> = ({ initialProfileId, coach: coachDefault
             onStart({
               id: uid(),
               playerId: profileId ?? uid(),
-              playerName: query.trim(),
+              playerName: pickedName(pick),
+              ...(profileId ? {} : { newPlayerName: { firstName: pick.firstName.trim(), lastName: pick.lastName.trim() } }),
               date, category, coach: coach.trim(),
               ...(note.trim() ? { note: note.trim() } : {}),
               playerTarget,

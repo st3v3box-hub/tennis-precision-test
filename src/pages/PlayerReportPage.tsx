@@ -1,5 +1,5 @@
 import { radarStrokes, familiesWithSpecials } from '../lib/formulas';
-import { SeriesBars, StrokeMetricsTable, ZonesPanel, FamilyCharts } from '../components/report/ReportBlocks';
+import { SeriesBars, StrokeMetricsTable, ZonesPanel, FamilyCharts, Fit } from '../components/report/ReportBlocks';
 import { BrandLockup } from '../components/brand/BrandLockup';
 import React, { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -127,7 +127,7 @@ export const PlayerReportPage: React.FC = () => {
       </div>
 
       {/* A4 sheet */}
-      <div className="report-sheet mx-auto my-6 bg-white shadow-xl w-[210mm] max-w-full p-[10mm] text-gray-900 space-y-4">
+      <div className="report-sheet mx-auto my-3 sm:my-6 bg-white shadow-xl w-full max-w-[210mm] p-4 sm:p-[10mm] print:p-0 text-gray-900 space-y-4">
         <header className="bg-pitch text-white rounded-2xl px-5 py-4 flex items-center gap-4 break-inside-avoid">
           <BrandLockup size={56} />
           <div className="ml-auto text-right">
@@ -158,21 +158,21 @@ export const PlayerReportPage: React.FC = () => {
           <p className="text-sm text-gray-500">Nessun test di precisione completato.</p>
         ) : (
           <>
-            <section className="grid grid-cols-2 gap-4 break-inside-avoid">
+            <section className="grid grid-cols-1 sm:grid-cols-2 print:grid-cols-2 gap-4 break-inside-avoid">
               <Card title="Profilo tecnico" subtitle={first ? `Ultimo test (verde) e primo test in categoria (grigio)` : 'Media per colpo, su 10'}>
-                <div className="flex justify-center">
-                  <RadarChart width={300} height={240} data={radarData} outerRadius={85}>
+                <Fit printWidth={300}>{w => (
+                  <RadarChart width={w} height={w * 0.8} data={radarData} outerRadius={w * 0.28} margin={{ top: 4, right: 30, bottom: 4, left: 30 }}>
                     <PolarGrid stroke="#e5e5e5" />
                     <PolarAngleAxis dataKey="stroke" tick={{ fontSize: 10, fill: '#404040' }} />
                     <PolarRadiusAxis domain={[0, 10]} tick={false} axisLine={false} />
                     {first && <Radar dataKey="first" stroke="#a3a3a3" fill="#a3a3a3" fillOpacity={0.15} strokeDasharray="4 3" isAnimationActive={false} />}
                     <Radar dataKey="value" stroke="#17663e" fill="#17663e" fillOpacity={0.25} strokeWidth={2} isAnimationActive={false} />
                   </RadarChart>
-                </div>
+                )}</Fit>
               </Card>
               <Card title="Colpo per colpo" subtitle={`Test del ${latest.s.date}${latest.s.zones && !latest.s.zones.standard ? ' · zone personalizzate' : ''}${sessionPassed(latest.s.series) ? '' : ' · non superato'}`}>
                 <StrokeMetricsTable results={latest.r} />
-                <div className="grid grid-cols-2 gap-3 mt-3 text-xs">
+                <div className="grid grid-cols-1 min-[400px]:grid-cols-2 print:grid-cols-2 gap-3 mt-3 text-xs">
                   <div className="rounded-xl bg-ok-50 border border-ok-200 p-2.5">
                     <p className="font-bold text-ok-700 mb-1">Punti di forza</p>
                     {strengths.map(s => <p key={s.stroke}>{s.label} · {s.ave.toFixed(1)}</p>)}
@@ -195,8 +195,8 @@ export const PlayerReportPage: React.FC = () => {
 
             {trend.length >= 2 && (
               <Card title="Andamento nel tempo" subtitle="% ideale test dopo test" className="break-inside-avoid">
-                <div className="flex justify-center">
-                  <LineChart width={640} height={170} data={trend} margin={{ top: 8, right: 16, left: -16, bottom: 0 }}>
+                <Fit printWidth={640}>{w => (
+                  <LineChart width={w} height={170} data={trend} margin={{ top: 8, right: 16, left: -16, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                     <XAxis dataKey="date" tick={{ fontSize: 9 }} tickLine={false} />
                     <YAxis domain={[0, 100]} tick={{ fontSize: 9 }} tickLine={false} />
@@ -206,11 +206,11 @@ export const PlayerReportPage: React.FC = () => {
                     )}
                     <Line type="monotone" dataKey="pct" stroke="#17663e" strokeWidth={2} dot={{ r: 3, fill: '#17663e' }} isAnimationActive={false} />
                   </LineChart>
-                </div>
+                )}</Fit>
               </Card>
             )}
 
-            <Card title={`Ultimo test · ${latest.s.date}`} subtitle="Serie per serie: palle nel bersaglio su 10, in verde pieno le serie perfette" className="break-inside-avoid">
+            <Card title={`Ultimo test · ${latest.s.date}`} subtitle="Serie per serie: palle nel bersaglio su 10, in verde pieno le serie perfette">
               <SeriesBars session={latest.s} />
             </Card>
 
@@ -218,7 +218,7 @@ export const PlayerReportPage: React.FC = () => {
               <ZonesPanel session={latest.s} />
             </Card>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 print:grid-cols-2 gap-4">
               <ObjectiveCard objective={objective} print />
               <GroupComparisonCard comparison={comparison} print />
             </div>

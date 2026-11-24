@@ -355,7 +355,7 @@ export const InstructionsPage: React.FC = () => {
 
         <Section id="fare-test" title="Fare un test, passo per passo">
           <Steps items={[
-            <><strong>Home → Nuovo test.</strong> Scegli la data, il maestro e quanti giocatori (fino a 4 nella stessa sessione). Cerca il giocatore in anagrafica: se è nuovo, il profilo si crea da solo al salvataggio.</>,
+            <><strong>Home → Nuovo test.</strong> Scegli la data, il maestro e quanti giocatori (fino a 4 nella stessa sessione). Scegli il giocatore con <em>Scegli dall'anagrafica</em> (in ordine alfabetico). Se è nuovo scrivi Nome e Cognome, tutti e due obbligatori: il profilo si crea da solo al salvataggio.</>,
             <><strong>Scegli i moduli</strong>, divisi per famiglia e colore. All'inizio non ce n'è nessuno selezionato: tocca solo quelli che fai oggi, oppure "Protocollo completo" per i 5 moduli classici. Per i moduli con una scelta (direzione, dritto o rovescio, schema dell'attacco, zona dello smash) la scelta compare sotto il modulo e vale per tutto il test.</>,
             <><strong>Zone.</strong> Di base valgono quelle della categoria. Per un giocatore puoi renderle più facili o più difficili (vedi Zone).</>,
             <><strong>Inserisci ogni serie</strong> toccando il numero di palle dentro (0–10). In alto vedi le serie perfette fatte e quelle che mancano alla soglia; sotto, il <em>match simulato</em> si aggiorna a ogni serie.</>,
