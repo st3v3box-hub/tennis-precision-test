@@ -6,6 +6,7 @@ import { Button } from '../components/ui/Button';
 import { HistoryList } from '../components/history/HistoryList';
 import { ClubFilter, useClubFilter } from '../components/ui/ClubFilter';
 import { useAppData } from '../contexts/AppDataContext';
+import { autosaveSummary, readAutosave } from '../lib/wizardAutosave';
 import { logout, getCredentials, ROLE_LABELS } from '../lib/auth';
 import type { UserRole } from '../lib/auth';
 
@@ -22,6 +23,7 @@ interface Props {
 
 export const HomePage: React.FC<Props> = ({ role, onLogout }) => {
   const navigate = useNavigate();
+  const [unsaved] = useState(() => readAutosave());
   const { sessions, settings, players } = useAppData();
 
   const handleLogout = () => {
@@ -86,6 +88,20 @@ export const HomePage: React.FC<Props> = ({ role, onLogout }) => {
               </span>
               <span className="text-3xl leading-none" aria-hidden>+</span>
             </button>
+
+            {unsaved && (() => {
+              const u = autosaveSummary(unsaved);
+              return (
+                <button onClick={() => navigate('/new', { state: { restoreLocal: true } })}
+                  className="w-full rounded-2xl border-2 border-ball bg-ball/20 px-4 py-3 text-left flex items-center justify-between gap-3">
+                  <span className="min-w-0">
+                    <span className="block font-bold text-ink">Test non salvato: riprendi</span>
+                    <span className="block text-xs text-gray-600 truncate">{u.names} · {u.series} serie{u.time ? ` · ${u.time}` : ''}</span>
+                  </span>
+                  <span className="text-2xl text-ink" aria-hidden>→</span>
+                </button>
+              );
+            })()}
 
             <div className="grid grid-cols-2 gap-2.5">
               <HomeTile title="Killer" text="100 palle di fila" onClick={() => navigate('/killer')} />

@@ -363,7 +363,9 @@ export const InstructionsPage: React.FC = () => {
             <><strong>Revisione e salvataggio.</strong> Controlla le serie e salva: si apre la pagina dei risultati.</>,
           ]} />
           <div className="rounded-xl border border-gray-200 p-3 space-y-1.5">
-            <p className="font-bold text-ink">Se bisogna fermarsi (pioggia, buio, tempo finito)</p>
+            <p className="font-bold text-ink">Salvataggio automatico</p>
+            <p>Ogni serie viene salvata subito sul telefono e, dopo pochi secondi, come bozza nello storico (in alto compare "✓ salvato"). Se il browser si chiude per sbaglio, in Home compare <em>Test non salvato: riprendi</em> e si riparte dall'ultima serie.</p>
+            <p className="font-bold text-ink pt-2">Se bisogna fermarsi (pioggia, buio, tempo finito)</p>
             <p><strong>Interrompi il test…</strong> offre due strade:</p>
             <ul className="list-disc pl-5 space-y-1">
               <li><strong>Chiudi e salva</strong>: il test si salva con i soli moduli giocati ed è <em>parziale</em>. Un modulo lasciato a metà risulta <em>interrotto</em>.</li>

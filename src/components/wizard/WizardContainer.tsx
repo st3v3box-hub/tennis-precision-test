@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import type { WizardState, WizardPlayerData, Category, SeriesResult, TestSession, TestType } from '../../types';
 import { uid } from '../../lib/storage';
@@ -6,6 +6,7 @@ import { useAppData } from '../../contexts/AppDataContext';
 import { ProgressSteps } from '../ui/ProgressSteps';
 import { WIZARD_STEPS, MODULE_STEP_ORDER, DEFAULT_MODULES, detectedModules, detectedOption, OPTION_MODULES, isOptionModule, moduleOption } from '../../lib/protocol';
 import { resolveSessionZones } from '../../lib/zones';
+import { clearAutosave, readAutosave, worthSaving, writeAutosave } from '../../lib/wizardAutosave';
 import { StepSingleStroke } from './StepSingleStroke';
 import type { OptionModule as OptionModuleId } from '../../lib/protocol';
 import { ModuleActions } from './ModuleActions';
@@ -63,7 +64,14 @@ export const WizardContainer: React.FC = () => {
     mode: WizardState['challengeMode'];
   } | undefined;
 
+  // Restore the copy kept on the phone (browser closed during a test)
+  const restoreLocal = (location.state as Record<string, unknown> | null)?.restoreLocal === true;
+
   const [state, setState] = useState<WizardState>(() => {
+    if (restoreLocal) {
+      const a = readAutosave();
+      if (a) return a.state;
+    }
     if (quickStart) {
       return {
         step: 1,   // skip meta — player data already known
@@ -230,6 +238,84 @@ export const WizardContainer: React.FC = () => {
   const [savingDraft, setSavingDraft] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
+  // ─── Autosave ────────────────────────────────────────────────────────────
+  // 1. On the phone, at every change (instant, works offline, survives a closed browser).
+  // 2. As a draft in the database a few seconds after the last series (queued offline),
+  //    so the test also survives a lost phone and shows up as "in corso" in the history.
+  const finalizing = useRef(false);
+  const latest = useRef(state);
+  latest.current = state;
+  const remoteChain = useRef<Promise<void>>(Promise.resolve());
+  const [lastRemoteSave, setLastRemoteSave] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (finalizing.current) return;
+    if (worthSaving(state)) writeAutosave(state);
+  }, [state]);
+
+  const seriesCount = state.players.reduce((n, p) => n + p.series.length, 0);
+  const seriesKey = state.players.map(p => p.series.map(r => `${r.testType}${r.seriesIndex}:${r.score}`).join(',')).join('|');
+
+  // Ids created by the autosave, keyed by the wizard player id: the source of truth while
+  // the state update that stores them is still on its way (no duplicate profiles or drafts).
+  const createdProfile = useRef<Record<string, string>>({});
+  const createdDraft = useRef<Record<string, string>>({});
+
+  const remoteAutosave = useCallback(() => {
+    remoteChain.current = remoteChain.current.then(async () => {
+      const snapshot = latest.current;
+      const fns = fnRef.current;
+      if (finalizing.current) return;
+      // Needs a name for every player (the profile is created from it)
+      if (snapshot.players.some(p => !p.name.trim())) return;
+      const now = new Date().toISOString();
+      const profileIds: string[] = [];
+      const ids: string[] = [];
+      for (let pi = 0; pi < snapshot.players.length; pi++) {
+        const p0 = snapshot.players[pi];
+        const p = p0.profileId || !createdProfile.current[p0.id] ? p0 : { ...p0, profileId: createdProfile.current[p0.id] };
+        const playerId = await fns.resolvePlayer(p, now);
+        createdProfile.current[p0.id] = playerId;
+        const id = snapshot.draftSessionIds?.[pi] ?? createdDraft.current[p0.id] ?? uid();
+        createdDraft.current[p0.id] = id;
+        if (finalizing.current) return;
+        await fns.upsertSession(fns.buildSessionPayload(p, playerId, id, now, false, snapshot.selectedModules, snapshot));
+        profileIds.push(playerId);
+        ids.push(id);
+      }
+      // Keep the ids, so the next autosave and the final save update the same records
+      setState(s => {
+        const missingIds = ids.some((id, i) => s.draftSessionIds?.[i] !== id);
+        const missingProfiles = s.players.some((p, i) => !p.profileId && profileIds[i]);
+        if (!missingIds && !missingProfiles) return s;
+        return {
+          ...s,
+          draftSessionIds: ids,
+          players: s.players.map((p, i) => (p.profileId ? p : { ...p, profileId: profileIds[i] })),
+        };
+      });
+      setLastRemoteSave(new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }));
+    }).catch(err => console.error('Autosave non riuscito', err));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (seriesCount === 0 || finalizing.current) return;
+    const t = window.setTimeout(() => remoteAutosave(), 2500);
+    return () => window.clearTimeout(t);
+  }, [seriesKey, seriesCount, remoteAutosave]);
+
+  // Leaving the page (tab closed, app in background): save the draft right away
+  useEffect(() => {
+    const flush = () => {
+      if (document.visibilityState === 'hidden' && !finalizing.current && latest.current.players.some(p => p.series.length > 0)) {
+        remoteAutosave();
+      }
+    };
+    document.addEventListener('visibilitychange', flush);
+    return () => document.removeEventListener('visibilitychange', flush);
+  }, [remoteAutosave]);
+
   const next = () => setState(s => ({ ...s, step: s.step + 1 }));
   const prev = () => setState(s => ({ ...s, step: Math.max(0, s.step - 1) }));
 
@@ -240,14 +326,15 @@ export const WizardContainer: React.FC = () => {
     now: string,
     completed: boolean,
     /** Modules to store; defaults to the selected ones. Used to close a test early. */
-    modules: TestType[] = state.selectedModules
+    modules: TestType[] = state.selectedModules,
+    st: WizardState = state
   ) => ({
     id,
     playerId,
     playerName: p.name,
-    date: state.date,
+    date: st.date,
     category: p.category as Category,
-    coach: state.coach,
+    coach: st.coach,
     dateOfBirth: p.dateOfBirth,
     note: p.note,
     completed,
@@ -259,15 +346,15 @@ export const WizardContainer: React.FC = () => {
       ? undefined
       : MODULE_STEP_ORDER.filter(m => modules.includes(m)), // canonical order
     // What was planned, when the test was closed before doing every selected module
-    ...(sameModules(modules, state.selectedModules) ? {} : { plannedModules: MODULE_STEP_ORDER.filter(m => state.selectedModules.includes(m)) }),
+    ...(sameModules(modules, st.selectedModules) ? {} : { plannedModules: MODULE_STEP_ORDER.filter(m => st.selectedModules.includes(m)) }),
     zones: resolveSessionZones(p.category, p.zones, settings.zoneDefaults),
-    ...(moduleOptionsOf(modules) ? { moduleOptions: moduleOptionsOf(modules) } : {}),
-    ...(state.challengeId ? { challengeId: state.challengeId } : {}),
+    ...(moduleOptionsOf(modules, st) ? { moduleOptions: moduleOptionsOf(modules, st) } : {}),
+    ...(st.challengeId ? { challengeId: st.challengeId } : {}),
   });
 
   /** Options of the configurable modules in this test (so a resumed draft keeps them) */
-  const moduleOptionsOf = (modules: TestType[]) => {
-    const entries = modules.filter(isOptionModule).map(m => [m, moduleOption(m, state.strokeDirections[m]).id] as const);
+  const moduleOptionsOf = (modules: TestType[], st: WizardState = state) => {
+    const entries = modules.filter(isOptionModule).map(m => [m, moduleOption(m, st.strokeDirections[m]).id] as const);
     return entries.length ? Object.fromEntries(entries) : undefined;
   };
 
@@ -289,21 +376,30 @@ export const WizardContainer: React.FC = () => {
     return playerId;
   };
 
+  // Latest helpers for the autosave (it runs outside React's render cycle)
+  const fnRef = useRef({ resolvePlayer, buildSessionPayload, upsertSession });
+  fnRef.current = { resolvePlayer, buildSessionPayload, upsertSession };
+
   const saveDraft = async () => {
     setSavingDraft(true);
     setSaveError(null);
+    finalizing.current = true;
     try {
+      await remoteChain.current;
       await saveLastCoach(state.coach);
       const now = new Date().toISOString();
       const ids: string[] = [];
 
       for (let pi = 0; pi < state.players.length; pi++) {
         const p = state.players[pi];
-        const playerId = await resolvePlayer(p, now);
-        const id = state.draftSessionIds?.[pi] ?? uid();
+        // After an autosave the ids may already exist (state update possibly still pending)
+        const known = p.profileId ? p : { ...p, profileId: createdProfile.current[p.id] };
+        const playerId = await resolvePlayer(known, now);
+        const id = state.draftSessionIds?.[pi] ?? createdDraft.current[p.id] ?? uid();
         await upsertSession(buildSessionPayload(p, playerId, id, now, false));
         ids.push(id);
       }
+      clearAutosave();
 
       if (state.challengeMode !== 'none' && state.challengeId) {
         navigate('/challenge-results', {
@@ -316,6 +412,7 @@ export const WizardContainer: React.FC = () => {
       }
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : 'Errore durante il salvataggio. Riprova.');
+      finalizing.current = false;
       setSavingDraft(false);
     }
   };
@@ -338,18 +435,23 @@ export const WizardContainer: React.FC = () => {
   const save = async (modules: TestType[] = state.selectedModules) => {
     setSaving(true);
     setSaveError(null);
+    finalizing.current = true;
     try {
+      await remoteChain.current;
       await saveLastCoach(state.coach);
       const now = new Date().toISOString();
       const ids: string[] = [];
 
       for (let pi = 0; pi < state.players.length; pi++) {
         const p = state.players[pi];
-        const playerId = await resolvePlayer(p, now);
-        const id = state.draftSessionIds?.[pi] ?? uid();
+        // After an autosave the ids may already exist (state update possibly still pending)
+        const known = p.profileId ? p : { ...p, profileId: createdProfile.current[p.id] };
+        const playerId = await resolvePlayer(known, now);
+        const id = state.draftSessionIds?.[pi] ?? createdDraft.current[p.id] ?? uid();
         await upsertSession(buildSessionPayload(p, playerId, id, now, true, modules));
         ids.push(id);
       }
+      clearAutosave();
 
       if (state.challengeMode !== 'none') {
         navigate('/challenge-results', { state: { ids, mode: state.challengeMode } });
@@ -360,6 +462,7 @@ export const WizardContainer: React.FC = () => {
       }
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : 'Errore durante il salvataggio. Riprova.');
+      finalizing.current = false;
       setSaving(false);
     }
   };
@@ -373,7 +476,12 @@ export const WizardContainer: React.FC = () => {
           <button onClick={() => navigate('/')} className="flex-shrink-0">
             <img src="./logo.png" alt="Gladiators Training — Home" className="h-8 w-8" />
           </button>
-          <p className="text-xs text-neutral-300 font-medium">{currentStepDef?.title}</p>
+          <p className="text-xs text-neutral-300 font-medium flex-1 min-w-0 truncate">{currentStepDef?.title}</p>
+          {seriesCount > 0 && (
+            <span className="text-[11px] text-chalk/70 flex-shrink-0" title="Ogni serie viene salvata sul telefono subito e nell'archivio dopo pochi secondi">
+              ✓ salvato{lastRemoteSave ? ` ${lastRemoteSave}` : ''}
+            </span>
+          )}
         </div>
         <div className="bg-white border-b border-gray-200 px-4 py-2">
           <ProgressSteps currentStep={state.step} steps={activeSteps} />
