@@ -4,6 +4,7 @@ import { useAppData } from '../contexts/AppDataContext';
 import type { Category, MatchSession, MatchStationId, MatchTargetMode } from '../types';
 import { CATEGORY_OPTIONS } from '../lib/protocol';
 import { uid } from '../lib/storage';
+import { findExactProfile } from '../lib/playerMatch';
 import {
   DEFAULT_STATIONS, MATCH_STATIONS, balancedCourtTarget, distributionOf, minutesLabel, playerHistory,
   raceOdds, raceState, stationForSeries, type PlayerHistory,
@@ -82,6 +83,9 @@ export const MatchPlayPage: React.FC = () => {
   /** The player profile must exist before the match is stored. */
   const ensurePlayer = async (m: MatchSession): Promise<MatchSession> => {
     if (players.some(p => p.id === m.playerId)) return m;
+    // Same name already in the registry: attach the match to that profile
+    const existing = findExactProfile(m.playerName, players);
+    if (existing) return { ...m, playerId: existing.id };
     const now = new Date().toISOString();
     const parts = m.playerName.trim().split(/\s+/);
     await upsertPlayer({

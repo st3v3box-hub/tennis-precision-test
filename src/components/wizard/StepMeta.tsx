@@ -3,6 +3,7 @@ import type { WizardState, WizardPlayerData, TestType } from '../../types';
 import type { PlayerProfile } from '../../types';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
+import { similarProfiles, profileName } from '../../lib/playerMatch';
 import {
   CATEGORY_OPTIONS, MODULE_STEP_ORDER, MODULE_LABELS, DEFAULT_MODULES, MODULE_SERIES, EXCLUSIVE_WITH, MODULE_OPTIONS, MODULE_FAMILY,
   FAMILY_META, FAMILY_ORDER, isOptionModule, moduleOption, type OptionModule,
@@ -307,6 +308,22 @@ export const StepMeta: React.FC<Props> = ({ state, update, updatePlayer, setPlay
                   placeholder="Es. Mario Rossi"
                   className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                 />
+
+                {/* Same or similar name already in the registry: link it instead of creating a duplicate */}
+                {similarProfiles(p.name, profiles).length > 0 && (
+                  <div className="mt-2 rounded-xl border-2 border-amber-300 bg-amber-50 px-3 py-2.5">
+                    <p className="text-xs font-semibold text-amber-900">È già in anagrafica? Tocca per collegarlo ed evitare un doppione</p>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {similarProfiles(p.name, profiles).map(sp => (
+                        <button key={sp.id} type="button" onClick={() => linkProfile(i, sp)}
+                          className="px-3 py-1.5 rounded-lg bg-white border border-amber-300 text-sm font-semibold text-ink">
+                          {profileName(sp)}{sp.club ? <span className="text-gray-400 font-normal"> · {sp.club}</span> : null}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-[11px] text-amber-800 mt-1.5">Se è un'altra persona, continua pure a scrivere il nome completo.</p>
+                  </div>
+                )}
 
                 {/* Profile picker toggle */}
                 {profiles.length > 0 && (

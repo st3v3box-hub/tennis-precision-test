@@ -1,6 +1,7 @@
 import { sessionPassed, sessionInterrupted, sessionPartial } from '../lib/protocol';
 import React, { useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { MergeIntoPlayer } from '../components/player/MergePlayers';
 import { can } from '../lib/auth';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine,
@@ -240,6 +241,12 @@ export const PlayerDetailPage: React.FC = () => {
           onNew={canTest ? () => navigate('/killer/new', { state: { profileId: profile.id } }) : undefined} />
         <MatchSummaryCard matches={playerMatches}
           onNew={canTest ? () => navigate('/match/new', { state: { profileId: profile.id } }) : undefined} />
+
+        {canEdit && (
+          <div className="px-1">
+            <MergeIntoPlayer keep={profile} />
+          </div>
+        )}
 
         {canTest && <Card title="Avvia Test Rapido">
           <p className="text-xs text-gray-500 mb-3">

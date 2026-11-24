@@ -5,6 +5,7 @@ import {
 import { db } from '../lib/firebase';
 import type { PlayerProfile, TestSession, AppSettings, KillerSession, MatchSession } from '../types';
 import { loadState, DEFAULT_SETTINGS, normalizeSettings } from '../lib/storage';
+import { mergedProfile, profileName } from '../lib/playerMatch';
 
 /** Sync state shown in the UI so coaches know whether data reached the cloud. */
 export interface SyncStatus {
@@ -28,6 +29,8 @@ interface AppDataContextValue {
 
   upsertPlayer: (profile: PlayerProfile) => Promise<void>;
   deletePlayer: (id: string) => Promise<void>;
+  /** Moves every test, Killer and Match of `mergeId` to `keepId`, fills the gaps of the kept profile, deletes the other */
+  mergePlayers: (keepId: string, mergeId: string) => Promise<{ moved: number }>;
   getPlayer: (id: string) => PlayerProfile | undefined;
   getPlayerSessions: (playerId: string) => TestSession[];
   getChallengeSessions: (challengeId: string) => TestSession[];
@@ -234,6 +237,39 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   }, [sessions, killerSessions, matchSessions, queueWrite]);
 
+  const mergePlayers = useCallback(async (keepId: string, mergeId: string) => {
+    const keep = players.find(p => p.id === keepId);
+    const merge = players.find(p => p.id === mergeId);
+    if (!keep || !merge || keepId === mergeId) throw new Error('Profili non trovati');
+    const now = new Date().toISOString();
+    const name = profileName(keep);
+    const merged = mergedProfile(keep, merge, now);
+    const movedSessions = sessions.filter(s => s.playerId === mergeId).map(s => ({ ...s, playerId: keepId, playerName: name }));
+    const movedKiller = killerSessions.filter(k => k.playerId === mergeId).map(k => ({ ...k, playerId: keepId, playerName: name }));
+    const movedMatch = matchSessions.filter(m => m.playerId === mergeId).map(m => ({ ...m, playerId: keepId, playerName: name }));
+
+    setSessions(prev => prev.map(s => movedSessions.find(x => x.id === s.id) ?? s));
+    setKillerSessions(prev => prev.map(k => movedKiller.find(x => x.id === k.id) ?? k));
+    setMatchSessions(prev => prev.map(m => movedMatch.find(x => x.id === m.id) ?? m));
+    setPlayers(prev => prev.filter(p => p.id !== mergeId).map(p => (p.id === keepId ? merged : p)));
+
+    // Profile, moved records and deletion in batches (max 500 writes each); the old profile goes last
+    type Op = (b: ReturnType<typeof writeBatch>) => void;
+    const ops: Op[] = [
+      b => b.set(doc(db, 'players', keepId), merged),
+      ...movedSessions.map(s => (b: ReturnType<typeof writeBatch>) => b.set(doc(db, 'sessions', s.id), s)),
+      ...movedKiller.map(k => (b: ReturnType<typeof writeBatch>) => b.set(doc(db, 'killer', k.id), k)),
+      ...movedMatch.map(m => (b: ReturnType<typeof writeBatch>) => b.set(doc(db, 'match', m.id), m)),
+      b => b.delete(doc(db, 'players', mergeId)),
+    ];
+    for (let i = 0; i < ops.length; i += 450) {
+      const batch = writeBatch(db);
+      ops.slice(i, i + 450).forEach(op => op(batch));
+      await queueWrite(() => batch.commit(), 'Unione profili');
+    }
+    return { moved: movedSessions.length + movedKiller.length + movedMatch.length };
+  }, [players, sessions, killerSessions, matchSessions, queueWrite]);
+
   const getPlayer = useCallback((id: string) => players.find(p => p.id === id), [players]);
   const getPlayerSessions = useCallback((playerId: string) => sessions.filter(s => s.playerId === playerId), [sessions]);
   const getChallengeSessions = useCallback((challengeId: string) => sessions.filter(s => s.challengeId === challengeId), [sessions]);
@@ -299,7 +335,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
       },
       clearSyncError,
       upsertPlayer, deletePlayer, getPlayer, getPlayerSessions, getChallengeSessions,
-      getSession, upsertSession, deleteSession, upsertKiller, deleteKiller, upsertMatch, deleteMatch, saveSettings, saveLastCoach,
+      getSession, upsertSession, deleteSession, upsertKiller, deleteKiller, upsertMatch, deleteMatch, saveSettings, mergePlayers, saveLastCoach,
     }}>
       {children}
     </AppDataContext.Provider>

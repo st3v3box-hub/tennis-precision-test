@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import type { WizardState, WizardPlayerData, Category, SeriesResult, TestSession, TestType } from '../../types';
 import { uid } from '../../lib/storage';
+import { findExactProfile, profileName } from '../../lib/playerMatch';
 import { useAppData } from '../../contexts/AppDataContext';
 import { ProgressSteps } from '../ui/ProgressSteps';
 import { WIZARD_STEPS, MODULE_STEP_ORDER, DEFAULT_MODULES, detectedModules, detectedOption, OPTION_MODULES, isOptionModule, moduleOption } from '../../lib/protocol';
@@ -39,7 +40,9 @@ const makePlayer = (): WizardPlayerData => ({
 export const WizardContainer: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { lastCoach, saveLastCoach, upsertPlayer, upsertSession, sessions: allSessions, settings } = useAppData();
+  const { lastCoach, saveLastCoach, upsertPlayer, upsertSession, sessions: allSessions, settings, players: registry } = useAppData();
+  const playersRef = useRef(registry);
+  playersRef.current = registry;
 
   // Quick-start payload from PlayerDetailPage
   const quickStart = (location.state as Record<string, unknown> | null)?.quickStart as {
@@ -331,7 +334,8 @@ export const WizardContainer: React.FC = () => {
   ) => ({
     id,
     playerId,
-    playerName: p.name,
+    // The registry spelling when the test belongs to an existing profile
+    playerName: (() => { const pr = playersRef.current.find(x => x.id === playerId); return pr ? profileName(pr) : p.name.trim(); })(),
     date: st.date,
     category: p.category as Category,
     coach: st.coach,
@@ -360,6 +364,9 @@ export const WizardContainer: React.FC = () => {
 
   const resolvePlayer = async (p: WizardPlayerData, now: string): Promise<string> => {
     if (p.profileId) return p.profileId;
+    // Same name already in the registry (case, accents, spaces ignored): use that profile
+    const existing = findExactProfile(p.name, playersRef.current);
+    if (existing) return existing.id;
     const playerId = uid();
     const nameParts = p.name.trim().split(/\s+/);
     const firstName = nameParts[0] ?? p.name;

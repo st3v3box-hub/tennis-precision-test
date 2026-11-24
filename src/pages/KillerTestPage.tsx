@@ -4,6 +4,7 @@ import { useAppData } from '../contexts/AppDataContext';
 import type { Category, KillerDepth, KillerSession, KillerZone } from '../types';
 import { CATEGORY_OPTIONS } from '../lib/protocol';
 import { uid } from '../lib/storage';
+import { findExactProfile } from '../lib/playerMatch';
 import {
   DEPTH_LABELS, ZONE_LABELS, STROKE_LABEL, formatDuration, killerClock, killerReducer,
   startKiller, strokeForBall, type KillerAction, type KillerLiveState,
@@ -90,7 +91,7 @@ export const KillerTestPage: React.FC = () => {
   const finish = async (d: KillerDraft) => {
     const now = new Date().toISOString();
     const { setup, live } = d;
-    let playerId = setup.profileId;
+    let playerId = setup.profileId ?? findExactProfile(setup.name, players)?.id;
     if (!playerId) {
       playerId = uid();
       const parts = setup.name.trim().split(/\s+/);

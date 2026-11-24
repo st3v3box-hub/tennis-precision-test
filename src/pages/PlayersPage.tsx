@@ -5,6 +5,7 @@ import { computeSessionResults } from '../lib/formulas';
 import { percentToStars, renderStars, STAR_LABELS } from '../lib/stars';
 import type { PlayerProfile } from '../types';
 import { Button } from '../components/ui/Button';
+import { DuplicateSuggestions } from '../components/player/MergePlayers';
 import { can } from '../lib/auth';
 import { ClubFilter, useClubFilter } from '../components/ui/ClubFilter';
 import { playerObjective } from '../lib/objectives';
@@ -74,6 +75,8 @@ export const PlayersPage: React.FC = () => {
           {canEdit && <Button onClick={() => navigate('/players/new')} icon="+">Nuovo</Button>}
         </div>
         <ClubFilter club={club} clubs={clubs} onChange={setClub} />
+
+        {canEdit && <DuplicateSuggestions />}
 
         {filtered.length === 0 && (
           <div className="text-center py-16 text-gray-400">
