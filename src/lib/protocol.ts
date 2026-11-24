@@ -21,9 +21,9 @@ export const GROUNDSTROKES_SERIES: SeriesSpec[] = Array.from({ length: 20 }, (_,
 // ═════════════════════════════════════════════════════════════════════════════
 
 export type OptionModule =
-  | 'forehand' | 'backhand' | 'insideout' | 'slice' | 'putaway' | 'volley' | 'approach' | 'smash_volo' | 'smash_rimbalzo' | 'dropshot';
+  | 'forehand' | 'backhand' | 'insideout' | 'slice' | 'putaway' | 'return' | 'volley' | 'approach' | 'smash_volo' | 'smash_rimbalzo' | 'dropshot';
 export const OPTION_MODULES: OptionModule[] = [
-  'forehand', 'backhand', 'insideout', 'slice', 'putaway', 'volley', 'approach', 'smash_volo', 'smash_rimbalzo', 'dropshot',
+  'forehand', 'backhand', 'insideout', 'slice', 'putaway', 'return', 'volley', 'approach', 'smash_volo', 'smash_rimbalzo', 'dropshot',
 ];
 export const isOptionModule = (m: TestType): m is OptionModule => (OPTION_MODULES as TestType[]).includes(m);
 
@@ -35,7 +35,7 @@ export const isSingleStroke = (m: TestType): m is SingleStrokeModule => (SINGLE_
 /** Where the target is drawn on the court diagram */
 export interface ModuleTarget {
   /** groundstroke = back corner box · volley = strip · dropshot = squares at the net · approach = back corners + volley strip */
-  zone: 'groundstroke' | 'volley' | 'dropshot' | 'approach';
+  zone: 'groundstroke' | 'volley' | 'dropshot' | 'approach' | 'none';
   /** Groundstroke box on the other side (see CourtZones) */
   mirror: boolean;
 }
@@ -78,6 +78,12 @@ export const MODULE_OPTIONS: Record<OptionModule, ModuleOption[]> = {
   putaway: [
     { id: 'cross', label: 'Incrociato', hint: 'palla corta e alta, chiusa in diagonale', cycle: ['pa_cross'], target: gs(false) },
     { id: 'line', label: 'Lungolinea', hint: 'palla corta e alta, chiusa lungo la linea', cycle: ['pa_line'], target: gs(true) },
+  ],
+  return: [
+    // First = the original protocol (alternated): older tests are read as this
+    { id: 'alt', label: 'Destra e sinistra', hint: 'da destra e da sinistra alternate', cycle: ['right', 'left'], target: { zone: 'none', mirror: false } },
+    { id: 'right', label: 'Solo da destra', hint: '10 serie dal lato destro (parità)', cycle: ['right'], target: { zone: 'none', mirror: false } },
+    { id: 'left', label: 'Solo da sinistra', hint: '10 serie dal lato sinistro (vantaggio)', cycle: ['left'], target: { zone: 'none', mirror: false } },
   ],
   volley: [
     // First = the original protocol (alternated): older tests are read as this
@@ -128,8 +134,8 @@ export const DIRECTION_TEXT: Record<Direction, string> = {
   io_line: 'Sventaglio inside-in',
   lungolinea: 'Lungolinea',
   diagonale: 'Diagonale',
-  right: 'Da destra',
-  left: 'Da sinistra',
+  right: 'Risposta da destra (parità)',
+  left: 'Risposta da sinistra (vantaggio)',
   fh_volley: 'Volée di dritto',
   bh_volley: 'Volée di rovescio',
   ds_fh_cross: 'Smorzata di dritto incrociata',
@@ -182,8 +188,8 @@ export function detectedOption(series: SeriesResult[], module: OptionModule, sav
 export function moduleDisplayName(series: SeriesResult[], module: TestType, saved?: Partial<Record<string, string>>): string {
   if (!isOptionModule(module)) return MODULE_LABELS[module];
   const option = detectedOption(series, module, saved?.[module]);
-  // Alternated volleys are the original module: keep its plain name
-  if (module === 'volley' && option.id === 'alt') return MODULE_LABELS.volley;
+  // Alternated volleys / returns are the original modules: keep their plain name
+  if ((module === 'volley' || module === 'return') && option.id === 'alt') return MODULE_LABELS[module];
   const opt = option.label.toLowerCase();
   return isSingleStroke(module) || module === 'putaway' || module === 'dropshot'
     ? `${MODULE_LABELS[module]} ${opt}`

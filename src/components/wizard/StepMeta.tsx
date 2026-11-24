@@ -4,7 +4,7 @@ import type { PlayerProfile } from '../../types';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import {
-  CATEGORY_OPTIONS, MODULE_STEP_ORDER, MODULE_LABELS, MODULE_SERIES, EXCLUSIVE_WITH, MODULE_OPTIONS, MODULE_FAMILY,
+  CATEGORY_OPTIONS, MODULE_STEP_ORDER, MODULE_LABELS, DEFAULT_MODULES, MODULE_SERIES, EXCLUSIVE_WITH, MODULE_OPTIONS, MODULE_FAMILY,
   FAMILY_META, FAMILY_ORDER, isOptionModule, moduleOption, type OptionModule,
 } from '../../lib/protocol';
 import { useAppData } from '../../contexts/AppDataContext';
@@ -18,7 +18,7 @@ const MODULE_HINT: Partial<Record<TestType, string>> = {
   slice: 'Back di dritto o di rovescio, incrociato o lungolinea',
   putaway: 'Palla corta e alta da chiudere di dritto',
   combined: 'Lungolinea e diagonale alternati',
-  return: 'Da destra e da sinistra alternati',
+  return: 'Destra e sinistra alternate, solo da destra o solo da sinistra',
   serve: '1ª da destra e 2ª da sinistra, con la striscia',
   volley: 'Dritto e rovescio alternati, solo dritto o solo rovescio',
   approach: 'Attacco e volée a coppie, dritto e rovescio alternati',
@@ -123,7 +123,19 @@ export const StepMeta: React.FC<Props> = ({ state, update, updatePlayer, setPlay
       </Card>
 
       {/* Module selection, grouped and coloured by family */}
-      <Card title="Moduli del test" subtitle="Groundstrokes e i test di solo dritto / solo rovescio non si fanno nella stessa sessione">
+      <Card title="Moduli del test" subtitle="Scegli solo quello che fai oggi. Groundstrokes e solo dritto / solo rovescio non si fanno nella stessa sessione.">
+        <div className="flex flex-wrap gap-2 mb-4">
+          <button type="button" onClick={() => update({ selectedModules: [...DEFAULT_MODULES] })}
+            className="px-3 py-1.5 rounded-full border border-brand-300 bg-brand-50 text-xs font-semibold text-brand-800">
+            Protocollo completo (56 serie)
+          </button>
+          {state.selectedModules.length > 0 && (
+            <button type="button" onClick={() => update({ selectedModules: [] })}
+              className="px-3 py-1.5 rounded-full border border-gray-300 bg-white text-xs font-semibold text-gray-600">
+              Deseleziona tutto
+            </button>
+          )}
+        </div>
         <div className="space-y-4">
           {FAMILY_ORDER.map(fam => {
             const meta = FAMILY_META[fam];

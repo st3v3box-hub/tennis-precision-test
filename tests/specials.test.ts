@@ -174,3 +174,18 @@ describe('volée: alternate, solo dritto, solo rovescio', () => {
     expect(st.find(s => s.stroke === 'volley')!.ave).toBe(7);
   });
 });
+
+describe('risposta: alternate, solo destra, solo sinistra', () => {
+  it('three options; old tests stay alternated with the plain name', () => {
+    expect(MODULE_OPTIONS.return.map(o => o.id)).toEqual(['alt', 'right', 'left']);
+    const old: SeriesResult[] = Array.from({ length: 4 }, (_, i) => ({
+      testType: 'return', seriesIndex: i, score: 7, direction: i % 2 === 0 ? 'right' : 'left',
+    }));
+    expect(detectedOption(old, 'return').id).toBe('alt');
+    expect(moduleDisplayName(old, 'return')).toBe('Return');
+    expect(moduleDisplayName(play('return', 'left', [6, 7]), 'return')).toBe('Return · solo da sinistra');
+    expect(optionSeries('return', 'right').every(s => s.direction === 'right')).toBe(true);
+    expect(MODULE_SERIES.return).toBe(10);
+    expect(MODULE_PASS.return).toBe(5);
+  });
+});

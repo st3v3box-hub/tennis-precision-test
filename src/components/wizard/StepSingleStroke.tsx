@@ -28,6 +28,7 @@ const FEED: Record<OptionModule, string> = {
   slice: '10 palle dal cesto, colpite in back',
   putaway: 'Palla corta e alta dal cesto, da chiudere vincente di dritto',
   volley: '10 palle a rete, volée incrociate',
+  return: '10 risposte, obiettivo: rimettere in campo',
   approach: '5 coppie: palla corta da attaccare, poi una volée. La coppia vale se entrano tutti e due i colpi',
   smash_volo: 'Pallonetto dal cesto, smash al volo',
   smash_rimbalzo: 'Pallonetto alto dal cesto, smash dopo il rimbalzo',
@@ -73,6 +74,7 @@ export const StepSingleStroke: React.FC<Props> = ({ module, state, setSeriesResu
       <Card title={`${MODULE_LABELS[module]} · ${option.label.toLowerCase()}${playerLabel}`}
         subtitle={`${FEED[module]} · ${total} serie · superato con ${required} perfette${isPairModule(module) ? ' (5 coppie su 5)' : ''}`}>
         <div className="flex items-center gap-4 mb-4">
+          {target.zone !== 'none' && (
           <div className="flex-shrink-0">
             <span className={`block text-[10px] font-bold rounded-full px-2 py-0.5 mb-1 text-center ${family.soft}`}>{family.label}</span>
             <CourtZones
@@ -83,6 +85,7 @@ export const StepSingleStroke: React.FC<Props> = ({ module, state, setSeriesResu
               mirror={target.mirror}
               showLabels={false} className="h-24 w-auto" title="Zona bersaglio" />
           </div>
+          )}
           <div className="flex-1">
             <p className="text-xs text-gray-500">Serie perfette</p>
             <p className="font-display text-4xl font-extrabold leading-none">

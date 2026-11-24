@@ -81,7 +81,7 @@ const PROTOCOL_ROWS = [
   { test: 'Back (slice)', series: 20, balls: 10, soglia: '10/20', pattern: 'Back di dritto o di rovescio, incrociato o lungolinea (scelto per tutto il test). Zona di fondo campo' },
   { test: 'Dritto di chiusura', series: 20, balls: 10, soglia: '10/20', pattern: 'Palla corta e alta da chiudere di dritto, incrociato o lungolinea. Zona di fondo campo' },
   { test: 'Combined', series: 10, balls: 10, soglia: '5/10', pattern: 'Lungolinea / Diagonale (alternati)' },
-  { test: 'Return', series: 10, balls: 10, soglia: '5/10', pattern: 'Da Destra (deuce) / Da Sinistra (ad) (alternati)' },
+  { test: 'Return', series: 10, balls: 10, soglia: '5/10', pattern: 'Da destra e da sinistra alternate (protocollo), oppure solo da destra o solo da sinistra' },
   { test: 'Servizio', series: 6, balls: 10, soglia: '3/6', pattern: '1ª Destra / 2ª Sinistra (alternati) + striscia target' },
   { test: 'Volley', series: 10, balls: 10, soglia: '5/10', pattern: 'Volée di dritto e di rovescio alternate (protocollo), oppure solo dritto o solo rovescio' },
   { test: 'Attacco e volée', series: 20, balls: 10, soglia: '10/20', pattern: '5 coppie per serie, dritto e rovescio alternati: attacco lungolinea + volée incrociata, o attacco incrociato + volée lungolinea. La coppia vale solo se entrano tutti e due i colpi; perfetta = 5 coppie su 5' },
@@ -356,7 +356,7 @@ export const InstructionsPage: React.FC = () => {
         <Section id="fare-test" title="Fare un test, passo per passo">
           <Steps items={[
             <><strong>Home → Nuovo test.</strong> Scegli la data, il maestro e quanti giocatori (fino a 4 nella stessa sessione). Cerca il giocatore in anagrafica: se è nuovo, il profilo si crea da solo al salvataggio.</>,
-            <><strong>Scegli i moduli</strong>, divisi per famiglia e colore. Per i moduli con una scelta (direzione, dritto o rovescio, schema dell'attacco, zona dello smash) la scelta compare sotto il modulo e vale per tutto il test.</>,
+            <><strong>Scegli i moduli</strong>, divisi per famiglia e colore. All'inizio non ce n'è nessuno selezionato: tocca solo quelli che fai oggi, oppure "Protocollo completo" per i 5 moduli classici. Per i moduli con una scelta (direzione, dritto o rovescio, schema dell'attacco, zona dello smash) la scelta compare sotto il modulo e vale per tutto il test.</>,
             <><strong>Zone.</strong> Di base valgono quelle della categoria. Per un giocatore puoi renderle più facili o più difficili (vedi Zone).</>,
             <><strong>Inserisci ogni serie</strong> toccando il numero di palle dentro (0–10). In alto vedi le serie perfette fatte e quelle che mancano alla soglia; sotto, il <em>match simulato</em> si aggiorna a ogni serie.</>,
             <><strong>Fine modulo.</strong> Quando la soglia è raggiunta o le serie sono finite, scegli <em>Continua con il modulo successivo</em> oppure <em>Termina e salva</em>.</>,

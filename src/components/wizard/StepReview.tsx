@@ -6,7 +6,6 @@ import { mean } from '../../lib/formulas';
 import {
   GROUNDSTROKES_SERIES,
   COMBINED_SERIES,
-  RETURN_SERIES,
   SERVE_SERIES,
   optionSeries, modulePasses, isOptionModule, moduleOption, MODULE_LABELS, MODULE_STEP_ORDER } from '../../lib/protocol';
 
@@ -46,7 +45,6 @@ function makeRows(player: WizardPlayerData, selectedModules: TestType[], options
       make('Groundstrokes BH', 'groundstrokes', GROUNDSTROKES_SERIES.filter(s => s.direction === 'bh_cross')),
     ],
     combined: [make('Combined', 'combined', COMBINED_SERIES)],
-    return: [make('Return', 'return', RETURN_SERIES)],
     serve: [make('Servizio', 'serve', SERVE_SERIES)],
   };
   const allRows: SummaryRow[] = MODULE_STEP_ORDER.flatMap(m => {

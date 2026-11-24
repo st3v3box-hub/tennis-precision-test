@@ -14,7 +14,6 @@ import { gameThresholdFor } from '../../lib/match';
 import { StepMeta } from './StepMeta';
 import { StepGroundstrokes } from './StepGroundstrokes';
 import { StepCombined } from './StepCombined';
-import { StepReturn } from './StepReturn';
 import { StepServe } from './StepServe';
 import { StepReview } from './StepReview';
 
@@ -80,7 +79,7 @@ export const WizardContainer: React.FC = () => {
           series: [],
         }],
         challengeMode: 'none',
-        selectedModules: [...ALL_MODULES],
+        selectedModules: [],
         strokeDirections: { ...DEFAULT_DIRECTIONS },
       };
     }
@@ -94,7 +93,7 @@ export const WizardContainer: React.FC = () => {
         playerCount: count,
         players: Array.from({ length: count }, () => makePlayer()),
         challengeMode: challengeSetup.challengeMode,
-        selectedModules: [...ALL_MODULES],
+        selectedModules: [],
         strokeDirections: { ...DEFAULT_DIRECTIONS },
         challengeId: uid(),  // generate challenge ID at start
       };
@@ -175,7 +174,8 @@ export const WizardContainer: React.FC = () => {
       playerCount: 1,
       players: [makePlayer()],
       challengeMode: 'none',
-      selectedModules: [...ALL_MODULES],
+      // A new test starts with nothing selected: the coach picks only what is needed today
+      selectedModules: [],
       strokeDirections: { ...DEFAULT_DIRECTIONS },
     };
   });
@@ -401,7 +401,6 @@ export const WizardContainer: React.FC = () => {
           <StepSingleStroke key={currentStepId} module={currentStepId as OptionModuleId} {...stepProps} />
         )}
         {currentStepId === 'combined' && <StepCombined {...stepProps} />}
-        {currentStepId === 'return' && <StepReturn {...stepProps} />}
         {currentStepId === 'serve' && <StepServe {...stepProps} />}
         {currentStepId !== 'meta' && currentStepId !== 'review' && (
           <ModuleActions
