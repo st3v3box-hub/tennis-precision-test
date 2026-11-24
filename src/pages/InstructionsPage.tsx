@@ -2,6 +2,8 @@ import { serveStripsFor } from '../lib/zones';
 import { useAppData } from '../contexts/AppDataContext';
 import { CourtZones } from '../components/brand/CourtZones';
 import React, { useState } from 'react';
+import { CATEGORY_OPTIONS } from '../lib/protocol';
+import { targetPercent } from '../lib/objectives';
 import { useNavigate } from 'react-router-dom';
 import type { Category } from '../types';
 
@@ -86,32 +88,81 @@ const EXAMPLES = [
   {
     label: 'Professionista',
     color: 'green',
-    desc: 'Completa 10 serie su 10 perfette in ogni modulo. Media altissima, deviazione minima.',
-    badge: '10/10 ✓',
+    desc: 'Tutte le serie perfette: chiude il modulo nel minor numero di serie possibile. Media altissima, deviazione minima.',
+    badge: '5 in 5 ✓',
     badgeColor: 'bg-brand-100 text-brand-700',
   },
   {
     label: 'Giocatore solido',
     color: 'yellow',
-    desc: 'Ottiene 7–8 serie da 10/10 su 10 disponibili. Supera la soglia, ma con margine ridotto.',
-    badge: '7/10 ✓',
+    desc: 'Arriva a 5 perfette dopo 7–8 serie: supera la soglia con qualche errore lungo la strada.',
+    badge: '5 in 8 ✓',
     badgeColor: 'bg-yellow-100 text-yellow-700',
   },
   {
     label: 'In miglioramento',
     color: 'orange',
-    desc: 'Raggiunge esattamente la soglia minima (5/10 o 3/6). Test superato di misura.',
-    badge: '5/10 ✓',
+    desc: 'Trova la quinta perfetta solo all\'ultima serie disponibile. Superato di misura.',
+    badge: '5 in 10 ✓',
     badgeColor: 'bg-orange-100 text-orange-700',
   },
   {
     label: 'Test fallito',
     color: 'red',
-    desc: 'Meno della metà delle serie risultano perfette. La zona target non viene centrata con sufficiente continuità.',
-    badge: '3/10 ✗',
+    desc: 'Finisce le 10 serie con meno di 5 perfette. La zona non viene centrata con sufficiente continuità.',
+    badge: '3 in 10 ✗',
     badgeColor: 'bg-red-100 text-red-600',
   },
 ];
+
+// ─── Page building blocks ────────────────────────────────────────────────────
+
+const SECTIONS = [
+  { id: 'panoramica', label: 'Le prove' },
+  { id: 'serie', label: 'La serie' },
+  { id: 'mentale', label: 'Mentale' },
+  { id: 'moduli', label: 'Moduli e soglie' },
+  { id: 'fare-test', label: 'Fare un test' },
+  { id: 'zone', label: 'Zone' },
+  { id: 'risultati', label: 'Risultati' },
+  { id: 'giocatore', label: 'Scheda giocatore' },
+  { id: 'classifiche', label: 'Classifiche e sfide' },
+  { id: 'killer', label: 'Killer' },
+  { id: 'match', label: 'Match Test' },
+  { id: 'app', label: 'Telefono e accessi' },
+] as const;
+
+const Section: React.FC<{ id: string; title: string; intro?: string; children: React.ReactNode }> = ({ id, title, intro, children }) => (
+  <section id={id} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 scroll-mt-20">
+    <h2 className="font-display font-bold text-xl text-ink leading-tight">{title}</h2>
+    {intro && <p className="text-sm text-gray-600 mt-1">{intro}</p>}
+    <div className="mt-3 text-sm text-gray-700 space-y-3">{children}</div>
+  </section>
+);
+
+const Steps: React.FC<{ items: React.ReactNode[] }> = ({ items }) => (
+  <ol className="space-y-2.5">
+    {items.map((it, i) => (
+      <li key={i} className="flex gap-3">
+        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-brand-100 text-brand-700 font-bold text-xs flex items-center justify-center">{i + 1}</span>
+        <div className="min-w-0 pt-0.5">{it}</div>
+      </li>
+    ))}
+  </ol>
+);
+
+const Term: React.FC<{ name: string; children: React.ReactNode }> = ({ name, children }) => (
+  <div className="flex gap-3">
+    <span className="flex-shrink-0 font-bold text-ink w-24">{name}</span>
+    <p className="min-w-0">{children}</p>
+  </div>
+);
+
+const Note: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <p className="rounded-xl bg-chalk/70 px-3 py-2 text-xs text-brand-900">{children}</p>
+);
+
+// ─── Page ────────────────────────────────────────────────────────────────────
 
 export const InstructionsPage: React.FC = () => {
   const { settings } = useAppData();
@@ -119,94 +170,89 @@ export const InstructionsPage: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState<Category>('seconda');
 
   const staticData = CATEGORY_DATA[activeCategory];
-
   // Zone measures follow the academy defaults set in Settings
-
   const data = activeCategory === 'u10_u12' ? staticData : (() => {
-
     const z = settings.zoneDefaults[activeCategory];
-
     const f = (v: number) => v.toLocaleString('it-IT', { maximumFractionDigits: 2 });
-
     return {
-
       ...staticData,
-
       zones: {
-
         groundstroke: { width: `${f(z.gsFromCenter)} m dalla centrale`, depth: `${f(z.gsFromService)} m dal servizio` },
-
         volley: `striscia ${f(z.volley)} m`,
-
         serve: `${serveStripsFor(activeCategory)} strisce da ${f(z.serve)} m`,
-
       },
-
     };
-
   })();
+
+  const go = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const pct = (avg: number) => Math.round(targetPercent(avg, settings.scoreScale));
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <div className="bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-10 shadow-sm flex items-center gap-3">
-        <button onClick={() => navigate('/')} className="text-gray-500 hover:text-gray-700 text-xl">←</button>
-        <h1 className="text-lg font-bold text-gray-900">Istruzioni Protocollo</h1>
+        <button onClick={() => navigate('/')} className="text-gray-500 hover:text-gray-700 text-xl" aria-label="Indietro">←</button>
+        <h1 className="text-lg font-bold text-gray-900">Istruzioni</h1>
       </div>
 
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-5">
 
-        {/* Obiettivo */}
-        <div className="bg-brand-700 rounded-2xl p-5 text-white">
-          <h2 className="text-sm font-bold uppercase tracking-wide opacity-80 mb-2">Obiettivo del Test</h2>
-          <p className="text-sm leading-relaxed">
-            Misurare la <strong>precisione e la continuità</strong> sui 5 colpi fondamentali del tennis.
-            Non basta colpire la zona target una volta: bisogna dimostrare di poterlo fare in modo <em>sistematico</em>,
-            raggiungendo almeno il <strong>50 % di serie perfette</strong> per ogni modulo.
+        {/* Intro + index */}
+        <div className="bg-pitch rounded-2xl p-5 text-white">
+          <p className="font-display font-bold text-ball text-lg">Gladiators Precision Test</p>
+          <p className="text-sm leading-relaxed text-chalk/90 mt-1">
+            Misura <strong className="text-white">precisione e continuità</strong> dei colpi, e come il giocatore regge la pressione.
+            Qui trovi tutto il sistema: le prove, come si fanno in campo, come leggere i risultati.
           </p>
+          <nav className="flex flex-wrap gap-1.5 mt-4" aria-label="Indice">
+            {SECTIONS.map(s => (
+              <button key={s.id} onClick={() => go(s.id)}
+                className="px-2.5 py-1 rounded-full bg-white/10 hover:bg-white/20 text-xs font-semibold">
+                {s.label}
+              </button>
+            ))}
+          </nav>
         </div>
 
-        {/* Come funziona una serie */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
-          <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3">Come funziona una serie</h2>
-          <div className="space-y-3 text-sm text-gray-700">
-            <div className="flex gap-3">
-              <span className="flex-shrink-0 w-7 h-7 rounded-full bg-brand-100 text-brand-700 font-bold text-xs flex items-center justify-center">1</span>
-              <p>Il coach alimenta il giocatore con <strong>10 palle consecutive</strong> nella stessa zona.</p>
-            </div>
-            <div className="flex gap-3">
-              <span className="flex-shrink-0 w-7 h-7 rounded-full bg-brand-100 text-brand-700 font-bold text-xs flex items-center justify-center">2</span>
-              <p>Il giocatore deve colpire la <strong>zona target</strong> (dimensioni diverse per categoria). Ogni palla che atterra nella zona vale 1 punto.</p>
-            </div>
-            <div className="flex gap-3">
-              <span className="flex-shrink-0 w-7 h-7 rounded-full bg-brand-100 text-brand-700 font-bold text-xs flex items-center justify-center">3</span>
-              <p>Lo <strong>score della serie</strong> è il numero di palle centrate: da 0 a 10.</p>
-            </div>
-            <div className="flex gap-3">
-              <span className="flex-shrink-0 w-7 h-7 rounded-full bg-yellow-100 text-yellow-700 font-bold text-xs flex items-center justify-center">★</span>
-              <p>Una serie è <strong>perfetta</strong> solo se il punteggio è esattamente <strong>10/10</strong>. Qualsiasi risultato inferiore (anche 9/10) non conta come serie superata.</p>
-            </div>
+        <Section id="panoramica" title="Le prove" intro="Quattro modi di misurare un giocatore, tutti con le stesse zone bersaglio.">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {[
+              { t: 'Test di precisione', d: 'Il protocollo completo o solo alcuni moduli: serie da 10 palle nella zona. Dà radar, % ideale, esito per modulo.' },
+              { t: 'Killer', d: `${settings.killerTarget} palle di fila, dritto e rovescio alternati. All'errore si riparte da zero. Misura consistenza e pazienza.` },
+              { t: 'Match Test', d: `Il giocatore contro il campo: ${settings.matchPlayerTarget} palle nella zona prima che il campo faccia i suoi punti. Misura la tenuta sotto pressione.` },
+              { t: 'Match simulato', d: 'Non si gioca: è la lettura di un test di precisione come se fosse una partita a game contro un avversario immaginario.' },
+            ].map(x => (
+              <div key={x.t} className="rounded-xl border border-gray-200 bg-gray-50 p-3">
+                <p className="font-bold text-ink">{x.t}</p>
+                <p className="text-xs text-gray-600 mt-0.5">{x.d}</p>
+              </div>
+            ))}
           </div>
-        </div>
+        </Section>
 
-        {/* Dimensione mentale, fisica e caratteriale */}
-        <div className="bg-pitch rounded-2xl p-5 text-white space-y-4">
-          <h2 className="text-sm font-bold uppercase tracking-wide text-gray-300">Il test è mentale, fisico e caratteriale</h2>
+        <Section id="serie" title="Come funziona una serie">
+          <Steps items={[
+            <>Il maestro alimenta <strong>10 palle consecutive</strong> dal cesto.</>,
+            <>Ogni palla che cade nella <strong>zona bersaglio</strong> della categoria vale 1 punto: lo score della serie va da 0 a 10.</>,
+            <>Una serie è <strong>perfetta</strong> solo con <strong>10/10</strong>. Anche 9/10 non conta come perfetta.</>,
+          ]} />
+        </Section>
 
+        {/* Mental, physical and character dimension */}
+        <section id="mentale" className="bg-pitch rounded-2xl p-5 text-white space-y-4 scroll-mt-20">
+          <h2 className="font-display font-bold text-xl">Il test è mentale, fisico e caratteriale</h2>
           <p className="text-sm leading-relaxed text-gray-100">
-            La precisione è solo la superficie. Eseguito al ritmo corretto — quello di uno <strong>scambio reale di torneo</strong>, senza pause tra una palla e l'altra — il Precision Test diventa uno degli strumenti più rivelatori che un coach possa utilizzare.
+            La precisione è solo la superficie. Eseguito al ritmo corretto — quello di uno <strong>scambio reale di torneo</strong>, senza pause tra una palla e l'altra — il test diventa uno degli strumenti più rivelatori che un maestro possa usare.
           </p>
-
           <div className="space-y-3">
             <div className="bg-white/10 rounded-xl p-4">
-              <p className="text-xs font-bold text-white uppercase tracking-wide mb-1">La penalizzazione naturale dell'errore</p>
+              <p className="font-bold text-white mb-1">La penalizzazione naturale dell'errore</p>
               <p className="text-sm text-gray-200 leading-relaxed">
-                Il protocollo è costruito in modo che ogni errore abbia una conseguenza immediata e concreta: <strong>allungare il test</strong>. Chi sbaglia deve continuare a colpire per raggiungere la soglia di serie perfette, accumulando fatica fisica e pressione mentale.
+                Ogni errore ha una conseguenza immediata: <strong>allunga il test</strong>. Chi sbaglia deve continuare a colpire per raggiungere la soglia di serie perfette, accumulando fatica e pressione.
               </p>
               <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
                 <div className="bg-ok-500/20 border border-ok-400/30 rounded-lg p-2.5">
                   <p className="font-bold text-ok-300 mb-1">Giocatore lucido</p>
-                  <p className="text-ok-200">10 perfette nelle prime 10 serie → chiude subito, minimo sforzo fisico e mentale.</p>
+                  <p className="text-ok-200">10 perfette nelle prime 10 serie → chiude subito, minimo sforzo.</p>
                 </div>
                 <div className="bg-red-500/20 border border-red-400/30 rounded-lg p-2.5">
                   <p className="font-bold text-red-300 mb-1">Giocatore sotto pressione</p>
@@ -214,63 +260,49 @@ export const InstructionsPage: React.FC = () => {
                 </div>
               </div>
             </div>
-
             <div className="bg-white/10 rounded-xl p-4">
-              <p className="text-xs font-bold text-white uppercase tracking-wide mb-1">Perché il ritmo è tutto</p>
+              <p className="font-bold text-white mb-1">Perché il ritmo è tutto</p>
               <p className="text-sm text-gray-200 leading-relaxed">
-                Se le palle vengono alimentate lentamente o con pause il test perde il suo valore diagnostico. La difficoltà deve essere reale: <strong>ritmo da scambio di torneo, senza interruzioni</strong>. È in queste condizioni che emergono le differenze vere tra giocatori. Chi colpisce con consapevolezza tattica regge; chi si affida solo alla memoria muscolare crolla non appena la pressione aumenta.
+                Con palle lente o pause il test perde valore. Serve <strong>ritmo da scambio di torneo, senza interruzioni</strong>: è lì che emergono le differenze vere. Chi colpisce con consapevolezza regge; chi si affida solo alla memoria muscolare crolla quando la pressione sale.
               </p>
             </div>
-
             <div className="bg-white/10 rounded-xl p-4">
-              <p className="text-xs font-bold text-white uppercase tracking-wide mb-1">La spirale frustrazione → errore</p>
+              <p className="font-bold text-white mb-1">La spirale frustrazione → errore</p>
               <p className="text-sm text-gray-200 leading-relaxed">
-                Il 9/10 — quello che non conta — è frustrante esattamente come un nastro in una partita di torneo: hai eseguito tecnicamente, ma il risultato non vale. La reazione a questa frustrazione è <strong>lo specchio del carattere dell'atleta</strong>.
+                Il 9/10 che non conta è frustrante come un nastro in partita. La reazione a questa frustrazione è <strong>lo specchio del carattere</strong>: chi resta calmo supera la soglia in poche serie extra; chi si innervosisce entra nella spirale errore → frustrazione → errore, e i dati lo registrano.
               </p>
-              <div className="mt-3 space-y-1.5 text-xs text-gray-300">
-                <div className="flex items-start gap-2">
-                  <span className="text-ok-400 font-bold flex-shrink-0 mt-0.5">↑</span>
-                  <p>Chi resta calmo e reimposta la concentrazione supera la soglia in poche serie extra.</p>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-red-400 font-bold flex-shrink-0 mt-0.5">↓</span>
-                  <p>Chi si innervosisce entra nella spirale errore → frustrazione → errore: il test si allunga, diventa fisicamente pesante, e i dati registrano questa instabilità.</p>
-                </div>
-              </div>
             </div>
-
             <div className="bg-white/10 rounded-xl p-4">
-              <p className="text-xs font-bold text-white uppercase tracking-wide mb-1">Cosa leggere nel risultato finale</p>
+              <p className="font-bold text-white mb-1">Cosa leggere nel risultato</p>
               <p className="text-sm text-gray-200 leading-relaxed">
-                Il rapporto tra serie compilate e serie perfette non è solo un dato tecnico: è un <strong>indicatore di maturità agonistica</strong>. Un giocatore che chiude 10 su 10 è mentalmente stabile oltre che preciso. Uno che usa 18 o 20 serie per raggiungere la soglia ha un problema nella gestione dell'errore — e questo è esattamente il lavoro da fare.
+                Il rapporto tra serie giocate e serie perfette è un <strong>indicatore di maturità agonistica</strong>. Chi chiude in 10 serie è stabile oltre che preciso. Chi ne usa 18 o 20 ha un problema nella gestione dell'errore — ed è esattamente il lavoro da fare.
               </p>
             </div>
           </div>
-        </div>
+        </section>
 
-        {/* Regola di completamento */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
-          <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3">Regola di completamento (soglia 50 %)</h2>
-          <p className="text-xs text-gray-500 mb-4">
-            Per superare un modulo il giocatore deve ottenere almeno il 50 % di serie perfette (10/10), su qualsiasi posizione tra le serie disponibili — non devono essere consecutive.
-          </p>
+        <Section id="moduli" title="Moduli e soglie"
+          intro="Un modulo è superato con almeno metà delle serie perfette (10/10), in qualsiasi posizione: non devono essere consecutive. Appena raggiunta la soglia si può passare al modulo successivo.">
           <div className="rounded-xl overflow-hidden border border-gray-200">
             <table className="w-full text-xs">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
                   <th className="text-left px-3 py-2 text-gray-600 font-semibold">Modulo</th>
-                  <th className="text-center px-3 py-2 text-gray-600 font-semibold">Serie tot.</th>
-                  <th className="text-center px-3 py-2 text-gray-600 font-semibold">Soglia</th>
-                  <th className="text-left px-3 py-2 text-gray-600 font-semibold hidden sm:table-cell">Alternanza</th>
+                  <th className="text-center px-2 py-2 text-gray-600 font-semibold">Serie</th>
+                  <th className="text-center px-2 py-2 text-gray-600 font-semibold">Perfette</th>
+                  <th className="text-left px-3 py-2 text-gray-600 font-semibold hidden sm:table-cell">Come</th>
                 </tr>
               </thead>
               <tbody>
-                {PROTOCOL_ROWS.map((row, i) => (
-                  <tr key={i} className="border-b border-gray-100 last:border-0">
-                    <td className="px-3 py-2 font-semibold text-gray-800">{row.test}</td>
-                    <td className="px-3 py-2 text-center font-bold text-brand-700">{row.series}</td>
-                    <td className="px-3 py-2 text-center">
-                      <span className="font-bold text-brand-700 bg-brand-50 px-2 py-0.5 rounded-full">{row.soglia}</span>
+                {PROTOCOL_ROWS.map(row => (
+                  <tr key={row.test} className="border-b border-gray-100 last:border-0 align-top">
+                    <td className="px-3 py-2 font-semibold text-gray-800">
+                      {row.test}
+                      <span className="block sm:hidden font-normal text-gray-500 mt-0.5">{row.pattern}</span>
+                    </td>
+                    <td className="px-2 py-2 text-center font-bold text-brand-700">{row.series}</td>
+                    <td className="px-2 py-2 text-center">
+                      <span className="font-bold text-brand-700 bg-brand-50 px-2 py-0.5 rounded-full whitespace-nowrap">{row.soglia}</span>
                     </td>
                     <td className="px-3 py-2 text-gray-500 hidden sm:table-cell">{row.pattern}</td>
                   </tr>
@@ -278,20 +310,16 @@ export const InstructionsPage: React.FC = () => {
               </tbody>
             </table>
           </div>
-          <p className="text-xs text-gray-400 mt-2">
-            Totale test completo: 56 serie · 560 palle
+          <p className="text-xs text-gray-500">
+            Il protocollo completo (Groundstrokes, Combined, Return, Servizio, Volley) è di 56 serie, 560 palle.
+            Solo dritto e Solo rovescio sostituiscono i Groundstrokes: non si fanno nello stesso test.
+            Lo Sventaglio si abbina a qualsiasi modulo.
           </p>
-        </div>
-
-        {/* Esempi pratici */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
-          <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3">Esempi pratici (modulo Groundstrokes, 10 serie)</h2>
-          <div className="space-y-3">
-            {EXAMPLES.map((ex, i) => (
-              <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
-                <span className={`flex-shrink-0 inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${ex.badgeColor}`}>
-                  {ex.badge}
-                </span>
+          <div className="space-y-2">
+            <p className="font-semibold text-ink">Esempi su un modulo da 10 serie (soglia 5 perfette)</p>
+            {EXAMPLES.map(ex => (
+              <div key={ex.label} className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
+                <span className={`flex-shrink-0 inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${ex.badgeColor}`}>{ex.badge}</span>
                 <div>
                   <p className="text-xs font-bold text-gray-800 mb-0.5">{ex.label}</p>
                   <p className="text-xs text-gray-500">{ex.desc}</p>
@@ -299,98 +327,47 @@ export const InstructionsPage: React.FC = () => {
               </div>
             ))}
           </div>
-        </div>
-
-        {/* Come interpretare le statistiche */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
-          <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3">Come interpretare le statistiche</h2>
-          <div className="space-y-2 text-xs text-gray-600">
-            <div className="flex gap-2">
-              <span className="flex-shrink-0 font-bold text-gray-800 w-20">Ave</span>
-              <p>Media degli score di tutte le serie per quel colpo (0–10). Indica il livello medio di precisione.</p>
-            </div>
-            <div className="flex gap-2">
-              <span className="flex-shrink-0 font-bold text-gray-800 w-20">Dev</span>
-              <p>Deviazione standard degli score. Più bassa = più regolare. Un Dev alto segnala inconsistenza.</p>
-            </div>
-            <div className="flex gap-2">
-              <span className="flex-shrink-0 font-bold text-gray-800 w-20">10/10</span>
-              <p>Numero di serie perfette su totale disponibile. Il badge verde ✓ indica che la soglia è superata, rosso ✗ che non lo è.</p>
-            </div>
-            <div className="flex gap-2">
-              <span className="flex-shrink-0 font-bold text-gray-800 w-20">Soglie</span>
-              <p>Riepilogo moduli superati / moduli testati. Verde = tutti superati, giallo = metà, rosso = meno della metà.</p>
-            </div>
-            <div className="flex gap-2">
-              <span className="flex-shrink-0 font-bold text-gray-800 w-20">% Ideale</span>
-              <p>Percentuale dell'area radar rispetto all'area di un giocatore che ottiene 10 in tutti i colpi. Indica il potenziale globale. La scala cresce al quadrato: tutti i colpi a 7/10 valgono 49%, a 9/10 valgono 81%. Nei test parziali conta solo i moduli eseguiti. Dalle Impostazioni si può passare alla media lineare (7/10 → 70%).</p>
-            </div>
-            <div className="flex gap-2">
-              <span className="flex-shrink-0 font-bold text-gray-800 w-20">Radar</span>
-              <p>Poligono a 6 assi (Servizio · FH · Combined · Return · BH · Volley). Forma equilibrata = giocatore completo.</p>
-            </div>
-            <div className="flex gap-2">
-              <span className="flex-shrink-0 font-bold text-gray-800 w-20">Precision–T</span>
-              <p>Curva di progressione che combina FH, BH e Combined: 10 punti con la strategia A, 5 punti (coppie di serie) con la strategia B. Mostra se la precisione migliora durante la sessione.</p>
-            </div>
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
+            <p className="font-bold text-amber-800 text-sm">Regola della striscia al servizio</p>
+            <p className="text-xs text-amber-700 mt-0.5">
+              Per ogni serie di servizio si sceglie la striscia (T · corpo · esterno). Dopo 2 scelte uguali di fila, la terza deve essere diversa.
+            </p>
           </div>
-          <div className="mt-3 p-3 rounded-xl bg-gray-50 border border-gray-200 text-xs text-gray-500">
-            <strong>Legenda colori Ave:</strong>
-            {' '}<span className="text-ok-600 font-bold">verde ≥ 8</span>,
-            {' '}<span className="text-yellow-600 font-bold">giallo ≥ 5</span>,
-            {' '}<span className="text-red-500 font-bold">rosso &lt; 5</span>
-          </div>
-        </div>
+        </Section>
 
-        {/* Serve strip rule */}
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
-          <h2 className="text-sm font-bold text-amber-800 mb-1">Regola Striscia Servizio</h2>
-          <p className="text-xs text-amber-700">
-            Il giocatore sceglie la striscia target (T · Body · Wide) per ogni serie di servizio.
-            <strong> Vincolo:</strong> dopo 2 scelte consecutive uguali, la terza deve essere obbligatoriamente diversa.
-          </p>
-          <div className="flex gap-2 mt-2">
-            {['T', 'Body', 'Wide'].map(s => (
-              <span key={s} className="flex-1 text-center bg-white border border-amber-300 rounded-lg py-1.5 text-xs font-bold text-amber-700">
-                {s}
-              </span>
+        <Section id="fare-test" title="Fare un test, passo per passo">
+          <Steps items={[
+            <><strong>Home → Nuovo test.</strong> Scegli la data, il maestro e quanti giocatori (fino a 4 nella stessa sessione). Cerca il giocatore in anagrafica: se è nuovo, il profilo si crea da solo al salvataggio.</>,
+            <><strong>Scegli i moduli.</strong> Per Solo dritto, Solo rovescio e Sventaglio scegli anche la direzione (incrociato o lungolinea; inside-out o inside-in), che vale per tutto il test.</>,
+            <><strong>Zone.</strong> Di base valgono quelle della categoria. Per un giocatore puoi renderle più facili o più difficili (vedi Zone).</>,
+            <><strong>Inserisci ogni serie</strong> toccando il numero di palle dentro (0–10). In alto vedi le serie perfette fatte e quelle che mancano alla soglia; sotto, il <em>match simulato</em> si aggiorna a ogni serie.</>,
+            <><strong>Fine modulo.</strong> Quando la soglia è raggiunta o le serie sono finite, scegli <em>Continua con il modulo successivo</em> oppure <em>Termina e salva</em>.</>,
+            <><strong>Revisione e salvataggio.</strong> Controlla le serie e salva: si apre la pagina dei risultati.</>,
+          ]} />
+          <div className="rounded-xl border border-gray-200 p-3 space-y-1.5">
+            <p className="font-bold text-ink">Se bisogna fermarsi (pioggia, buio, tempo finito)</p>
+            <p><strong>Interrompi il test…</strong> offre due strade:</p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li><strong>Chiudi e salva</strong>: il test si salva con i soli moduli giocati ed è <em>parziale</em>. Un modulo lasciato a metà risulta <em>interrotto</em>.</li>
+              <li><strong>Sospendi</strong>: il test resta in bozza, segnato "in corso" nello storico, e con <em>Continua test</em> riparti da dove eri, anche un altro giorno.</li>
+            </ul>
+          </div>
+        </Section>
+
+        <Section id="zone" title="Zone bersaglio"
+          intro="Ogni categoria ha le sue zone predefinite, impostate dall'amministratore nelle Impostazioni. Ogni test salva le zone usate, così i risultati restano confrontabili.">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {CATEGORIES.map(cat => (
+              <button key={cat.value} onClick={() => setActiveCategory(cat.value)}
+                className={`py-2 px-2 rounded-xl border-2 text-xs font-bold transition-all ${activeCategory === cat.value ? 'bg-brand-600 border-brand-600 text-white' : 'bg-white border-gray-300 text-gray-700 hover:border-gray-400'}`}>
+                {cat.label}
+              </button>
             ))}
           </div>
-        </div>
-
-        {/* Category zone diagrams */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-          <div className="p-4 border-b border-gray-100">
-            <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3">Zone Target per Categoria</h2>
-            {/* Category tabs */}
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              {CATEGORIES.map(cat => (
-                <button
-                  key={cat.value}
-                  onClick={() => setActiveCategory(cat.value)}
-                  className={`py-2 px-2 rounded-xl border-2 text-xs font-bold transition-all
-                    ${activeCategory === cat.value
-                      ? cat.color === 'blue'
-                        ? 'bg-blue-600 border-blue-600 text-white'
-                        : cat.color === 'green'
-                          ? 'bg-brand-600 border-brand-600 text-white'
-                          : cat.color === 'yellow'
-                            ? 'bg-yellow-500 border-yellow-500 text-white'
-                            : 'bg-red-600 border-red-600 text-white'
-                      : 'bg-white border-gray-300 text-gray-700 hover:border-gray-400'
-                    }`}
-                >
-                  {cat.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Court diagram: drawn from the academy default zones (photo for U10/U12) */}
           {activeCategory === 'u10_u12' ? (
-            <img src={data.image} alt="Schema campo U10/U12" className="w-full object-contain" />
+            <img src={data.image} alt="Schema campo U10/U12" className="w-full object-contain rounded-xl" />
           ) : (
-            <div className="bg-pitch p-4">
+            <div className="bg-pitch p-4 rounded-xl">
               <CourtZones measures={settings.zoneDefaults[activeCategory]} level={activeCategory}
                 className="w-full max-w-sm mx-auto block" title={`Zone ${activeCategory}`} />
               <p className="text-center text-xs text-chalk/80 mt-2">
@@ -398,42 +375,88 @@ export const InstructionsPage: React.FC = () => {
               </p>
             </div>
           )}
-
-          {/* Zone details */}
-          <div className="p-4 space-y-3">
-            <div className={`rounded-xl border-2 p-3 ${data.accentClass}`}>
-              <p className="text-xs font-bold mb-0.5">{data.level}</p>
-              <p className="text-xs opacity-80">{data.levelDesc}</p>
+          <div className={`rounded-xl border-2 p-3 ${data.accentClass}`}>
+            <p className="text-xs font-bold mb-0.5">{data.level}</p>
+            <p className="text-xs opacity-80">{data.levelDesc}</p>
+          </div>
+          <div className="grid grid-cols-3 gap-2 text-center text-xs">
+            <div className="bg-gray-50 rounded-xl p-3 border border-gray-200">
+              <div className="text-gray-500 mb-1">Fondo campo</div>
+              <div className="font-bold text-gray-800">{data.zones.groundstroke.width}</div>
+              <div className="text-gray-500">{data.zones.groundstroke.depth}</div>
             </div>
-
-            <div className="grid grid-cols-3 gap-2 text-center text-xs">
-              <div className="bg-gray-50 rounded-xl p-3 border border-gray-200">
-                <div className="text-gray-500 mb-1">Groundstroke</div>
-                <div className="font-bold text-gray-800">{data.zones.groundstroke.width}</div>
-                <div className="text-gray-500">{data.zones.groundstroke.depth}</div>
-                <div className="text-gray-400 mt-1">largh. × prof.</div>
-              </div>
-              <div className="bg-gray-50 rounded-xl p-3 border border-gray-200">
-                <div className="text-gray-500 mb-1">Volley</div>
-                <div className="font-bold text-gray-800">{data.zones.volley}</div>
-                <div className="text-gray-400 mt-1">dal bordo</div>
-              </div>
-              <div className="bg-gray-50 rounded-xl p-3 border border-gray-200">
-                <div className="text-gray-500 mb-1">Servizio</div>
-                <div className="font-bold text-gray-800 leading-tight">{data.zones.serve}</div>
-                <div className="text-gray-400 mt-1">striscia T</div>
-              </div>
+            <div className="bg-gray-50 rounded-xl p-3 border border-gray-200">
+              <div className="text-gray-500 mb-1">Volée</div>
+              <div className="font-bold text-gray-800">{data.zones.volley}</div>
+              <div className="text-gray-400 mt-1">dal bordo</div>
+            </div>
+            <div className="bg-gray-50 rounded-xl p-3 border border-gray-200">
+              <div className="text-gray-500 mb-1">Servizio</div>
+              <div className="font-bold text-gray-800 leading-tight">{data.zones.serve}</div>
             </div>
           </div>
-        </div>
+          <div className="space-y-1.5">
+            <p className="font-bold text-ink">Zone personalizzate</p>
+            <p>Nel test, per ogni giocatore, puoi partire dalle zone di un'altra categoria, spostare il cursore <em>facile ↔ difficile</em> oppure scrivere le misure a mano. Il test viene segnato come <em>personalizzato</em>.</p>
+            <p>Classifiche, obiettivi di categoria e confronto con il gruppo contano solo i test con zone standard, a meno di accendere l'interruttore nelle Impostazioni. La scheda del giocatore li mostra sempre, segnalati.</p>
+          </div>
+        </Section>
 
-        <div className="bg-pitch text-white rounded-2xl p-5 space-y-3">
+        <Section id="risultati" title="Leggere i risultati">
+          <div className="space-y-2">
+            <Term name="Esito">Per ogni modulo: superato, non superato o interrotto, con le serie perfette sulla soglia.</Term>
+            <Term name="Ave">Media delle serie di quel colpo (0–10). Verde da 8, giallo da 5, rosso sotto 5.</Term>
+            <Term name="Dev">Quanto variano le serie: più è bassa, più il giocatore è regolare.</Term>
+            <Term name="10/10">Serie perfette sul totale giocato per quel colpo.</Term>
+            <Term name="Radar">I 6 colpi base: Servizio, Dritto, Combined, Risposta, Rovescio, Volée. Se nel test c'è lo Sventaglio compare un settimo asse. I colpi non provati restano a zero, segnati "n.t.".</Term>
+            <Term name="% ideale">Quanto il giocatore si avvicina a quello che fa 10 su tutto, calcolato solo sui colpi provati. Con la scala "area radar" cresce al quadrato (7/10 ovunque = 49%); con la scala lineare 7/10 = 70%. La scala si sceglie nelle Impostazioni.</Term>
+            <Term name="Precision-T">Andamento di dritto, rovescio e combined durante la sessione: dice se la precisione cresce o cala man mano.</Term>
+          </div>
+          <div className="rounded-xl border border-gray-200 p-3 space-y-1.5">
+            <p className="font-bold text-ink">Match simulato</p>
+            <p>
+              Ogni serie del test diventa un punto di una partita contro un avversario immaginario: è del giocatore se la serie arriva alla soglia della categoria, altrimenti dell'avversario.
+              Game con punto secco sul 40-40, set a 6 con tie-break sul 6-6.
+            </p>
+            <p className="text-xs text-gray-500">
+              Soglie attuali: {CATEGORY_OPTIONS.map(o => `${o.label} ${settings.matchGameThresholds[o.value]}/10`).join(' · ')}. Il punteggio si vede in diretta durante il test e nei risultati, con il parziale dopo ogni modulo.
+            </p>
+          </div>
+          <div className="rounded-xl border border-gray-200 p-3 space-y-1.5">
+            <p className="font-bold text-ink">PDF e file</p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li><strong>PDF del test</strong> (nei risultati): esito, metriche, serie per serie, radar, zone e note del maestro, da mandare al giocatore o alla famiglia.</li>
+              <li><strong>PDF del giocatore</strong> (nella scheda): l'andamento di tutti i test, l'obiettivo di categoria, Killer.</li>
+              <li><strong>Export CSV</strong>: i dati grezzi del test, per un foglio di calcolo.</li>
+            </ul>
+            <p className="text-xs text-gray-500">Il PDF si crea con "Crea PDF" → stampa → "Salva come PDF".</p>
+          </div>
+        </Section>
+
+        <Section id="giocatore" title="La scheda del giocatore">
+          <div className="space-y-2">
+            <Term name="Andamento">Tutti i test nel tempo, con i parziali e quelli a zone personalizzate segnalati.</Term>
+            <Term name="Obiettivo">
+              Quando è pronto per la categoria successiva: servono {settings.promotionConsecutive} test di fila superati e sopra l'obiettivo della sua categoria
+              ({CATEGORY_OPTIONS.map(o => `${o.label} ${pct(settings.promotionTargets[o.value])}%`).join(' · ')}).
+            </Term>
+            <Term name="Gruppo">L'ultimo test confrontato con i giocatori della stessa categoria.</Term>
+            <Term name="Killer e Match">Gli ultimi risultati, i migliori e il bilancio vinti/persi.</Term>
+          </div>
+        </Section>
+
+        <Section id="classifiche" title="Classifiche e sfide">
+          <p><strong>Classifiche</strong>: per categoria, con il filtro per circolo. I test parziali compaiono con l'etichetta "parziale". Contano solo i test con zone standard, salvo diversa impostazione.</p>
+          <p><strong>Sfide</strong>: lo stesso test giocato insieme da più giocatori, 1 contro 1, 2 contro 2 o tutti contro tutti, con il confronto colpo per colpo alla fine. Si possono salvare a metà e riprendere.</p>
+        </Section>
+
+        <section id="killer" className="bg-pitch text-white rounded-2xl p-5 space-y-3 scroll-mt-20">
           <p className="text-sm font-display font-bold text-ball">Test Killer</p>
           <h2 className="text-lg font-black">Consistenza, pazienza, concentrazione</h2>
           <p className="text-sm text-neutral-300 leading-relaxed">
             Il maestro alimenta palle semplici, senza peso: una di dritto e una di rovescio. All'errore il test si interrompe,
             il giocatore raccoglie le palle e si <strong className="text-white">riparte da zero</strong>. Il test finisce quando il
-            giocatore completa tutte le palle di fila (100 di default, modificabile nelle Impostazioni o test per test).
+            giocatore completa tutte le palle di fila ({settings.killerTarget} di default, modificabile nelle Impostazioni o test per test).
             Si possono aggiungere vincoli: dritto nella metà del pari e rovescio in quella del dispari, oppure palle oltre la linea del servizio.
           </p>
           <div className="grid grid-cols-1 gap-2 text-sm">
@@ -450,7 +473,54 @@ export const InstructionsPage: React.FC = () => {
               <p className="text-neutral-300">Dove arrivano gli errori (partenza = tensione, seconda metà = calo di concentrazione, ultimo 10% = pressione), le ricadute subito dopo un errore, il lato che cede per primo, i tempi di gioco e di raccolta.</p>
             </div>
           </div>
-        </div>
+        </section>
+
+        <section id="match" className="bg-pitch text-white rounded-2xl p-5 space-y-3 scroll-mt-20">
+          <p className="text-sm font-display font-bold text-ball">Match Test</p>
+          <h2 className="text-lg font-black">Il giocatore contro il campo</h2>
+          <p className="text-sm text-neutral-300 leading-relaxed">
+            Il giocatore deve mettere <strong className="text-white">{settings.matchPlayerTarget} palle</strong> nella zona.
+            Ogni serie non perfetta (meno di 10/10) è un <strong className="text-white">punto per il campo</strong>. Vince chi arriva prima al traguardo.
+            Le serie girano sui colpi scelti all'inizio (dritto, rovescio, sventaglio, volée, risposta) e si usano le zone della categoria.
+          </p>
+          <div className="grid grid-cols-1 gap-2 text-sm">
+            <div className="bg-white/10 rounded-xl p-3">
+              <p className="font-bold">Il campo vince a… (l'handicap)</p>
+              <p className="text-neutral-300">
+                Più il traguardo del campo è basso, più il match è difficile. Tre modi per sceglierlo:
+                il valore della categoria ({CATEGORY_OPTIONS.map(o => `${o.label} ${settings.matchCourtTargets[o.value]}`).join(' · ')});
+                quello calcolato sullo <strong className="text-white">storico del giocatore</strong>, perché il match sia il più possibile alla pari;
+                oppure un numero scelto dal maestro. Prima di iniziare l'app mostra la probabilità di vittoria e la durata stimata.
+              </p>
+            </div>
+            <div className="bg-white/10 rounded-xl p-3">
+              <p className="font-bold">In campo</p>
+              <p className="text-neutral-300">
+                Dopo ogni serie tocca il numero di palle dentro. Il tabellone mostra palle del giocatore e punti del campo; il "match point" si accende quando a uno dei due manca un passo.
+                Un tocco sbagliato si corregge con "Annulla ultima serie". Con "Pausa / Stop" il match si sospende (e si riprende dalla lista dei match) o si chiude come interrotto.
+                Una serie dura circa un minuto e mezzo con il recupero: un match pari dura 15–20 minuti.
+              </p>
+            </div>
+            <div className="bg-white/10 rounded-xl p-3">
+              <p className="font-bold">Il resoconto</p>
+              <p className="text-neutral-300">
+                Andamento serie dopo serie, perfette di fila, rendimento per colpo e, soprattutto, il <strong className="text-white">rendimento sotto pressione</strong>:
+                la media delle serie giocate con il campo a 1 o 2 punti dalla vittoria, confrontata con il resto del match.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <Section id="app" title="Telefono, rete e accessi">
+          <p><strong>Installa l'app</strong>: dal browser del telefono scegli "Aggiungi a schermata Home". Si apre come un'app normale.</p>
+          <p><strong>Senza rete</strong>: test, Killer e Match si possono fare anche senza connessione. I dati restano sul telefono e si inviano da soli quando torna la rete; l'indicatore in alto dice se c'è qualcosa in attesa. Lo schermo resta acceso durante Killer e Match.</p>
+          <div className="space-y-2">
+            <Term name="Amministratore">Tutto, più Impostazioni: zone, obiettivi, Killer, Match, account.</Term>
+            <Term name="Maestro">Fa test, Killer e Match, gestisce i giocatori.</Term>
+            <Term name="Genitore / allievo">Vede risultati, schede e classifiche.</Term>
+          </div>
+          <Note>I valori in questa pagina (zone, obiettivi, traguardi del Match) seguono le Impostazioni attuali dell'accademia.</Note>
+        </Section>
 
       </div>
     </div>
