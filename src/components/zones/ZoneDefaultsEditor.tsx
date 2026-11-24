@@ -3,7 +3,7 @@ import type { AppSettings, ZoneCategory, ZoneMeasures } from '../../types';
 import { CATEGORY_TARGETS } from '../../lib/protocol';
 import { PROTOCOL_ZONES, ZONE_CATEGORIES, clampMeasures, limitsFor, sameMeasures } from '../../lib/zones';
 import { getCredentials } from '../../lib/auth';
-import { CourtZones } from '../brand/CourtZones';
+import { CourtZones, ALL_ZONES } from '../brand/CourtZones';
 
 interface Props {
   settings: AppSettings;
@@ -15,6 +15,7 @@ const FIELDS: { key: keyof ZoneMeasures; label: string }[] = [
   { key: 'gsFromService', label: 'Fondo · dal servizio' },
   { key: 'volley', label: 'Volée · striscia' },
   { key: 'serve', label: 'Servizio · strisce' },
+  { key: 'dropshot', label: 'Smorzata · quadrato' },
 ];
 
 const fmt = (v: number) => v.toLocaleString('it-IT', { maximumFractionDigits: 2 });
@@ -53,7 +54,7 @@ export const ZoneDefaultsEditor: React.FC<Props> = ({ settings, onSave }) => {
       </div>
 
       <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] gap-3 items-start">
-        <CourtZones measures={draft} level={cat} className="w-full" />
+        <CourtZones measures={draft} level={cat} only={ALL_ZONES} className="w-full" />
         <div className="space-y-2">
           {FIELDS.map(f => (
             <label key={`${cat}-${f.key}`} className="block">

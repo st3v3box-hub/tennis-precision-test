@@ -16,67 +16,175 @@ export const GROUNDSTROKES_SERIES: SeriesSpec[] = Array.from({ length: 20 }, (_,
   label: `Serie ${i + 1} — ${i % 2 === 0 ? 'FH Incrociato' : 'BH Incrociato'}`,
 }));
 
-/** Modules played with one stroke and one direction chosen for the whole test */
+// ═════════════════════════════════════════════════════════════════════════════
+// Modules with an option chosen for the whole test (direction, side, pattern…)
+// ═════════════════════════════════════════════════════════════════════════════
+
+export type OptionModule =
+  | 'forehand' | 'backhand' | 'insideout' | 'slice' | 'putaway' | 'approach' | 'smash_volo' | 'smash_rimbalzo' | 'dropshot';
+export const OPTION_MODULES: OptionModule[] = [
+  'forehand', 'backhand', 'insideout', 'slice', 'putaway', 'approach', 'smash_volo', 'smash_rimbalzo', 'dropshot',
+];
+export const isOptionModule = (m: TestType): m is OptionModule => (OPTION_MODULES as TestType[]).includes(m);
+
+/** Kept for older call sites: the original single-stroke modules */
 export type SingleStrokeModule = 'forehand' | 'backhand' | 'insideout';
 export const SINGLE_STROKE_MODULES: SingleStrokeModule[] = ['forehand', 'backhand', 'insideout'];
 export const isSingleStroke = (m: TestType): m is SingleStrokeModule => (SINGLE_STROKE_MODULES as TestType[]).includes(m);
 
-const SINGLE_DIRECTIONS: Record<SingleStrokeModule, Record<StrokeDirection, Direction>> = {
-  forehand: { cross: 'fh_cross', line: 'fh_line' },
-  backhand: { cross: 'bh_cross', line: 'bh_line' },
-  insideout: { cross: 'io_cross', line: 'io_line' },
-};
-
-/** Direction names per module: sventaglio uses inside-out / inside-in */
-export function directionLabel(module: SingleStrokeModule, dir: StrokeDirection): string {
-  if (module === 'insideout') return dir === 'line' ? 'Inside-in' : 'Inside-out';
-  return dir === 'line' ? 'Lungolinea' : 'Incrociato';
+/** Where the target is drawn on the court diagram */
+export interface ModuleTarget {
+  /** groundstroke = back corner box · dropshot = squares at the net · approach = back corners + volley strip */
+  zone: 'groundstroke' | 'dropshot' | 'approach';
+  /** Groundstroke box on the other side (see CourtZones) */
+  mirror: boolean;
 }
 
-/** Short explanation of a direction, for buttons */
-export function directionHint(module: SingleStrokeModule, dir: StrokeDirection): string {
-  if (module === 'insideout') return dir === 'line' ? 'lungolinea, sul dritto dell\'avversario' : 'incrociato, sul rovescio dell\'avversario';
-  return dir === 'line' ? 'lungo la linea' : 'in diagonale';
+export interface ModuleOption {
+  id: string;
+  label: string;
+  hint: string;
+  /** Directions of the series, in rotation (two = forehand / backhand alternated) */
+  cycle: Direction[];
+  target: ModuleTarget;
 }
+
+const gs = (mirror: boolean): ModuleTarget => ({ zone: 'groundstroke', mirror });
 
 /**
- * Which back corner is the target, seen as in the court drawing.
- * false = the forehand-crosscourt corner; true = the opposite one.
- * Inside-out and backhand crosscourt go to the opponent's backhand corner,
- * forehand down the line too; inside-in goes to the forehand-crosscourt corner.
+ * Options of every configurable module; the first one is the default.
+ * Court drawing convention: mirror = false is the forehand-crosscourt corner,
+ * mirror = true the opposite one (backhand crosscourt, forehand down the line).
  */
-export function targetMirrored(module: SingleStrokeModule, dir: StrokeDirection): boolean {
-  if (module === 'forehand') return dir === 'line';
-  if (module === 'backhand') return dir === 'cross';
-  return dir === 'cross';
+export const MODULE_OPTIONS: Record<OptionModule, ModuleOption[]> = {
+  forehand: [
+    { id: 'cross', label: 'Incrociato', hint: 'in diagonale', cycle: ['fh_cross'], target: gs(false) },
+    { id: 'line', label: 'Lungolinea', hint: 'lungo la linea', cycle: ['fh_line'], target: gs(true) },
+  ],
+  backhand: [
+    { id: 'cross', label: 'Incrociato', hint: 'in diagonale', cycle: ['bh_cross'], target: gs(true) },
+    { id: 'line', label: 'Lungolinea', hint: 'lungo la linea', cycle: ['bh_line'], target: gs(false) },
+  ],
+  insideout: [
+    { id: 'cross', label: 'Inside-out', hint: 'incrociato, sul rovescio dell\'avversario', cycle: ['io_cross'], target: gs(true) },
+    { id: 'line', label: 'Inside-in', hint: 'lungolinea, sul dritto dell\'avversario', cycle: ['io_line'], target: gs(false) },
+  ],
+  slice: [
+    { id: 'bh_cross', label: 'Rovescio incrociato', hint: 'back di rovescio in diagonale', cycle: ['sl_bh_cross'], target: gs(true) },
+    { id: 'bh_line', label: 'Rovescio lungolinea', hint: 'back di rovescio lungo la linea', cycle: ['sl_bh_line'], target: gs(false) },
+    { id: 'fh_cross', label: 'Dritto incrociato', hint: 'back di dritto in diagonale', cycle: ['sl_fh_cross'], target: gs(false) },
+    { id: 'fh_line', label: 'Dritto lungolinea', hint: 'back di dritto lungo la linea', cycle: ['sl_fh_line'], target: gs(true) },
+  ],
+  putaway: [
+    { id: 'cross', label: 'Incrociato', hint: 'palla corta e alta, chiusa in diagonale', cycle: ['pa_cross'], target: gs(false) },
+    { id: 'line', label: 'Lungolinea', hint: 'palla corta e alta, chiusa lungo la linea', cycle: ['pa_line'], target: gs(true) },
+  ],
+  approach: [
+    {
+      id: 'line', label: 'Attacco lungolinea + volée incrociata', hint: 'dritto e rovescio alternati',
+      cycle: ['ap_fh_line', 'ap_bh_line'], target: { zone: 'approach', mirror: false },
+    },
+    {
+      id: 'cross', label: 'Attacco incrociato + volée lungolinea', hint: 'dritto e rovescio alternati',
+      cycle: ['ap_fh_cross', 'ap_bh_cross'], target: { zone: 'approach', mirror: false },
+    },
+  ],
+  smash_volo: [
+    { id: 'fh', label: 'Zona del dritto', hint: 'angolo di fondo del dritto', cycle: ['sm_fh'], target: gs(false) },
+    { id: 'bh', label: 'Zona del rovescio', hint: 'angolo di fondo del rovescio', cycle: ['sm_bh'], target: gs(true) },
+  ],
+  smash_rimbalzo: [
+    { id: 'fh', label: 'Zona del dritto', hint: 'angolo di fondo del dritto', cycle: ['sm_fh'], target: gs(false) },
+    { id: 'bh', label: 'Zona del rovescio', hint: 'angolo di fondo del rovescio', cycle: ['sm_bh'], target: gs(true) },
+  ],
+  dropshot: [
+    { id: 'cross', label: 'Incrociata', hint: 'dritto e rovescio alternati, in diagonale', cycle: ['ds_fh_cross', 'ds_bh_cross'], target: { zone: 'dropshot', mirror: false } },
+    { id: 'line', label: 'Lungolinea', hint: 'dritto e rovescio alternati, lungo la linea', cycle: ['ds_fh_line', 'ds_bh_line'], target: { zone: 'dropshot', mirror: false } },
+  ],
+};
+
+export function moduleOption(module: OptionModule, id: string | undefined): ModuleOption {
+  const list = MODULE_OPTIONS[module];
+  return list.find(o => o.id === id) ?? list[0];
 }
 
-/** Single-stroke modules: 20 series of the same stroke, direction chosen for the whole test */
-export function singleStrokeSeries(module: SingleStrokeModule, dir: StrokeDirection): SeriesSpec[] {
-  const direction = SINGLE_DIRECTIONS[module][dir];
-  const stroke = module === 'forehand' ? 'Dritto' : module === 'backhand' ? 'Rovescio' : 'Sventaglio';
-  const where = directionLabel(module, dir).toLowerCase();
-  return Array.from({ length: 20 }, (_, i) => ({
-    testType: module,
-    seriesIndex: i,
-    direction,
-    label: `Serie ${i + 1} — ${stroke} ${where}`,
-  }));
+/** Modules where a series is 5 pairs of shots: a pair counts only when both are in (score = pairs × 2) */
+export const PAIR_MODULES: TestType[] = ['approach'];
+export const isPairModule = (m: TestType) => PAIR_MODULES.includes(m);
+
+/** What a series direction means, for the series cards */
+export const DIRECTION_TEXT: Record<Direction, string> = {
+  fh_cross: 'Dritto incrociato',
+  bh_cross: 'Rovescio incrociato',
+  fh_line: 'Dritto lungolinea',
+  bh_line: 'Rovescio lungolinea',
+  io_cross: 'Sventaglio inside-out',
+  io_line: 'Sventaglio inside-in',
+  lungolinea: 'Lungolinea',
+  diagonale: 'Diagonale',
+  right: 'Da destra',
+  left: 'Da sinistra',
+  fh_volley: 'Volée di dritto',
+  bh_volley: 'Volée di rovescio',
+  ds_fh_cross: 'Smorzata di dritto incrociata',
+  ds_bh_cross: 'Smorzata di rovescio incrociata',
+  ds_fh_line: 'Smorzata di dritto lungolinea',
+  ds_bh_line: 'Smorzata di rovescio lungolinea',
+  ap_fh_line: 'Attacco di dritto lungolinea + volée incrociata',
+  ap_bh_line: 'Attacco di rovescio lungolinea + volée incrociata',
+  ap_fh_cross: 'Attacco di dritto incrociato + volée lungolinea',
+  ap_bh_cross: 'Attacco di rovescio incrociato + volée lungolinea',
+  sl_fh_cross: 'Back di dritto incrociato',
+  sl_fh_line: 'Back di dritto lungolinea',
+  sl_bh_cross: 'Back di rovescio incrociato',
+  sl_bh_line: 'Back di rovescio lungolinea',
+  pa_cross: 'Dritto di chiusura incrociato',
+  pa_line: 'Dritto di chiusura lungolinea',
+  sm_fh: 'Smash nella zona del dritto',
+  sm_bh: 'Smash nella zona del rovescio',
+};
+
+/** The 20 series of a configurable module with the chosen option */
+export function optionSeries(module: OptionModule, optionId: string | undefined): SeriesSpec[] {
+  const opt = moduleOption(module, optionId);
+  return Array.from({ length: MODULE_SERIES[module] }, (_, i) => {
+    const direction = opt.cycle[i % opt.cycle.length];
+    return { testType: module, seriesIndex: i, direction, label: `Serie ${i + 1} — ${DIRECTION_TEXT[direction]}` };
+  });
 }
 
-export const DIRECTION_LABEL: Record<StrokeDirection, string> = { cross: 'Incrociato', line: 'Lungolinea' };
-
-/** Direction used by a single-stroke module in an existing series list (defaults to cross) */
-export function detectedDirection(series: SeriesResult[], module: SingleStrokeModule): StrokeDirection {
-  const d = series.find(s => s.testType === module)?.direction;
-  return d === 'fh_line' || d === 'bh_line' || d === 'io_line' ? 'line' : 'cross';
+/** Option used by a module in an existing series list (first option when unknown) */
+export function detectedOption(series: SeriesResult[], module: OptionModule): ModuleOption {
+  const d = series.find(s => s.testType === module && s.direction)?.direction;
+  return MODULE_OPTIONS[module].find(o => d !== undefined && o.cycle.includes(d)) ?? MODULE_OPTIONS[module][0];
 }
 
-/** Module name with its direction, e.g. "Sventaglio di dritto inside-out" */
+/** Module name with its option, e.g. "Solo dritto incrociato", "Back (slice) · rovescio lungolinea" */
 export function moduleDisplayName(series: SeriesResult[], module: TestType): string {
-  return isSingleStroke(module)
-    ? `${MODULE_LABELS[module]} ${directionLabel(module, detectedDirection(series, module)).toLowerCase()}`
-    : MODULE_LABELS[module];
+  if (!isOptionModule(module)) return MODULE_LABELS[module];
+  const opt = detectedOption(series, module).label.toLowerCase();
+  return isSingleStroke(module) || module === 'putaway' || module === 'dropshot'
+    ? `${MODULE_LABELS[module]} ${opt}`
+    : `${MODULE_LABELS[module]} · ${opt}`;
+}
+
+// ─── Compatibility helpers for the original single-stroke modules ────────────
+
+export function directionLabel(module: SingleStrokeModule, dir: StrokeDirection): string {
+  return moduleOption(module, dir).label;
+}
+export function directionHint(module: SingleStrokeModule, dir: StrokeDirection): string {
+  return moduleOption(module, dir).hint;
+}
+export function targetMirrored(module: SingleStrokeModule, dir: StrokeDirection): boolean {
+  return moduleOption(module, dir).target.mirror;
+}
+export function singleStrokeSeries(module: SingleStrokeModule, dir: StrokeDirection): SeriesSpec[] {
+  return optionSeries(module, dir);
+}
+export const DIRECTION_LABEL: Record<StrokeDirection, string> = { cross: 'Incrociato', line: 'Lungolinea' };
+export function detectedDirection(series: SeriesResult[], module: SingleStrokeModule): StrokeDirection {
+  return detectedOption(series, module).id === 'line' ? 'line' : 'cross';
 }
 
 export const COMBINED_SERIES: SeriesSpec[] = Array.from({ length: 10 }, (_, i) => ({
@@ -172,7 +280,12 @@ export const CATEGORY_OPTIONS: { value: Category; label: string }[] = [
 ];
 
 /** Canonical order of test modules (used for step routing) */
-export const MODULE_STEP_ORDER: TestType[] = ['groundstrokes', 'forehand', 'backhand', 'insideout', 'combined', 'return', 'serve', 'volley'];
+export const MODULE_STEP_ORDER: TestType[] = [
+  'groundstrokes', 'forehand', 'backhand', 'insideout', 'slice', 'putaway', 'combined',
+  'return', 'serve',
+  'volley', 'approach', 'smash_volo', 'smash_rimbalzo',
+  'dropshot',
+];
 
 /** Modules selected by default in a new session (the original full protocol) */
 export const DEFAULT_MODULES: TestType[] = ['groundstrokes', 'combined', 'return', 'serve', 'volley'];
@@ -193,6 +306,12 @@ export const MODULE_LABELS: Record<TestType, string> = {
   return: 'Return',
   serve: 'Servizio',
   volley: 'Volley',
+  slice: 'Back (slice)',
+  putaway: 'Dritto di chiusura',
+  approach: 'Attacco e volée',
+  smash_volo: 'Smash al volo',
+  smash_rimbalzo: 'Smash a rimbalzo',
+  dropshot: 'Smorzata',
 };
 
 /** Series in the protocol for each module */
@@ -205,6 +324,12 @@ export const MODULE_SERIES: Record<TestType, number> = {
   return: 10,
   serve: 6,
   volley: 10,
+  slice: 20,
+  putaway: 20,
+  approach: 20,
+  smash_volo: 20,
+  smash_rimbalzo: 20,
+  dropshot: 20,
 };
 
 /**
@@ -220,6 +345,12 @@ export const MODULE_PASS: Record<TestType, number> = {
   return: 5,
   serve: 3,
   volley: 5,
+  slice: 10,
+  putaway: 10,
+  approach: 10,
+  smash_volo: 10,
+  smash_rimbalzo: 10,
+  dropshot: 10,
 };
 
 export type ModuleOutcome = 'superato' | 'non_superato' | 'interrotto';
@@ -308,6 +439,62 @@ export const WIZARD_STEPS = [
   { id: 'combined', label: 'Combined', title: 'Combined (10 serie)' },
   { id: 'return', label: 'Return', title: 'Return (10 serie)' },
   { id: 'serve', label: 'Servizio', title: 'Servizio (6 serie)' },
+  { id: 'slice', label: 'Back', title: 'Back / slice (20 serie)' },
+  { id: 'putaway', label: 'Chiusura', title: 'Dritto di chiusura (20 serie)' },
   { id: 'volley', label: 'Volley', title: 'Volley (10 serie)' },
+  { id: 'approach', label: 'Attacco', title: 'Attacco e volée (20 serie da 5 coppie)' },
+  { id: 'smash_volo', label: 'Smash volo', title: 'Smash al volo (20 serie)' },
+  { id: 'smash_rimbalzo', label: 'Smash rimb.', title: 'Smash a rimbalzo (20 serie)' },
+  { id: 'dropshot', label: 'Smorzata', title: 'Smorzata (20 serie)' },
   { id: 'review', label: 'Review', title: 'Riepilogo & Salva' },
 ];
+
+// ═════════════════════════════════════════════════════════════════════════════
+// Families of strokes: colours in the module list and family radars
+// ═════════════════════════════════════════════════════════════════════════════
+
+export type Family = 'fondo' | 'servizio' | 'rete' | 'sensibilita';
+export const FAMILY_ORDER: Family[] = ['fondo', 'servizio', 'rete', 'sensibilita'];
+
+export const MODULE_FAMILY: Record<TestType, Family> = {
+  groundstrokes: 'fondo', forehand: 'fondo', backhand: 'fondo', insideout: 'fondo', slice: 'fondo', putaway: 'fondo', combined: 'fondo',
+  return: 'servizio', serve: 'servizio',
+  volley: 'rete', approach: 'rete', smash_volo: 'rete', smash_rimbalzo: 'rete',
+  dropshot: 'sensibilita',
+};
+
+export interface FamilyMeta {
+  label: string;
+  /** Hex for charts */
+  color: string;
+  /** Tailwind classes (written in full so the build keeps them) */
+  selected: string;
+  idle: string;
+  idleText: string;
+  dot: string;
+  soft: string;
+  ink: string;
+}
+
+export const FAMILY_META: Record<Family, FamilyMeta> = {
+  fondo: {
+    label: 'Fondo campo', color: '#17663e',
+    selected: 'border-brand-600 bg-brand-600', idle: 'border-brand-200 bg-brand-50/60', idleText: 'text-brand-800',
+    dot: 'bg-brand-600', soft: 'bg-brand-50 text-brand-800', ink: 'text-brand-700',
+  },
+  servizio: {
+    label: 'Servizio e risposta', color: '#b45309',
+    selected: 'border-amber-600 bg-amber-600', idle: 'border-amber-200 bg-amber-50/70', idleText: 'text-amber-800',
+    dot: 'bg-amber-600', soft: 'bg-amber-50 text-amber-800', ink: 'text-amber-700',
+  },
+  rete: {
+    label: 'Rete', color: '#0369a1',
+    selected: 'border-sky-700 bg-sky-700', idle: 'border-sky-200 bg-sky-50/70', idleText: 'text-sky-800',
+    dot: 'bg-sky-700', soft: 'bg-sky-50 text-sky-800', ink: 'text-sky-700',
+  },
+  sensibilita: {
+    label: 'Sensibilità', color: '#6d28d9',
+    selected: 'border-violet-700 bg-violet-700', idle: 'border-violet-200 bg-violet-50/70', idleText: 'text-violet-800',
+    dot: 'bg-violet-700', soft: 'bg-violet-50 text-violet-800', ink: 'text-violet-700',
+  },
+};

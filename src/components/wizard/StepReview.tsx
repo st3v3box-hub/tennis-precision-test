@@ -8,7 +8,7 @@ import {
   COMBINED_SERIES,
   RETURN_SERIES,
   SERVE_SERIES,
-  VOLLEY_SERIES, singleStrokeSeries, modulePasses } from '../../lib/protocol';
+  VOLLEY_SERIES, optionSeries, modulePasses, isOptionModule, moduleOption, MODULE_LABELS, MODULE_STEP_ORDER } from '../../lib/protocol';
 
 interface Props {
   state: WizardState;
@@ -28,7 +28,7 @@ interface SummaryRow {
   avg: number | null;
 }
 
-function makeRows(player: WizardPlayerData, selectedModules: TestType[]): SummaryRow[] {
+function makeRows(player: WizardPlayerData, selectedModules: TestType[], options: WizardState['strokeDirections'] = {}): SummaryRow[] {
   const make = (
     label: string,
     testType: TestType,
@@ -40,27 +40,34 @@ function makeRows(player: WizardPlayerData, selectedModules: TestType[]): Summar
     return { label, testType, total: specs.length, done: scores.length, avg: scores.length > 0 ? mean(scores) : null };
   };
 
-  const allRows: SummaryRow[] = [
-    make('Groundstrokes FH', 'groundstrokes', GROUNDSTROKES_SERIES.filter(s => s.direction === 'fh_cross')),
-    make('Groundstrokes BH', 'groundstrokes', GROUNDSTROKES_SERIES.filter(s => s.direction === 'bh_cross')),
-    make('Solo dritto', 'forehand', singleStrokeSeries('forehand', 'cross')),
-    make('Solo rovescio', 'backhand', singleStrokeSeries('backhand', 'cross')),
-    make('Sventaglio', 'insideout', singleStrokeSeries('insideout', 'cross')),
-    make('Combined', 'combined', COMBINED_SERIES),
-    make('Return', 'return', RETURN_SERIES),
-    make('Servizio', 'serve', SERVE_SERIES),
-    make('Volley', 'volley', VOLLEY_SERIES),
-  ];
+  const fixed: Partial<Record<TestType, SummaryRow[]>> = {
+    groundstrokes: [
+      make('Groundstrokes FH', 'groundstrokes', GROUNDSTROKES_SERIES.filter(s => s.direction === 'fh_cross')),
+      make('Groundstrokes BH', 'groundstrokes', GROUNDSTROKES_SERIES.filter(s => s.direction === 'bh_cross')),
+    ],
+    combined: [make('Combined', 'combined', COMBINED_SERIES)],
+    return: [make('Return', 'return', RETURN_SERIES)],
+    serve: [make('Servizio', 'serve', SERVE_SERIES)],
+    volley: [make('Volley', 'volley', VOLLEY_SERIES)],
+  };
+  const allRows: SummaryRow[] = MODULE_STEP_ORDER.flatMap(m => {
+    if (isOptionModule(m)) {
+      const opt = moduleOption(m, options[m]);
+      return [make(`${MODULE_LABELS[m]} · ${opt.label.toLowerCase()}`, m, optionSeries(m, opt.id))];
+    }
+    return fixed[m] ?? [];
+  });
 
   return allRows.filter(r => selectedModules.includes(r.testType));
 }
 
-const PlayerSummary: React.FC<{ player: WizardPlayerData; label: string; selectedModules: TestType[] }> = ({
+const PlayerSummary: React.FC<{ player: WizardPlayerData; label: string; selectedModules: TestType[]; options: WizardState['strokeDirections'] }> = ({
   player,
   label,
   selectedModules,
+  options,
 }) => {
-  const rows = makeRows(player, selectedModules);
+  const rows = makeRows(player, selectedModules, options);
   // A module can end early once passed (perfect-series threshold reached)
   const passed = new Set(modulePasses(player.series).filter(m => m.passed).map(m => m.module));
   const rowOk = (r: SummaryRow) => r.done === r.total || passed.has(r.testType);
@@ -109,7 +116,7 @@ export const StepReview: React.FC<Props> = ({ state, onPrev, onSave, saving = fa
   const [activeIdx, setActiveIdx] = useState(0);
 
   const allDone = state.players.every(p =>
-    makeRows(p, state.selectedModules).every(r => r.done === r.total)
+    makeRows(p, state.selectedModules, state.strokeDirections).every(r => r.done === r.total)
   );
 
   return (
@@ -143,7 +150,7 @@ export const StepReview: React.FC<Props> = ({ state, onPrev, onSave, saving = fa
                 <p><span className="text-gray-500">Nota:</span> <em className="text-gray-700">{state.players[0].note}</em></p>
               )}
             </div>
-            <PlayerSummary player={state.players[0]} label="" selectedModules={state.selectedModules} />
+            <PlayerSummary player={state.players[0]} label="" selectedModules={state.selectedModules} options={state.strokeDirections} />
           </>
         )}
 
@@ -152,7 +159,7 @@ export const StepReview: React.FC<Props> = ({ state, onPrev, onSave, saving = fa
           <>
             <div className="flex gap-1 mb-4 overflow-x-auto">
               {state.players.map((p, i) => {
-                const rows = makeRows(p, state.selectedModules);
+                const rows = makeRows(p, state.selectedModules, state.strokeDirections);
                 const done = rows.every(r => r.done === r.total);
                 return (
                   <button
@@ -186,6 +193,7 @@ export const StepReview: React.FC<Props> = ({ state, onPrev, onSave, saving = fa
               player={state.players[activeIdx]}
               label=""
               selectedModules={state.selectedModules}
+              options={state.strokeDirections}
             />
           </>
         )}

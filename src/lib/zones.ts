@@ -15,10 +15,23 @@ export const COURT = {
 
 /** Zone measures from the protocol slides ("Accuracy test") */
 export const PROTOCOL_ZONES: Record<ZoneCategory, ZoneMeasures> = {
-  terza: { gsFromCenter: 1, gsFromService: 1, volley: 1.5, serve: 2.06 },
-  seconda: { gsFromCenter: 1.5, gsFromService: 2, volley: 1.2, serve: 1.2 },
-  prima: { gsFromCenter: 2, gsFromService: 3, volley: 0.7, serve: 0.7 },
+  terza: { gsFromCenter: 1, gsFromService: 1, volley: 1.5, serve: 2.06, dropshot: 1.5 },
+  seconda: { gsFromCenter: 1.5, gsFromService: 2, volley: 1.2, serve: 1.2, dropshot: 1.2 },
+  prima: { gsFromCenter: 2, gsFromService: 3, volley: 0.7, serve: 0.7, dropshot: 1 },
 };
+
+/** The smorzata square starts this far from the net */
+export const DROPSHOT_FROM_NET = 0.3;
+
+/**
+ * Zones saved before the smorzata existed have no square: use the size of the
+ * academy default of that level (or of 2ª when the level has no measures).
+ */
+export function withDropshot(m: ZoneMeasures, level: Category, defaults?: Record<ZoneCategory, ZoneMeasures>): ZoneMeasures {
+  if (Number.isFinite(m.dropshot)) return m;
+  const ref = (level === 'u10_u12' ? undefined : (defaults ?? PROTOCOL_ZONES)[level]) ?? PROTOCOL_ZONES.seconda;
+  return { ...m, dropshot: ref.dropshot };
+}
 
 export const ZONE_CATEGORIES: ZoneCategory[] = ['terza', 'seconda', 'prima'];
 
@@ -35,10 +48,11 @@ export function limitsFor(level: Category): Record<keyof ZoneMeasures, [number, 
     volley: [0.3, 4],
     // 4.115 / 2 = 2.0575 → 2.06 as in the slides
     serve: [0.3, Math.round((COURT.boxWidth / serveStripsFor(level)) * 100) / 100],
+    dropshot: [0.5, 3],
   };
 }
 
-const FIELDS: (keyof ZoneMeasures)[] = ['gsFromCenter', 'gsFromService', 'volley', 'serve'];
+const FIELDS: (keyof ZoneMeasures)[] = ['gsFromCenter', 'gsFromService', 'volley', 'serve', 'dropshot'];
 
 const round = (v: number) => Math.round(v * 100) / 100;
 const clamp = (v: number, [lo, hi]: [number, number]) => Math.min(hi, Math.max(lo, v));
@@ -52,7 +66,8 @@ export function clampMeasures(m: ZoneMeasures, level: Category): ZoneMeasures {
 
 export function sameMeasures(a: ZoneMeasures | null | undefined, b: ZoneMeasures | null | undefined): boolean {
   if (!a || !b) return a === b;
-  return FIELDS.every(f => Math.abs(a[f] - b[f]) < 0.005);
+  // A field missing on one side (smorzata square on zones saved before it existed) does not make them different
+  return FIELDS.every(f => !Number.isFinite(a[f]) || !Number.isFinite(b[f]) || Math.abs(a[f] - b[f]) < 0.005);
 }
 
 // ─── Difficulty slider ───────────────────────────────────────────────────────
@@ -88,6 +103,7 @@ export function difficultyOf(m: ZoneMeasures, defaults: Record<ZoneCategory, Zon
   for (const f of FIELDS) {
     const [v0, v1, v2] = [a[0][f], a[1][f], a[2][f]];
     const v = m[f];
+    if (!Number.isFinite(v)) continue; // e.g. no smorzata square on old zones
     // Which side of the 2ª anchor is the value on? Same side as 3ª → segment 0 (3ª↔2ª), else segment 1.
     const seg = (v - v1) * (v0 - v1) > 0 ? 0 : 1;
     const from = seg === 0 ? v0 : v1;
@@ -149,16 +165,18 @@ export function countsForRankings(s: Pick<TestSession, 'zones'>, settings: Pick<
 
 const fmt = (v: number) => v.toLocaleString('it-IT', { maximumFractionDigits: 2 });
 
-export function describeZones(z: SessionZones | undefined, category: Category): { groundstroke: string; volley: string; serve: string } {
+export function describeZones(z: SessionZones | undefined, category: Category): { groundstroke: string; volley: string; serve: string; dropshot: string } {
   const level = z?.level ?? category;
   if (!z?.measures) {
-    if (level === 'u10_u12') return { groundstroke: 'Area pari / dispari', volley: 'Area pari / dispari', serve: 'Area pari / dispari' };
+    if (level === 'u10_u12') return { groundstroke: 'Area pari / dispari', volley: 'Area pari / dispari', serve: 'Area pari / dispari', dropshot: 'Rettangolo del servizio, vicino alla rete' };
   }
-  const m = z?.measures;
-  if (!m) return { groundstroke: '—', volley: '—', serve: '—' };
+  const raw = z?.measures;
+  if (!raw) return { groundstroke: '—', volley: '—', serve: '—', dropshot: '—' };
+  const m = withDropshot(raw, level);
   return {
     groundstroke: `${fmt(m.gsFromCenter)} m dalla centrale · ${fmt(m.gsFromService)} m dal servizio`,
     volley: `striscia ${fmt(m.volley)} m`,
     serve: `${serveStripsFor(level)} strisce da ${fmt(m.serve)} m`,
+    dropshot: `quadrato di ${fmt(m.dropshot)} m vicino al corridoio, da 30 cm dalla rete`,
   };
 }

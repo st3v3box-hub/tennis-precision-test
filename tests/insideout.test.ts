@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeSessionResults, computeStrokeStats, radarStrokes, radarValuesFor, radarArea } from '../src/lib/formulas';
+import { computeSessionResults, computeStrokeStats, radarStrokes, radarValuesFor, radarArea, familyAxes, familiesWithSpecials } from '../src/lib/formulas';
 import { singleStrokeSeries, targetMirrored, moduleDisplayName, modulePasses, detectedDirection } from '../src/lib/protocol';
 import type { SeriesResult, TestSession } from '../src/types';
 
@@ -34,7 +34,7 @@ describe('sventaglio (inside-out) module', () => {
   });
 });
 
-describe('7th radar axis', () => {
+describe('sventaglio and the radars', () => {
   it('old tests: same %, same 6 axes, same area as before', () => {
     const r = computeSessionResults(sess(full()));
     expect(r.radarValues).toHaveLength(6);
@@ -44,15 +44,17 @@ describe('7th radar axis', () => {
     expect(r.percentOfIdeal).toBeCloseTo(ref, 10);
     expect(r.radarArea).toBeCloseTo(radarArea(base), 10);
   });
-  it('a test with the sventaglio gets 7 axes, placed next to the forehand', () => {
+  it('the general radar keeps the 6 base strokes; the sventaglio goes to the "fondo" family radar', () => {
     const r = computeSessionResults(sess([...full(), ...io('cross', Array(20).fill(7))]));
-    expect(r.radarValues).toHaveLength(7);
-    expect(radarStrokes(r.stats)).toEqual(['serve', 'forehand', 'insideout', 'combined', 'return', 'backhand', 'volley']);
+    expect(r.radarValues).toHaveLength(6);
+    expect(radarStrokes(r.stats)).toEqual(['serve', 'forehand', 'combined', 'return', 'backhand', 'volley']);
+    expect(familyAxes('fondo', r.stats)).toEqual(['forehand', 'insideout', 'backhand']);
+    expect(familiesWithSpecials(r.stats)).toEqual(['fondo']);
   });
-  it('comparison radar shows the 7th axis if either test has it (0 for the other)', () => {
+  it('family radar of a comparison: axes tested in either test (0 for the other)', () => {
     const a = computeStrokeStats(sess(full()));
     const b = computeStrokeStats(sess(io('cross', [8])));
-    const axes = radarStrokes(a, b);
+    const axes = familyAxes('fondo', a, b);
     expect(axes).toContain('insideout');
     expect(radarValuesFor(a, axes)[axes.indexOf('insideout')]).toBe(0);
   });

@@ -1,6 +1,6 @@
 import React from 'react';
 import type { SeriesResult } from '../../types';
-import type { SeriesSpec } from '../../lib/protocol';
+import { DIRECTION_TEXT, isPairModule, type SeriesSpec } from '../../lib/protocol';
 import { ScoreInput } from '../ui/ScoreInput';
 
 interface Props {
@@ -10,20 +10,6 @@ interface Props {
   extraRender?: (spec: SeriesSpec, idx: number) => React.ReactNode;
 }
 
-const directionLabel: Record<string, string> = {
-  fh_cross: '🎾 FH Incrociato',
-  bh_cross: '🎾 BH Incrociato',
-  fh_line: '🎾 Dritto lungolinea',
-  bh_line: '🎾 Rovescio lungolinea',
-  io_cross: '🎾 Sventaglio inside-out',
-  io_line: '🎾 Sventaglio inside-in',
-  lungolinea: '➡️ Lungolinea',
-  diagonale: '↗️ Diagonale',
-  right: '→ Da Destra',
-  left: '← Da Sinistra',
-  fh_volley: '⚡ FH Volee',
-  bh_volley: '⚡ BH Volee',
-};
 
 export const SeriesInputBlock: React.FC<Props> = ({ specs, series, onSet, extraRender }) => {
   const getValue = (spec: SeriesSpec): number | null => {
@@ -54,7 +40,8 @@ export const SeriesInputBlock: React.FC<Props> = ({ specs, series, onSet, extraR
       <div className="space-y-4">
         {specs.map((spec, idx) => {
           const val = getValue(spec);
-          const dirLabel = spec.direction ? directionLabel[spec.direction] : '';
+          const dirLabel = spec.direction ? DIRECTION_TEXT[spec.direction] : '';
+          const pairs = isPairModule(spec.testType);
           const serveLabel = spec.serveType
             ? `${spec.serveType === 'prima' ? '1ª' : '2ª'} Servizio · ${spec.side === 'right' ? 'Destra' : 'Sinistra'}`
             : '';
@@ -79,14 +66,16 @@ export const SeriesInputBlock: React.FC<Props> = ({ specs, series, onSet, extraR
                   <span className={`text-xl font-black
                     ${val >= 8 ? 'text-ok-600' : val >= 5 ? 'text-yellow-600' : 'text-red-500'}
                   `}>
-                    {val}
+                    {pairs ? `${val / 2}/5` : val}
                   </span>
                 )}
               </div>
 
               {extraRender?.(spec, idx)}
 
+              {pairs && <p className="text-xs text-gray-500 mb-2">Coppie riuscite su 5 (attacco e volée entrambi dentro)</p>}
               <ScoreInput
+                pairs={pairs}
                 value={val}
                 onChange={score =>
                   onSet({

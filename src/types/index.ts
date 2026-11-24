@@ -1,7 +1,10 @@
 export type Category = 'terza' | 'seconda' | 'prima' | 'u10_u12';
 
 /** forehand / backhand = single-stroke modules ("Solo dritto" / "Solo rovescio") */
-export type TestType = 'groundstrokes' | 'forehand' | 'backhand' | 'insideout' | 'combined' | 'return' | 'serve' | 'volley';
+export type TestType =
+  | 'groundstrokes' | 'forehand' | 'backhand' | 'insideout' | 'combined' | 'return' | 'serve' | 'volley'
+  // Special strokes (families: fondo, rete, sensibilità)
+  | 'slice' | 'putaway' | 'approach' | 'smash_volo' | 'smash_rimbalzo' | 'dropshot';
 
 /** Direction chosen for a whole single-stroke module */
 export type StrokeDirection = 'cross' | 'line';
@@ -18,15 +21,26 @@ export type Direction =
   | 'right'
   | 'left'
   | 'fh_volley'
-  | 'bh_volley';
+  | 'bh_volley'
+  // Smorzata: forehand / backhand alternated, crosscourt or down the line
+  | 'ds_fh_cross' | 'ds_bh_cross' | 'ds_fh_line' | 'ds_bh_line'
+  // Attacco e volée: approach down the line + crosscourt volley, or the opposite
+  | 'ap_fh_line' | 'ap_bh_line' | 'ap_fh_cross' | 'ap_bh_cross'
+  // Back (slice)
+  | 'sl_fh_cross' | 'sl_fh_line' | 'sl_bh_cross' | 'sl_bh_line'
+  // Dritto di chiusura
+  | 'pa_cross' | 'pa_line'
+  // Smash: toward the forehand or the backhand zone
+  | 'sm_fh' | 'sm_bh';
 
 export type ServeType = 'prima' | 'seconda';
 
 export type TargetStrip = 'T' | 'body' | 'wide';
 
-/** Order: serve, forehand, combined, return, backhand, volley — matches radar order */
-/** insideout = "Sventaglio": 7th radar axis, shown only when tested */
-export type StrokeName = 'serve' | 'forehand' | 'insideout' | 'combined' | 'return' | 'backhand' | 'volley';
+/** Base strokes (general radar): serve, forehand, combined, return, backhand, volley. The others are shown only when tested. */
+export type StrokeName =
+  | 'serve' | 'forehand' | 'insideout' | 'combined' | 'return' | 'backhand' | 'volley'
+  | 'slice' | 'putaway' | 'approach' | 'smash_volo' | 'smash_rimbalzo' | 'dropshot';
 
 export type StdDevMode = 'sample' | 'population';
 
@@ -119,6 +133,11 @@ export interface ZoneMeasures {
   gsFromService: number;
   volley: number;
   serve: number;
+  /**
+   * Smorzata: side of the square at the net (from 30 cm), next to the alley.
+   * Zones saved before it existed don't have it: read them with withDropshot().
+   */
+  dropshot: number;
 }
 
 export type ZoneCategory = Exclude<Category, 'u10_u12'>;
@@ -310,7 +329,8 @@ export interface WizardState {
   challengeMode: 'none' | '1v1' | '2v2' | 'ffa';
   selectedModules: TestType[];
   /** Direction of the single-stroke modules, chosen for the whole test */
-  strokeDirections: { forehand: StrokeDirection; backhand: StrokeDirection; insideout: StrokeDirection };
+  /** Option chosen for each configurable module (direction, side, pattern…), whole test */
+  strokeDirections: Partial<Record<string, string>>;
   challengeId?: string;       // generated at start for challenge sessions
   draftSessionIds?: string[]; // existing session IDs to update on resume
 }

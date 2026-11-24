@@ -1,8 +1,9 @@
 import React from 'react';
 import type { Category, ZoneMeasures } from '../../types';
-import { COURT, serveStripsFor } from '../../lib/zones';
+import { COURT, DROPSHOT_FROM_NET, serveStripsFor } from '../../lib/zones';
 
-export type ZoneKind = 'groundstroke' | 'volley' | 'serve';
+export type ZoneKind = 'groundstroke' | 'volley' | 'serve' | 'dropshot';
+export const ALL_ZONES: ZoneKind[] = ['groundstroke', 'volley', 'serve', 'dropshot'];
 
 interface Props {
   measures: ZoneMeasures | null;
@@ -11,6 +12,10 @@ interface Props {
   focus?: ZoneKind;
   /** Draw the groundstroke zone on the other side (down-the-line targets) */
   mirror?: boolean;
+  /** Draw only these zones (default: groundstroke, volley, serve) */
+  only?: ZoneKind[];
+  /** Groundstroke box in both back corners (forehand and backhand alternated) */
+  bothCorners?: boolean;
   showLabels?: boolean;
   className?: string;
   title?: string;
@@ -32,9 +37,10 @@ const fmt = (v: number) => v.toLocaleString('it-IT', { maximumFractionDigits: 2 
  * Geometry follows the protocol slides: groundstroke box in the back corner,
  * volley strip along the sideline, serve strips in the service box.
  */
-export const CourtZones: React.FC<Props> = ({ measures, level, focus, mirror = false, showLabels = true, className = '', title }) => {
+export const CourtZones: React.FC<Props> = ({ measures, level, focus, mirror = false, only, bothCorners = false, showLabels = true, className = '', title }) => {
   const sw = COURT.halfWidth * 2; // singles width 8.23
   const op = (k: ZoneKind) => (focus && focus !== k ? 0.28 : 1);
+  const shown = (k: ZoneKind) => (only ? only.includes(k) : k !== 'dropshot');
 
   let zones: React.ReactNode = null;
   if (measures) {
@@ -54,41 +60,61 @@ export const CourtZones: React.FC<Props> = ({ measures, level, focus, mirror = f
       ? [boxL, sw - measures.serve]
       : [boxL, boxL + (COURT.boxWidth - measures.serve) / 2, sw - measures.serve];
 
+    // Smorzata: a square against each singles sideline, starting 30 cm from the net
+    const ds = Number.isFinite(measures.dropshot) ? measures.dropshot : 0;
+
     const zoneFill = 'rgba(217, 240, 74, 0.82)';
     zones = (
       <>
-        <g opacity={op('serve')}>
+        {shown('dropshot') && ds > 0 && (
+          <g opacity={op('dropshot')}>
+            {[0, sw - ds].map(dx => (
+              <rect key={dx} x={x(dx)} y={y(DROPSHOT_FROM_NET)} width={ds * S} height={ds * S}
+                fill={zoneFill} stroke="#d9f04a" strokeWidth={1.5} strokeDasharray="5 3" />
+            ))}
+          </g>
+        )}
+        {shown('serve') && <g opacity={op('serve')}>
           {strips.map((sx, i) => (
             <rect key={i} x={x(sx)} y={y(0)} width={measures.serve * S} height={COURT.serviceDepth * S}
               fill={zoneFill} stroke="#d9f04a" strokeWidth={1.5} strokeDasharray="5 3" />
           ))}
-        </g>
-        <g opacity={op('volley')}>
+        </g>}
+        {shown('volley') && <g opacity={op('volley')}>
           <rect x={x(vX)} y={y(0)} width={measures.volley * S} height={L * S}
             fill={zoneFill} stroke="#d9f04a" strokeWidth={1.5} strokeDasharray="5 3" />
-        </g>
-        <g opacity={op('groundstroke')}>
+        </g>}
+        {shown('groundstroke') && <g opacity={op('groundstroke')}>
           <rect x={x(gsX)} y={y(gsY)} width={gsW * S} height={gsH * S}
             fill={zoneFill} stroke="#d9f04a" strokeWidth={1.5} strokeDasharray="5 3" />
-        </g>
+          {bothCorners && (
+            <rect x={x(mirror ? COURT.halfWidth + measures.gsFromCenter : 0)} y={y(gsY)} width={gsW * S} height={gsH * S}
+              fill={zoneFill} stroke="#d9f04a" strokeWidth={1.5} strokeDasharray="5 3" />
+          )}
+        </g>}
         {showLabels && (
           <g fontFamily="Barlow Semi Condensed, Barlow, sans-serif" fontWeight={700} fontSize={13} fill="#062a17">
             {/* Groundstroke distances */}
-            <g opacity={op('groundstroke')}>
+            {shown('groundstroke') && <g opacity={op('groundstroke')}>
               <Dim x1={x(mirror ? sw - measures.gsFromCenter : COURT.halfWidth)} x2={x(mirror ? sw : COURT.halfWidth + measures.gsFromCenter)}
                 y1={y(L - 0.9)} y2={y(L - 0.9)} label={`${fmt(measures.gsFromCenter)} m`} />
               <Dim x1={x(mirror ? 1.2 : sw - 1.2)} x2={x(mirror ? 1.2 : sw - 1.2)}
                 y1={y(COURT.serviceDepth)} y2={y(COURT.serviceDepth + measures.gsFromService)} label={`${fmt(measures.gsFromService)} m`} vertical />
-            </g>
-            <g opacity={op('volley')}>
+            </g>}
+            {shown('volley') && <g opacity={op('volley')}>
               <text x={x(vX + measures.volley / 2)} y={y(L * 0.62)} textAnchor="middle" fill="#062a17"
                 transform={`rotate(-90 ${x(vX + measures.volley / 2)} ${y(L * 0.62)})`}>Volée {fmt(measures.volley)} m</text>
-            </g>
-            <g opacity={op('serve')}>
+            </g>}
+            {shown('dropshot') && ds > 0 && (
+              <g opacity={op('dropshot')}>
+                <text x={x(sw - ds / 2)} y={y(DROPSHOT_FROM_NET + ds) + 15} textAnchor="middle" fill="#ffffff">{fmt(ds)} m</text>
+              </g>
+            )}
+            {shown('serve') && <g opacity={op('serve')}>
               <text x={x(boxL + COURT.boxWidth / 2)} y={y(COURT.serviceDepth) - 6} textAnchor="middle" fill="#ffffff">
                 {n} × {fmt(measures.serve)} m
               </text>
-            </g>
+            </g>}
           </g>
         )}
       </>

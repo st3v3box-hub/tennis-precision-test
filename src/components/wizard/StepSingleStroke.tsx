@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import type { WizardState, SeriesResult } from '../../types';
-import { singleStrokeSeries, MODULE_PASS, MODULE_LABELS, directionLabel, targetMirrored, type SingleStrokeModule } from '../../lib/protocol';
-import { resolveSessionZones } from '../../lib/zones';
+import {
+  optionSeries, moduleOption, MODULE_PASS, MODULE_LABELS, MODULE_SERIES, MODULE_FAMILY, FAMILY_META, isPairModule,
+  type OptionModule,
+} from '../../lib/protocol';
+import { resolveSessionZones, withDropshot } from '../../lib/zones';
 import { useAppData } from '../../contexts/AppDataContext';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
@@ -10,25 +13,39 @@ import { PlayerTabBar } from './PlayerTabBar';
 import { CourtZones } from '../brand/CourtZones';
 
 interface Props {
-  module: SingleStrokeModule;
+  module: OptionModule;
   state: WizardState;
   setSeriesResult: (playerIdx: number, r: SeriesResult) => void;
   onNext: () => void;
   onPrev: () => void;
 }
 
+/** How the ball is fed, per module */
+const FEED: Record<OptionModule, string> = {
+  forehand: '10 palle dal cesto sul dritto',
+  backhand: '10 palle dal cesto sul rovescio',
+  insideout: 'Palla dal cesto sul lato del rovescio, il giocatore gira intorno e colpisce di dritto',
+  slice: '10 palle dal cesto, colpite in back',
+  putaway: 'Palla corta e alta dal cesto, da chiudere vincente di dritto',
+  approach: '5 coppie: palla corta da attaccare, poi una volée. La coppia vale se entrano tutti e due i colpi',
+  smash_volo: 'Pallonetto dal cesto, smash al volo',
+  smash_rimbalzo: 'Pallonetto alto dal cesto, smash dopo il rimbalzo',
+  dropshot: '10 palle dal cesto, dritto e rovescio alternati, smorzata nel quadrato vicino alla rete',
+};
+
 /**
- * "Solo dritto" / "Solo rovescio": 20 series of the same stroke from the basket,
- * direction chosen for the whole test. Passed with 10 perfect series (10/10);
- * the coach can move on as soon as the 10th perfect series is reached.
+ * Every module played with one option for the whole test (solo dritto, solo rovescio,
+ * sventaglio, back, chiusura, attacco e volée, smash, smorzata): 20 series from the basket,
+ * passed with 10 perfect series; the coach can move on as soon as the 10th is reached.
  */
 export const StepSingleStroke: React.FC<Props> = ({ module, state, setSeriesResult, onNext, onPrev }) => {
   const { settings } = useAppData();
   const [activeIdx, setActiveIdx] = useState(0);
-  const direction = state.strokeDirections[module] ?? 'cross';
-  const specs = singleStrokeSeries(module, direction);
+  const option = moduleOption(module, state.strokeDirections[module]);
+  const specs = optionSeries(module, option.id);
+  const total = MODULE_SERIES[module];
   const required = MODULE_PASS[module];
-  const strokeName = MODULE_LABELS[module];
+  const family = FAMILY_META[MODULE_FAMILY[module]];
 
   const own = (pidx: number) => state.players[pidx].series.filter(r => r.testType === module);
   const perfect = (pidx: number) => own(pidx).filter(r => r.score === 10).length;
@@ -41,7 +58,9 @@ export const StepSingleStroke: React.FC<Props> = ({ module, state, setSeriesResu
   const activePerfect = perfect(activeIdx);
   const activeFilled = filled(activeIdx);
   const zones = resolveSessionZones(active.category, active.zones, settings.zoneDefaults);
+  const measures = zones.measures ? withDropshot(zones.measures, zones.level, settings.zoneDefaults) : null;
   const playerLabel = state.playerCount > 1 ? ` — ${active.name || `Giocatore ${activeIdx + 1}`}` : '';
+  const target = option.target;
 
   // Once passed, the series that would come after are not shown
   const lastNeeded = activePerfect >= required ? activeFilled : specs.length;
@@ -50,13 +69,19 @@ export const StepSingleStroke: React.FC<Props> = ({ module, state, setSeriesResu
     <div className="space-y-4">
       <PlayerTabBar players={state.players} activeIdx={activeIdx} completedFlags={completedFlags} onChange={setActiveIdx} />
 
-      <Card title={`${strokeName} · ${directionLabel(module, direction).toLowerCase()}${playerLabel}`}
-        subtitle={module === 'insideout'
-          ? `Palla dal cesto sul lato del rovescio, il giocatore gira intorno e colpisce di dritto · 20 serie · superato con ${required} perfette`
-          : `20 serie da 10 palle dal cesto · superato con ${required} serie perfette`}>
+      <Card title={`${MODULE_LABELS[module]} · ${option.label.toLowerCase()}${playerLabel}`}
+        subtitle={`${FEED[module]} · ${total} serie · superato con ${required} perfette${isPairModule(module) ? ' (5 coppie su 5)' : ''}`}>
         <div className="flex items-center gap-4 mb-4">
-          <CourtZones measures={zones.measures} level={zones.level} focus="groundstroke" mirror={targetMirrored(module, direction)}
-            showLabels={false} className="h-24 w-auto flex-shrink-0" title="Zona bersaglio" />
+          <div className="flex-shrink-0">
+            <span className={`block text-[10px] font-bold rounded-full px-2 py-0.5 mb-1 text-center ${family.soft}`}>{family.label}</span>
+            <CourtZones
+              measures={measures} level={zones.level}
+              focus={target.zone === 'dropshot' ? 'dropshot' : 'groundstroke'}
+              only={target.zone === 'dropshot' ? ['dropshot'] : target.zone === 'approach' ? ['groundstroke', 'volley'] : ['groundstroke']}
+              bothCorners={target.zone === 'approach'}
+              mirror={target.mirror}
+              showLabels={false} className="h-24 w-auto" title="Zona bersaglio" />
+          </div>
           <div className="flex-1">
             <p className="text-xs text-gray-500">Serie perfette</p>
             <p className="font-display text-4xl font-extrabold leading-none">
@@ -65,7 +90,7 @@ export const StepSingleStroke: React.FC<Props> = ({ module, state, setSeriesResu
             <div className="mt-2 h-2 rounded-full bg-gray-100 overflow-hidden">
               <div className="h-full bg-brand-600 transition-all" style={{ width: `${Math.min(100, (activePerfect / required) * 100)}%` }} />
             </div>
-            <p className="text-xs text-gray-500 mt-1">{activeFilled} di 20 serie giocate</p>
+            <p className="text-xs text-gray-500 mt-1">{activeFilled} di {total} serie giocate</p>
           </div>
         </div>
         <SeriesInputBlock
@@ -82,7 +107,7 @@ export const StepSingleStroke: React.FC<Props> = ({ module, state, setSeriesResu
       )}
       {activeFilled === specs.length && activePerfect < required && (
         <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
-          <strong>Test non superato</strong>: {activePerfect} serie perfette su {required}. I punteggi contano comunque nel radar.
+          <strong>Test non superato</strong>: {activePerfect} serie perfette su {required}. I punteggi contano comunque nei grafici.
         </div>
       )}
 

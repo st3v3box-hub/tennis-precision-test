@@ -1,4 +1,5 @@
-import { radarStrokes, radarValuesFor, strokeLabel } from '../../lib/formulas';
+import { radarStrokes, radarValuesFor, strokeLabel, familiesWithSpecials, isBaseStroke } from '../../lib/formulas';
+import { FamilyCharts } from '../report/ReportBlocks';
 import { SessionOutcome } from './SessionOutcome';
 import { GameSimCard } from './GameSimCard';
 import { MODULE_LABELS, CATEGORY_TARGETS } from '../../lib/protocol';
@@ -26,6 +27,7 @@ export const ResultsDashboard: React.FC<Props> = ({ session, settings, compareSe
   const [activeTab, setActiveTab] = useState<'stats' | 'radar' | 'series' | 'precision' | 'serve'>('stats');
 
   const results: SessionResults = computeSessionResults(session, settings);
+  const baseTested = results.stats.some(s => isBaseStroke(s.stroke) && s.scores.length > 0);
 
   const compareResults = compareSession
     ? computeSessionResults(compareSession, settings)
@@ -135,9 +137,9 @@ export const ResultsDashboard: React.FC<Props> = ({ session, settings, compareSe
         </Card>
       )}
 
-      {activeTab === 'radar' && (
+      {activeTab === 'radar' && baseTested && (
         <Card
-          title={`Radar — ${radarStrokes(results.stats, compareResults?.stats).length} colpi`}
+          title="Radar generale — 6 colpi base"
           subtitle={`Area: ${results.radarArea.toFixed(1)} · ${results.percentOfIdeal.toFixed(1)}% dell'ideale`}
         >
           <RadarSpider
@@ -146,6 +148,11 @@ export const ResultsDashboard: React.FC<Props> = ({ session, settings, compareSe
             compareValues={compareResults ? radarValuesFor(compareResults.stats, radarStrokes(results.stats, compareResults.stats)) : undefined}
             compareLabel={compareSession ? `${compareSession.playerName} (${compareSession.date})` : undefined}
           />
+        </Card>
+      )}
+      {activeTab === 'radar' && familiesWithSpecials(results.stats, compareResults?.stats).length > 0 && (
+        <Card title="Colpi speciali per famiglia" subtitle="Radar con 3 colpi o più, altrimenti barre">
+          <FamilyCharts results={results} compare={compareResults} size={300} />
         </Card>
       )}
 

@@ -1,11 +1,11 @@
 import React, { useState, useMemo } from 'react';
-import type { WizardState, WizardPlayerData, TestType, StrokeDirection } from '../../types';
+import type { WizardState, WizardPlayerData, TestType } from '../../types';
 import type { PlayerProfile } from '../../types';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import {
-  CATEGORY_OPTIONS, MODULE_STEP_ORDER, MODULE_LABELS, MODULE_SERIES, EXCLUSIVE_WITH, isSingleStroke, directionLabel,
-  type SingleStrokeModule,
+  CATEGORY_OPTIONS, MODULE_STEP_ORDER, MODULE_LABELS, MODULE_SERIES, EXCLUSIVE_WITH, MODULE_OPTIONS, MODULE_FAMILY,
+  FAMILY_META, FAMILY_ORDER, isOptionModule, moduleOption, type OptionModule,
 } from '../../lib/protocol';
 import { useAppData } from '../../contexts/AppDataContext';
 import { ZonePicker } from '../zones/ZonePicker';
@@ -15,6 +15,16 @@ const MODULE_HINT: Partial<Record<TestType, string>> = {
   forehand: '20 serie solo di dritto',
   backhand: '20 serie solo di rovescio',
   insideout: 'Gira intorno al rovescio e colpisce di dritto',
+  slice: 'Back di dritto o di rovescio, incrociato o lungolinea',
+  putaway: 'Palla corta e alta da chiudere di dritto',
+  combined: 'Lungolinea e diagonale alternati',
+  return: 'Da destra e da sinistra alternati',
+  serve: '1ª da destra e 2ª da sinistra, con la striscia',
+  volley: 'Volée di dritto e di rovescio alternate',
+  approach: 'Attacco e volée a coppie, dritto e rovescio alternati',
+  smash_volo: 'Smash al volo da pallonetto',
+  smash_rimbalzo: 'Smash dopo il rimbalzo',
+  dropshot: 'Nel quadrato vicino alla rete, dritto e rovescio alternati',
 };
 
 interface Props {
@@ -48,8 +58,8 @@ export const StepMeta: React.FC<Props> = ({ state, update, updatePlayer, setPlay
     }
   };
 
-  const setDirection = (m: SingleStrokeModule, d: StrokeDirection) =>
-    update({ strokeDirections: { ...state.strokeDirections, [m]: d } });
+  const setOption = (m: OptionModule, id: string) =>
+    update({ strokeDirections: { ...state.strokeDirections, [m]: id } });
 
   const linkProfile = (playerIdx: number, profile: PlayerProfile) => {
     updatePlayer(playerIdx, {
@@ -112,44 +122,59 @@ export const StepMeta: React.FC<Props> = ({ state, update, updatePlayer, setPlay
         </div>
       </Card>
 
-      {/* Module selection */}
+      {/* Module selection, grouped and coloured by family */}
       <Card title="Moduli del test" subtitle="Groundstrokes e i test di solo dritto / solo rovescio non si fanno nella stessa sessione">
-        <div className="space-y-2">
-          {MODULE_STEP_ORDER.map(m => {
-            const selected = state.selectedModules.includes(m);
-            const single = isSingleStroke(m);
-            const excludedBy = (EXCLUSIVE_WITH[m] ?? []).find(x => state.selectedModules.includes(x));
+        <div className="space-y-4">
+          {FAMILY_ORDER.map(fam => {
+            const meta = FAMILY_META[fam];
+            const mods = MODULE_STEP_ORDER.filter(m => MODULE_FAMILY[m] === fam);
             return (
-              <div key={m} className={`rounded-xl border-2 transition-colors ${selected ? 'border-brand-600 bg-brand-600' : 'border-gray-200 bg-white'}`}>
-                <button
-                  type="button"
-                  onClick={() => toggleModule(m)}
-                  aria-pressed={selected}
-                  className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left"
-                >
-                  <span className="min-w-0">
-                    <span className={`block text-sm font-semibold ${selected ? 'text-white' : 'text-ink'}`}>{MODULE_LABELS[m]}</span>
-                    {MODULE_HINT[m] && (
-                      <span className={`block text-xs ${selected ? 'text-brand-100' : 'text-gray-500'}`}>
-                        {!selected && excludedBy ? `Sostituisce ${MODULE_LABELS[excludedBy]}` : MODULE_HINT[m]}
-                      </span>
-                    )}
-                  </span>
-                  <span className={`text-xs flex-shrink-0 ${selected ? 'text-brand-100' : 'text-gray-400'}`}>{MODULE_SERIES[m]} serie</span>
-                </button>
-                {selected && isSingleStroke(m) && (
-                  <div className="px-3 pb-3 grid grid-cols-2 gap-2">
-                    {(['cross', 'line'] as StrokeDirection[]).map(d => {
-                      const on = (state.strokeDirections[m] ?? 'cross') === d;
-                      return (
-                        <button key={d} type="button" onClick={() => setDirection(m, d)} aria-pressed={on}
-                          className={`py-2 rounded-lg text-xs font-semibold border ${on ? 'bg-white text-brand-800 border-white' : 'bg-transparent text-white border-white/40 hover:border-white'}`}>
-                          {directionLabel(m, d)}
+              <div key={fam}>
+                <p className={`flex items-center gap-2 text-xs font-bold mb-1.5 ${meta.ink}`}>
+                  <span className={`w-2.5 h-2.5 rounded-full ${meta.dot}`} aria-hidden />
+                  {meta.label}
+                </p>
+                <div className="space-y-2">
+                  {mods.map(m => {
+                    const selected = state.selectedModules.includes(m);
+                    const excludedBy = (EXCLUSIVE_WITH[m] ?? []).find(x => state.selectedModules.includes(x));
+                    const options = isOptionModule(m) ? MODULE_OPTIONS[m] : [];
+                    const current = isOptionModule(m) ? moduleOption(m, state.strokeDirections[m]).id : '';
+                    return (
+                      <div key={m} className={`rounded-xl border-2 transition-colors ${selected ? meta.selected : meta.idle}`}>
+                        <button
+                          type="button"
+                          onClick={() => toggleModule(m)}
+                          aria-pressed={selected}
+                          className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left"
+                        >
+                          <span className="min-w-0">
+                            <span className={`block text-sm font-semibold ${selected ? 'text-white' : 'text-ink'}`}>{MODULE_LABELS[m]}</span>
+                            {MODULE_HINT[m] && (
+                              <span className={`block text-xs ${selected ? 'text-white/80' : 'text-gray-500'}`}>
+                                {!selected && excludedBy ? `Sostituisce ${MODULE_LABELS[excludedBy]}` : MODULE_HINT[m]}
+                              </span>
+                            )}
+                          </span>
+                          <span className={`text-xs flex-shrink-0 ${selected ? 'text-white/80' : meta.idleText}`}>{MODULE_SERIES[m]} serie</span>
                         </button>
-                      );
-                    })}
-                  </div>
-                )}
+                        {selected && isOptionModule(m) && (
+                          <div className={`px-3 pb-3 grid gap-2 ${options.length > 2 ? 'grid-cols-2' : options.some(o => o.label.length > 16) ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                            {options.map(o => {
+                              const on = current === o.id;
+                              return (
+                                <button key={o.id} type="button" onClick={() => setOption(m, o.id)} aria-pressed={on}
+                                  className={`py-2 px-2 rounded-lg text-xs font-semibold border ${on ? 'bg-white text-ink border-white' : 'bg-transparent text-white border-white/40 hover:border-white'}`}>
+                                  {o.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             );
           })}

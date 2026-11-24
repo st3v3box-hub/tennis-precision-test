@@ -1,12 +1,13 @@
 import React from 'react';
 import type { StrokeStats } from '../../types';
-import { radarArea } from '../../lib/formulas';
+import { radarArea, visibleStats, isBaseStroke, strokeFamily } from '../../lib/formulas';
+import { FAMILY_META } from '../../lib/protocol';
 
 interface Props {
   stats: StrokeStats[];
   radarArea: number;
   percentOfIdeal: number;
-  /** Number of radar axes (6, or 7 with the Sventaglio) */
+  /** Number of radar axes (6) */
   axes?: number;
 }
 
@@ -17,8 +18,8 @@ const barColor = (v: number): string => {
 };
 
 export const StatsTable: React.FC<Props> = ({ stats: allStats, radarArea: area, percentOfIdeal, axes = 6 }) => {
-  // Sventaglio row only when it was tested
-  const stats = allStats.filter(s => s.stroke !== 'insideout' || s.scores.length > 0);
+  // Base strokes always, the special ones only when tested
+  const stats = visibleStats(allStats);
   const testedStats = stats.filter(s => s.scores.length > 0);
   const passedCount = testedStats.filter(s => s.perfectCount >= s.passThreshold).length;
   const testedCount = testedStats.length;
@@ -43,7 +44,13 @@ export const StatsTable: React.FC<Props> = ({ stats: allStats, radarArea: area, 
               const failed = tested && s.perfectCount < s.passThreshold;
               return (
                 <tr key={s.stroke} className="border-b border-gray-100 last:border-0">
-                  <td className="px-4 py-3 font-semibold text-gray-800">{s.label}</td>
+                  <td className="px-4 py-3 font-semibold text-gray-800">
+                    <span className="inline-flex items-center gap-2">
+                      <span className={`w-2 h-2 rounded-full flex-shrink-0 ${FAMILY_META[strokeFamily(s.stroke)].dot}`} aria-hidden />
+                      {s.label}
+                      {!isBaseStroke(s.stroke) && <span className="sr-only">(colpo speciale)</span>}
+                    </span>
+                  </td>
                   <td className="px-3 py-3 text-center font-bold text-lg">
                     <span className={
                       !tested ? 'text-gray-300' :

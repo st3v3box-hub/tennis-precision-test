@@ -4,10 +4,10 @@ import {
   RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer, Tooltip, Legend,
 } from 'recharts';
 import { useAppData } from '../contexts/AppDataContext';
-import { computeSessionResults } from '../lib/formulas';
+import { computeSessionResults, isBaseStroke } from '../lib/formulas';
 import { percentToStars, renderStars } from '../lib/stars';
 import { Button } from '../components/ui/Button';
-import type { TestSession } from '../types';
+import type { StrokeName, TestSession } from '../types';
 
 type ChallengeMode = '1v1' | '2v2' | 'ffa';
 
@@ -460,7 +460,7 @@ export const ChallengeResultsPage: React.FC = () => {
   );
 };
 
-/** The Sventaglio row/axis only appears in challenges where someone played it. */
-function keepStroke(s: { stroke: string }, all: { stats: { stroke: string; scores: number[] }[] }[]): boolean {
-  return s.stroke !== 'insideout' || all.some(r => r.stats.some(x => x.stroke === 'insideout' && x.scores.length > 0));
+/** Special strokes only appear in challenges where someone played them. */
+function keepStroke(s: { stroke: StrokeName }, all: { stats: { stroke: StrokeName; scores: number[] }[] }[]): boolean {
+  return isBaseStroke(s.stroke) || all.some(r => r.stats.some(x => x.stroke === s.stroke && x.scores.length > 0));
 }

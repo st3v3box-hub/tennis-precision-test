@@ -1,4 +1,4 @@
-import { radarStrokes } from '../../lib/formulas';
+import { radarStrokes, familyAxes, familiesWithSpecials, strokeLabel, isBaseStroke } from '../../lib/formulas';
 import React from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Cell, ReferenceLine,
@@ -6,11 +6,11 @@ import {
 } from 'recharts';
 import type { SessionResults, TestSession } from '../../types';
 import {
-  MODULE_SERIES, OUTCOME_LABEL, detectedDirection, modulePasses, moduleDisplayName, isSingleStroke, targetMirrored,
-  type ModulePass,
+  MODULE_SERIES, OUTCOME_LABEL, modulePasses, moduleDisplayName, isOptionModule, detectedOption, FAMILY_META,
+  type ModulePass, type Family,
 } from '../../lib/protocol';
 import { CourtZones } from '../brand/CourtZones';
-import { describeZones, isStandardZones } from '../../lib/zones';
+import { describeZones, isStandardZones, withDropshot } from '../../lib/zones';
 import { CATEGORY_TARGETS } from '../../lib/protocol';
 import { useAppData } from '../../contexts/AppDataContext';
 
@@ -67,9 +67,8 @@ export const SeriesBars: React.FC<{ session: TestSession; width?: number }> = ({
   );
 };
 
-/** Radar of the stroke averages, optional comparison polygon (e.g. first test). */
+/** General radar (6 base strokes), optional comparison polygon (e.g. first test). */
 export const RadarPrint: React.FC<{ results: SessionResults; compare?: SessionResults; size?: number }> = ({ results, compare, size = 300 }) => {
-  // 6 axes, 7 when the Sventaglio is in this test or in the comparison
   const axes = radarStrokes(results.stats, compare?.stats);
   const data = axes.map(stroke => {
     const st = results.stats.find(s => s.stroke === stroke)!;
@@ -93,6 +92,71 @@ export const RadarPrint: React.FC<{ results: SessionResults; compare?: SessionRe
 };
 
 const f1 = (v: number) => v.toLocaleString('it-IT', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+/**
+ * One chart per family with special strokes tested (fondo, rete, sensibilità), in the family colour:
+ * a radar with 3+ strokes, bars otherwise. Optional comparison (grey, dashed).
+ */
+export const FamilyCharts: React.FC<{ results: SessionResults; compare?: SessionResults; size?: number }> = ({ results, compare, size = 260 }) => {
+  const fams = familiesWithSpecials(results.stats, compare?.stats);
+  if (fams.length === 0) return null;
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {fams.map(f => <FamilyChart key={f} family={f} results={results} compare={compare} size={size} />)}
+    </div>
+  );
+};
+
+const FamilyChart: React.FC<{ family: Family; results: SessionResults; compare?: SessionResults; size: number }> = ({ family, results, compare, size }) => {
+  const meta = FAMILY_META[family];
+  const axes = familyAxes(family, results.stats, compare?.stats);
+  const ave = (list: SessionResults | undefined, st: string) => list?.stats.find(s => s.stroke === st);
+  return (
+    <div className="break-inside-avoid">
+      <p className={`flex items-center gap-2 font-display font-bold ${meta.ink}`}>
+        <span className={`w-2.5 h-2.5 rounded-full ${meta.dot}`} aria-hidden />{meta.label}
+      </p>
+      {axes.length >= 3 ? (
+        <RadarChart width={size} height={size * 0.8} outerRadius={size * 0.27} margin={{ top: 4, right: 30, bottom: 4, left: 30 }}
+          data={axes.map(a => {
+            const st = ave(results, a);
+            const c = ave(compare, a);
+            return {
+              stroke: st && st.scores.length > 0 ? strokeLabel(a) : `${strokeLabel(a)} (n.t.)`,
+              value: Number((st?.ave ?? 0).toFixed(2)),
+              compare: c && c.scores.length > 0 ? Number(c.ave.toFixed(2)) : undefined,
+            };
+          })}>
+          <PolarGrid stroke="#e5e5e5" />
+          <PolarAngleAxis dataKey="stroke" tick={{ fontSize: 10, fill: '#404040' }} />
+          <PolarRadiusAxis domain={[0, 10]} tick={false} axisLine={false} />
+          {compare && <Radar dataKey="compare" stroke="#a3a3a3" fill="#a3a3a3" fillOpacity={0.15} strokeDasharray="4 3" isAnimationActive={false} />}
+          <Radar dataKey="value" stroke={meta.color} fill={meta.color} fillOpacity={0.25} strokeWidth={2} isAnimationActive={false} />
+        </RadarChart>
+      ) : (
+        <div className="space-y-2.5 mt-2">
+          {axes.map(a => {
+            const st = ave(results, a);
+            const c = ave(compare, a);
+            const tested = !!st && st.scores.length > 0;
+            return (
+              <div key={a}>
+                <div className="flex items-baseline justify-between text-sm">
+                  <span className="font-semibold">{strokeLabel(a)}</span>
+                  <span className="font-display font-extrabold text-xl">{tested ? f1(st!.ave) : 'n.t.'}<span className="text-xs text-gray-400"> /10</span></span>
+                </div>
+                <div className="h-2.5 rounded-full bg-gray-100 overflow-hidden mt-1 relative">
+                  <div className="h-full rounded-full" style={{ width: `${(st?.ave ?? 0) * 10}%`, background: meta.color }} />
+                </div>
+                {c && c.scores.length > 0 && <p className="text-[11px] text-gray-500 mt-0.5">prima: {f1(c.ave)}</p>}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
 
 /** Per-stroke metrics: average, spread, perfect series, balls on target. */
 export const StrokeMetricsTable: React.FC<{ results: SessionResults }> = ({ results }) => {
@@ -135,13 +199,17 @@ export const ZonesPanel: React.FC<{ session: TestSession; width?: number }> = ({
     standard: true,
   };
   const d = describeZones(zones, session.category);
-  // Groundstroke box on the side targeted by the (first) single-stroke module, if any
-  const single = modulePasses(session.series).map(p => p.module).find(isSingleStroke);
-  const lineFH = single ? targetMirrored(single, detectedDirection(session.series, single)) : false;
+  const played = modulePasses(session.series).map(p => p.module);
+  // Groundstroke box on the side targeted by the (first) module with a chosen direction, if any
+  const optMod = played.filter(isOptionModule).find(m => detectedOption(session.series, m).target.zone === 'groundstroke');
+  const lineFH = optMod ? detectedOption(session.series, optMod).target.mirror : false;
+  const hasDropshot = played.includes('dropshot');
+  const measures = zones.measures ? withDropshot(zones.measures, zones.level, settings.zoneDefaults) : null;
   return (
     <div className="flex gap-4 items-start">
       <div style={{ width }} className="flex-shrink-0">
-        <CourtZones measures={zones.measures} level={zones.level} mirror={lineFH} className="w-full" title="Zone del test" />
+        <CourtZones measures={measures} level={zones.level} mirror={lineFH} className="w-full" title="Zone del test"
+          only={hasDropshot ? ['groundstroke', 'volley', 'serve', 'dropshot'] : undefined} />
       </div>
       <div className="text-sm text-gray-700 space-y-1.5 min-w-0">
         <p className="font-display font-bold text-base text-ink">
@@ -153,6 +221,7 @@ export const ZonesPanel: React.FC<{ session: TestSession; width?: number }> = ({
         <p><span className="text-gray-500">Colpi da fondo:</span> {d.groundstroke}</p>
         <p><span className="text-gray-500">Volée:</span> {d.volley}</p>
         <p><span className="text-gray-500">Servizio:</span> {d.serve}</p>
+        {hasDropshot && <p><span className="text-gray-500">Smorzata:</span> {d.dropshot}</p>}
         <p className="text-xs text-gray-500 pt-1">In giallo le zone bersaglio. Le distanze sono misurate dalla linea centrale e dalla linea del servizio.</p>
       </div>
     </div>
@@ -170,10 +239,10 @@ export const REPORT_PRINT_CSS = `
   .break-inside-avoid { break-inside: avoid; page-break-inside: avoid; }
 `;
 
-/** For tests with fewer than 3 strokes a radar says nothing: one bar per tested stroke instead. */
+/** For tests with fewer than 3 base strokes the radar says little: one bar per tested base stroke too. */
 export const StrokeBarsPrint: React.FC<{ results: SessionResults }> = ({ results }) => (
   <div className="space-y-3 py-2">
-    {results.stats.filter(st => st.scores.length > 0).map(st => (
+    {results.stats.filter(st => isBaseStroke(st.stroke) && st.scores.length > 0).map(st => (
       <div key={st.stroke}>
         <div className="flex items-baseline justify-between text-sm">
           <span className="font-semibold">{st.label}</span>

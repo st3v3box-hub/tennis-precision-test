@@ -5,7 +5,7 @@ import {
   DIFFICULTY_MAX, DIFFICULTY_MIN, clampMeasures, difficultyLabel, difficultyOf, limitsFor,
   measuresAtDifficulty, resolveSessionZones, zonesForLevel,
 } from '../../lib/zones';
-import { CourtZones, type ZoneKind } from '../brand/CourtZones';
+import { CourtZones, ALL_ZONES, type ZoneKind } from '../brand/CourtZones';
 
 type Choice = Omit<SessionZones, 'standard'>;
 
@@ -23,6 +23,7 @@ const FIELDS: { key: keyof ZoneMeasures; label: string; hint: string; zone: Zone
   { key: 'gsFromService', label: 'Fondo · dalla linea del servizio', hint: 'più alto = zona più corta', zone: 'groundstroke' },
   { key: 'volley', label: 'Volée · larghezza striscia', hint: 'più alto = più facile', zone: 'volley' },
   { key: 'serve', label: 'Servizio · larghezza strisce', hint: 'più alto = più facile', zone: 'serve' },
+  { key: 'dropshot', label: 'Smorzata · lato del quadrato', hint: 'più alto = più facile', zone: 'dropshot' },
 ];
 
 const fmt = (v: number) => v.toLocaleString('it-IT', { maximumFractionDigits: 2 });
@@ -77,7 +78,7 @@ export const ZonePicker: React.FC<Props> = ({ category, value, onChange, default
 
       {open && (
         <div className="p-3 space-y-4 bg-white">
-          <CourtZones measures={m} level={level} focus={focus} className="w-full max-w-[300px] mx-auto block"
+          <CourtZones measures={m} level={level} focus={focus} only={ALL_ZONES} className="w-full max-w-[300px] mx-auto block"
             title={`Zone ${level === 'u10_u12' ? 'U10/U12' : CATEGORY_TARGETS[level].label}`} />
 
           <div>

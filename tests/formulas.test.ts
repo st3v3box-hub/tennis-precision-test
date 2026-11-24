@@ -131,12 +131,14 @@ describe('computeStrokeStats', () => {
   const session = buildSession();
   const stats = computeStrokeStats(session, 'sample');
 
-  it('returns the 6 base strokes + the sventaglio (empty here) in radar order', () => {
-    expect(stats).toHaveLength(7);
-    expect(stats.map(s => s.stroke)).toEqual([
-      'serve', 'forehand', 'insideout', 'combined', 'return', 'backhand', 'volley',
+  it('returns the 6 base strokes and the special ones (empty here)', () => {
+    expect(stats).toHaveLength(13);
+    expect(stats.map(s => s.stroke).filter(s => ['serve', 'forehand', 'combined', 'return', 'backhand', 'volley'].includes(s))).toEqual([
+      'serve', 'forehand', 'combined', 'return', 'backhand', 'volley',
     ]);
-    expect(stats.find(s => s.stroke === 'insideout')!.scores).toHaveLength(0);
+    for (const sp of ['insideout', 'slice', 'putaway', 'approach', 'smash_volo', 'smash_rimbalzo', 'dropshot']) {
+      expect(stats.find(s => s.stroke === sp)!.scores).toHaveLength(0);
+    }
   });
 
   it('forehand average = 7', () => {

@@ -8,7 +8,8 @@ import {
 } from '../lib/protocol';
 import { Card } from '../components/ui/Card';
 import { BrandLockup } from '../components/brand/BrandLockup';
-import { SeriesBars, RadarPrint, StrokeBarsPrint, StrokeMetricsTable, ZonesPanel, REPORT_PRINT_CSS } from '../components/report/ReportBlocks';
+import { SeriesBars, RadarPrint, StrokeBarsPrint, StrokeMetricsTable, ZonesPanel, FamilyCharts, REPORT_PRINT_CSS } from '../components/report/ReportBlocks';
+import { familiesWithSpecials, isBaseStroke } from '../lib/formulas';
 
 const dateIt = (iso: string) => {
   const d = new Date(iso);
@@ -60,6 +61,7 @@ export const TestReportPage: React.FC = () => {
   const totalBalls = session.series.length * 10;
   const inside = session.series.reduce((a, s) => a + s.score, 0);
   const perfect = session.series.filter(s => s.score === 10).length;
+  const baseTested = results.stats.filter(st => isBaseStroke(st.stroke) && st.scores.length > 0).length;
 
   return (
     <div className="min-h-screen bg-neutral-200 print:bg-white">
@@ -144,15 +146,27 @@ export const TestReportPage: React.FC = () => {
         </Card>
 
         <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-4">
-          <Card title="Profilo tecnico" subtitle={previous ? `Questo test (verde) e il precedente del ${previous.s.date} (grigio)` : 'Media per colpo, su 10'} className="break-inside-avoid">
-            <div className="flex justify-center"><RadarPrint results={results} compare={previous?.r} size={300} /></div>
-            {results.stats.filter(st => st.scores.length > 0).length < 3 && <StrokeBarsPrint results={results} />}
-          </Card>
+          {baseTested > 0 ? (
+            <Card title="Profilo tecnico" subtitle={previous ? `Questo test (verde) e il precedente del ${previous.s.date} (grigio)` : 'I 6 colpi base, media su 10'} className="break-inside-avoid">
+              <div className="flex justify-center"><RadarPrint results={results} compare={previous?.r} size={300} /></div>
+              {baseTested < 3 && <StrokeBarsPrint results={results} />}
+            </Card>
+          ) : (
+            <Card title="Colpi speciali" subtitle="Media per colpo, su 10" className="break-inside-avoid">
+              <FamilyCharts results={results} compare={previous?.r} size={300} />
+            </Card>
+          )}
           <Card title="Metriche per colpo" className="break-inside-avoid">
             <StrokeMetricsTable results={results} />
             <p className="text-[11px] text-gray-500 mt-2">Costanza: scarto medio tra le serie (più è basso, più è regolare).</p>
           </Card>
         </div>
+
+        {baseTested > 0 && familiesWithSpecials(results.stats).length > 0 && (
+          <Card title="Colpi speciali per famiglia" subtitle={previous ? 'Questo test a colori, il precedente in grigio' : 'Media per colpo, su 10'} className="break-inside-avoid">
+            <FamilyCharts results={results} compare={previous?.r} size={300} />
+          </Card>
+        )}
 
         <Card title="Zone bersaglio" className="break-inside-avoid">
           <ZonesPanel session={session} />

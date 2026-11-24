@@ -1,8 +1,8 @@
 import { serveStripsFor } from '../lib/zones';
 import { useAppData } from '../contexts/AppDataContext';
-import { CourtZones } from '../components/brand/CourtZones';
+import { CourtZones, ALL_ZONES } from '../components/brand/CourtZones';
 import React, { useState } from 'react';
-import { CATEGORY_OPTIONS } from '../lib/protocol';
+import { CATEGORY_OPTIONS, FAMILY_META, FAMILY_ORDER, MODULE_FAMILY, MODULE_LABELS, MODULE_STEP_ORDER } from '../lib/protocol';
 import { targetPercent } from '../lib/objectives';
 import { useNavigate } from 'react-router-dom';
 import type { Category } from '../types';
@@ -77,11 +77,17 @@ const PROTOCOL_ROWS = [
   { test: 'Groundstrokes', series: 20, balls: 10, soglia: '10/20', pattern: 'FH Incrociato / BH Incrociato (alternati) · 10 perfette in totale' },
   { test: 'Solo dritto', series: 20, balls: 10, soglia: '10/20', pattern: 'Solo dritto, incrociato o lungolinea (scelto per tutto il test)' },
   { test: 'Solo rovescio', series: 20, balls: 10, soglia: '10/20', pattern: 'Solo rovescio, incrociato o lungolinea (scelto per tutto il test)' },
-  { test: 'Sventaglio di dritto', series: 20, balls: 10, soglia: '10/20', pattern: 'Palla sul rovescio, gira intorno e colpisce di dritto: inside-out (sul rovescio avversario) o inside-in (lungolinea, sul dritto). Settimo asse del radar' },
+  { test: 'Sventaglio di dritto', series: 20, balls: 10, soglia: '10/20', pattern: 'Palla sul rovescio, gira intorno e colpisce di dritto: inside-out (sul rovescio avversario) o inside-in (lungolinea, sul dritto)' },
+  { test: 'Back (slice)', series: 20, balls: 10, soglia: '10/20', pattern: 'Back di dritto o di rovescio, incrociato o lungolinea (scelto per tutto il test). Zona di fondo campo' },
+  { test: 'Dritto di chiusura', series: 20, balls: 10, soglia: '10/20', pattern: 'Palla corta e alta da chiudere di dritto, incrociato o lungolinea. Zona di fondo campo' },
   { test: 'Combined', series: 10, balls: 10, soglia: '5/10', pattern: 'Lungolinea / Diagonale (alternati)' },
   { test: 'Return', series: 10, balls: 10, soglia: '5/10', pattern: 'Da Destra (deuce) / Da Sinistra (ad) (alternati)' },
   { test: 'Servizio', series: 6, balls: 10, soglia: '3/6', pattern: '1ª Destra / 2ª Sinistra (alternati) + striscia target' },
   { test: 'Volley', series: 10, balls: 10, soglia: '5/10', pattern: 'Volee FH / Volee BH (alternati)' },
+  { test: 'Attacco e volée', series: 20, balls: 10, soglia: '10/20', pattern: '5 coppie per serie, dritto e rovescio alternati: attacco lungolinea + volée incrociata, o attacco incrociato + volée lungolinea. La coppia vale solo se entrano tutti e due i colpi; perfetta = 5 coppie su 5' },
+  { test: 'Smash al volo', series: 20, balls: 10, soglia: '10/20', pattern: 'Nella zona del dritto o del rovescio (angolo di fondo)' },
+  { test: 'Smash a rimbalzo', series: 20, balls: 10, soglia: '10/20', pattern: 'Nella zona del dritto o del rovescio (angolo di fondo)' },
+  { test: 'Smorzata', series: 20, balls: 10, soglia: '10/20', pattern: 'Dritto e rovescio alternati, incrociata o lungolinea, nel quadrato vicino alla rete e al corridoio' },
 ];
 
 const EXAMPLES = [
@@ -313,8 +319,20 @@ export const InstructionsPage: React.FC = () => {
           <p className="text-xs text-gray-500">
             Il protocollo completo (Groundstrokes, Combined, Return, Servizio, Volley) è di 56 serie, 560 palle.
             Solo dritto e Solo rovescio sostituiscono i Groundstrokes: non si fanno nello stesso test.
-            Lo Sventaglio si abbina a qualsiasi modulo.
+            Tutti gli altri moduli si abbinano liberamente.
           </p>
+          <div className="rounded-xl border border-gray-200 p-3">
+            <p className="font-semibold text-ink mb-2">Le famiglie di colpi</p>
+            <p className="text-xs text-gray-600 mb-2">Quando scegli i moduli, ogni famiglia ha il suo colore. Gli stessi colori tornano nei grafici.</p>
+            <div className="grid grid-cols-2 gap-1.5">
+              {FAMILY_ORDER.map(f => (
+                <div key={f} className={`rounded-lg px-2.5 py-1.5 text-xs ${FAMILY_META[f].soft}`}>
+                  <p className="font-bold flex items-center gap-1.5"><span className={`w-2 h-2 rounded-full ${FAMILY_META[f].dot}`} aria-hidden />{FAMILY_META[f].label}</p>
+                  <p className="opacity-80">{MODULE_STEP_ORDER.filter(m => MODULE_FAMILY[m] === f).map(m => MODULE_LABELS[m]).join(', ')}</p>
+                </div>
+              ))}
+            </div>
+          </div>
           <div className="space-y-2">
             <p className="font-semibold text-ink">Esempi su un modulo da 10 serie (soglia 5 perfette)</p>
             {EXAMPLES.map(ex => (
@@ -338,7 +356,7 @@ export const InstructionsPage: React.FC = () => {
         <Section id="fare-test" title="Fare un test, passo per passo">
           <Steps items={[
             <><strong>Home → Nuovo test.</strong> Scegli la data, il maestro e quanti giocatori (fino a 4 nella stessa sessione). Cerca il giocatore in anagrafica: se è nuovo, il profilo si crea da solo al salvataggio.</>,
-            <><strong>Scegli i moduli.</strong> Per Solo dritto, Solo rovescio e Sventaglio scegli anche la direzione (incrociato o lungolinea; inside-out o inside-in), che vale per tutto il test.</>,
+            <><strong>Scegli i moduli</strong>, divisi per famiglia e colore. Per i moduli con una scelta (direzione, dritto o rovescio, schema dell'attacco, zona dello smash) la scelta compare sotto il modulo e vale per tutto il test.</>,
             <><strong>Zone.</strong> Di base valgono quelle della categoria. Per un giocatore puoi renderle più facili o più difficili (vedi Zone).</>,
             <><strong>Inserisci ogni serie</strong> toccando il numero di palle dentro (0–10). In alto vedi le serie perfette fatte e quelle che mancano alla soglia; sotto, il <em>match simulato</em> si aggiorna a ogni serie.</>,
             <><strong>Fine modulo.</strong> Quando la soglia è raggiunta o le serie sono finite, scegli <em>Continua con il modulo successivo</em> oppure <em>Termina e salva</em>.</>,
@@ -368,7 +386,7 @@ export const InstructionsPage: React.FC = () => {
             <img src={data.image} alt="Schema campo U10/U12" className="w-full object-contain rounded-xl" />
           ) : (
             <div className="bg-pitch p-4 rounded-xl">
-              <CourtZones measures={settings.zoneDefaults[activeCategory]} level={activeCategory}
+              <CourtZones measures={settings.zoneDefaults[activeCategory]} level={activeCategory} only={ALL_ZONES}
                 className="w-full max-w-sm mx-auto block" title={`Zone ${activeCategory}`} />
               <p className="text-center text-xs text-chalk/80 mt-2">
                 Le misure sono distanze dalle linee: più sono alte, più la zona è piccola. Volée e servizio: larghezza delle strisce.
@@ -395,6 +413,12 @@ export const InstructionsPage: React.FC = () => {
               <div className="font-bold text-gray-800 leading-tight">{data.zones.serve}</div>
             </div>
           </div>
+          {activeCategory !== 'u10_u12' && (
+            <p className="text-xs text-gray-600">
+              <strong>Smorzata:</strong> quadrato di {settings.zoneDefaults[activeCategory].dropshot.toLocaleString('it-IT')} m di lato, attaccato al corridoio, a partire da 30 cm dalla rete.
+              Attacco e volée usano la zona di fondo per l'attacco e la striscia della volée; back, chiusura e smash la zona di fondo.
+            </p>
+          )}
           <div className="space-y-1.5">
             <p className="font-bold text-ink">Zone personalizzate</p>
             <p>Nel test, per ogni giocatore, puoi partire dalle zone di un'altra categoria, spostare il cursore <em>facile ↔ difficile</em> oppure scrivere le misure a mano. Il test viene segnato come <em>personalizzato</em>.</p>
@@ -408,8 +432,9 @@ export const InstructionsPage: React.FC = () => {
             <Term name="Ave">Media delle serie di quel colpo (0–10). Verde da 8, giallo da 5, rosso sotto 5.</Term>
             <Term name="Dev">Quanto variano le serie: più è bassa, più il giocatore è regolare.</Term>
             <Term name="10/10">Serie perfette sul totale giocato per quel colpo.</Term>
-            <Term name="Radar">I 6 colpi base: Servizio, Dritto, Combined, Risposta, Rovescio, Volée. Se nel test c'è lo Sventaglio compare un settimo asse. I colpi non provati restano a zero, segnati "n.t.".</Term>
-            <Term name="% ideale">Quanto il giocatore si avvicina a quello che fa 10 su tutto, calcolato solo sui colpi provati. Con la scala "area radar" cresce al quadrato (7/10 ovunque = 49%); con la scala lineare 7/10 = 70%. La scala si sceglie nelle Impostazioni.</Term>
+            <Term name="Radar">Il radar generale ha sempre i 6 colpi base: Servizio, Dritto, Combined, Risposta, Rovescio, Volée, così ogni test si confronta con tutti gli altri. I colpi non provati restano a zero, segnati "n.t.".</Term>
+            <Term name="Famiglie">I colpi speciali hanno i loro grafici, nel colore della famiglia: Fondo (dritto, rovescio, sventaglio, back, chiusura), Rete (volée, attacco e volée, smash) e Sensibilità (smorzata). Con 3 colpi o più è un radar, altrimenti barre.</Term>
+            <Term name="% ideale">Quanto il giocatore si avvicina a quello che fa 10 su tutto, calcolato su tutti i colpi provati, speciali compresi. Con la scala "area radar" cresce al quadrato (7/10 ovunque = 49%); con la scala lineare 7/10 = 70%. La scala si sceglie nelle Impostazioni.</Term>
             <Term name="Precision-T">Andamento di dritto, rovescio e combined durante la sessione: dice se la precisione cresce o cala man mano.</Term>
           </div>
           <div className="rounded-xl border border-gray-200 p-3 space-y-1.5">

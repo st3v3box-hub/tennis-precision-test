@@ -13,9 +13,9 @@ const D = PROTOCOL_ZONES;
 
 describe('protocol zones', () => {
   it('match the slides: bigger distances = smaller groundstroke zone at higher levels', () => {
-    expect(D.terza).toEqual({ gsFromCenter: 1, gsFromService: 1, volley: 1.5, serve: 2.06 });
-    expect(D.seconda).toEqual({ gsFromCenter: 1.5, gsFromService: 2, volley: 1.2, serve: 1.2 });
-    expect(D.prima).toEqual({ gsFromCenter: 2, gsFromService: 3, volley: 0.7, serve: 0.7 });
+    expect(D.terza).toEqual({ gsFromCenter: 1, gsFromService: 1, volley: 1.5, serve: 2.06, dropshot: 1.5 });
+    expect(D.seconda).toEqual({ gsFromCenter: 1.5, gsFromService: 2, volley: 1.2, serve: 1.2, dropshot: 1.2 });
+    expect(D.prima).toEqual({ gsFromCenter: 2, gsFromService: 3, volley: 0.7, serve: 0.7, dropshot: 1 });
   });
 });
 

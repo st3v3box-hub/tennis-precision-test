@@ -1,7 +1,7 @@
 import React from 'react';
 import type { TestSession } from '../../types';
 import { MODULE_LABELS, modulePasses, moduleDisplayName, OUTCOME_LABEL } from '../../lib/protocol';
-import { describeZones, isStandardZones } from '../../lib/zones';
+import { describeZones, isStandardZones, withDropshot } from '../../lib/zones';
 import { useAppData } from '../../contexts/AppDataContext';
 import { CourtZones } from '../brand/CourtZones';
 import { CATEGORY_TARGETS } from '../../lib/protocol';
@@ -17,7 +17,8 @@ export const SessionOutcome: React.FC<{ session: TestSession }> = ({ session }) 
 
   return (
     <div className="bg-white rounded-2xl border border-black/[0.06] p-4 grid grid-cols-[88px_minmax(0,1fr)] gap-4 items-start">
-      <CourtZones measures={zones.measures} level={zones.level} showLabels={false} className="w-full" title="Zone usate" />
+      <CourtZones measures={zones.measures ? withDropshot(zones.measures, zones.level, settings.zoneDefaults) : null} level={zones.level} showLabels={false} className="w-full" title="Zone usate"
+        only={session.series.some(x => x.testType === 'dropshot') ? ['groundstroke', 'volley', 'serve', 'dropshot'] : undefined} />
       <div className="min-w-0 space-y-3">
         <div>
           <div className="flex items-center gap-2 flex-wrap">
@@ -30,6 +31,7 @@ export const SessionOutcome: React.FC<{ session: TestSession }> = ({ session }) 
           </div>
           <p className="text-xs text-gray-600 mt-1 leading-relaxed">
             Fondo: {d.groundstroke}<br />Volée: {d.volley} · Servizio: {d.serve}
+            {session.series.some(s => s.testType === 'dropshot') && <><br />Smorzata: {d.dropshot}</>}
           </p>
         </div>
         {session.plannedModules && (

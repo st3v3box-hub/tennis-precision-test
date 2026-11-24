@@ -1,5 +1,5 @@
-import { radarStrokes } from '../lib/formulas';
-import { SeriesBars, StrokeMetricsTable, ZonesPanel } from '../components/report/ReportBlocks';
+import { radarStrokes, familiesWithSpecials } from '../lib/formulas';
+import { SeriesBars, StrokeMetricsTable, ZonesPanel, FamilyCharts } from '../components/report/ReportBlocks';
 import { BrandLockup } from '../components/brand/BrandLockup';
 import React, { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -186,6 +186,12 @@ export const PlayerReportPage: React.FC = () => {
                 </div>
               </Card>
             </section>
+
+            {familiesWithSpecials(latest.r.stats, first?.r.stats).length > 0 && (
+              <Card title="Colpi speciali per famiglia" subtitle={first ? 'Ultimo test a colori, primo test in grigio' : 'Media per colpo, su 10'} className="break-inside-avoid">
+                <FamilyCharts results={latest.r} compare={first?.r} size={300} />
+              </Card>
+            )}
 
             {trend.length >= 2 && (
               <Card title="Andamento nel tempo" subtitle="% ideale test dopo test" className="break-inside-avoid">

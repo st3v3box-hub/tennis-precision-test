@@ -4,9 +4,10 @@ import type { WizardState, WizardPlayerData, Category, SeriesResult, TestSession
 import { uid } from '../../lib/storage';
 import { useAppData } from '../../contexts/AppDataContext';
 import { ProgressSteps } from '../ui/ProgressSteps';
-import { WIZARD_STEPS, MODULE_STEP_ORDER, DEFAULT_MODULES, detectedModules, detectedDirection } from '../../lib/protocol';
+import { WIZARD_STEPS, MODULE_STEP_ORDER, DEFAULT_MODULES, detectedModules, detectedOption, OPTION_MODULES, isOptionModule } from '../../lib/protocol';
 import { resolveSessionZones } from '../../lib/zones';
 import { StepSingleStroke } from './StepSingleStroke';
+import type { OptionModule as OptionModuleId } from '../../lib/protocol';
 import { ModuleActions } from './ModuleActions';
 import { liveSimLabel } from '../results/GameSimCard';
 import { gameThresholdFor } from '../../lib/match';
@@ -20,14 +21,11 @@ import { StepReview } from './StepReview';
 
 const ALL_MODULES = DEFAULT_MODULES;
 
-const DEFAULT_DIRECTIONS: WizardState['strokeDirections'] = { forehand: 'cross', backhand: 'cross', insideout: 'cross' };
+const DEFAULT_DIRECTIONS: WizardState['strokeDirections'] = {};
 
 /** Directions used by an existing (draft) session */
-const directionsOf = (series: SeriesResult[]): WizardState['strokeDirections'] => ({
-  forehand: detectedDirection(series, 'forehand'),
-  backhand: detectedDirection(series, 'backhand'),
-  insideout: detectedDirection(series, 'insideout'),
-});
+const directionsOf = (series: SeriesResult[]): WizardState['strokeDirections'] =>
+  Object.fromEntries(OPTION_MODULES.filter(m => series.some(s => s.testType === m)).map(m => [m, detectedOption(series, m).id]));
 
 /** Custom zones of a saved session become the player's choice again on resume */
 const zonesOf = (s: TestSession): WizardPlayerData['zones'] => (s.zones && !s.zones.standard ? s.zones : undefined);
@@ -393,9 +391,9 @@ export const WizardContainer: React.FC = () => {
       <div className="max-w-2xl mx-auto px-4 py-6">
         {currentStepId === 'meta' && <StepMeta {...stepProps} />}
         {currentStepId === 'groundstrokes' && <StepGroundstrokes {...stepProps} />}
-        {currentStepId === 'forehand' && <StepSingleStroke key="fh" module="forehand" {...stepProps} />}
-        {currentStepId === 'backhand' && <StepSingleStroke key="bh" module="backhand" {...stepProps} />}
-        {currentStepId === 'insideout' && <StepSingleStroke key="io" module="insideout" {...stepProps} />}
+        {currentStepId && isOptionModule(currentStepId as TestType) && (
+          <StepSingleStroke key={currentStepId} module={currentStepId as OptionModuleId} {...stepProps} />
+        )}
         {currentStepId === 'combined' && <StepCombined {...stepProps} />}
         {currentStepId === 'return' && <StepReturn {...stepProps} />}
         {currentStepId === 'serve' && <StepServe {...stepProps} />}

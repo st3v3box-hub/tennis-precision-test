@@ -9,7 +9,7 @@ import type {
   ScoreScale,
   AppSettings,
 } from '../types';
-import { MODULE_PASS } from './protocol';
+import { MODULE_PASS, type Family } from './protocol';
 
 // ─── Primitives ─────────────────────────────────────────────────────────────
 
@@ -84,7 +84,34 @@ const STROKE_LABELS: Record<StrokeName, string> = {
   return: 'Return',
   backhand: 'Backhand',
   volley: 'Volley',
+  slice: 'Back',
+  putaway: 'Chiusura',
+  approach: 'Attacco-volée',
+  smash_volo: 'Smash al volo',
+  smash_rimbalzo: 'Smash a rimbalzo',
+  dropshot: 'Smorzata',
 };
+
+/** The 6 strokes of the general radar, in radar order. Same for every test, old and new. */
+export const BASE_STROKES: StrokeName[] = ['serve', 'forehand', 'combined', 'return', 'backhand', 'volley'];
+export const isBaseStroke = (s: StrokeName) => BASE_STROKES.includes(s);
+
+/** Strokes of each family radar. Forehand and backhand also appear in the "fondo" radar. */
+export const FAMILY_STROKES: Record<Family, StrokeName[]> = {
+  fondo: ['forehand', 'insideout', 'putaway', 'slice', 'backhand'],
+  servizio: ['serve', 'return'],
+  rete: ['volley', 'approach', 'smash_volo', 'smash_rimbalzo'],
+  sensibilita: ['dropshot'],
+};
+
+/** Family of a stroke (for colours): forehand and backhand belong to "fondo" */
+export function strokeFamily(s: StrokeName): Family {
+  return s === 'serve' || s === 'return' ? 'servizio' : s === 'combined' ? 'fondo'
+    : (Object.keys(FAMILY_STROKES) as Family[]).find(f => FAMILY_STROKES[f].includes(s)) ?? 'fondo';
+}
+
+/** Strokes to list in tables: the 6 base strokes always, the special ones only when tested. */
+export const visibleStats = (stats: StrokeStats[]) => stats.filter(s => isBaseStroke(s.stroke) || s.scores.length > 0);
 
 export function computeStrokeStats(
   session: TestSession,
@@ -120,12 +147,18 @@ export function computeStrokeStats(
   return [
     make('serve', scores(s => s.testType === 'serve'), MODULE_PASS.serve),
     make('forehand', scores(s => s.testType === 'forehand' || (s.testType === 'groundstrokes' && s.direction === 'fh_cross')), fhThreshold),
-    // 7th axis, next to the forehand. Untested on older sessions: left out of radar and % (see radarStats).
     make('insideout', scores(s => s.testType === 'insideout'), MODULE_PASS.insideout),
     make('combined', scores(s => s.testType === 'combined'), MODULE_PASS.combined),
     make('return', scores(s => s.testType === 'return'), MODULE_PASS.return),
     make('backhand', scores(s => s.testType === 'backhand' || (s.testType === 'groundstrokes' && s.direction === 'bh_cross')), bhThreshold),
     make('volley', scores(s => s.testType === 'volley'), MODULE_PASS.volley),
+    // Special strokes: shown and counted only when tested
+    make('slice', scores(s => s.testType === 'slice'), MODULE_PASS.slice),
+    make('putaway', scores(s => s.testType === 'putaway'), MODULE_PASS.putaway),
+    make('approach', scores(s => s.testType === 'approach'), MODULE_PASS.approach),
+    make('smash_volo', scores(s => s.testType === 'smash_volo'), MODULE_PASS.smash_volo),
+    make('smash_rimbalzo', scores(s => s.testType === 'smash_rimbalzo'), MODULE_PASS.smash_rimbalzo),
+    make('dropshot', scores(s => s.testType === 'dropshot'), MODULE_PASS.dropshot),
   ];
 }
 
@@ -187,11 +220,20 @@ export function computePrecisionTime(
 
 // ─── Full session results ────────────────────────────────────────────────────
 
-/** Axes shown on a radar: the 6 base strokes, plus Sventaglio when any of the lists has it */
-export function radarStrokes(...lists: (StrokeStats[] | undefined)[]): StrokeName[] {
-  const withInsideOut = lists.some(l => l?.some(s => s.stroke === 'insideout' && s.scores.length > 0));
-  const order = (lists.find(Boolean) ?? []).map(s => s.stroke);
-  return order.filter(st => st !== 'insideout' || withInsideOut);
+/** Axes of the general radar: always the 6 base strokes (the special ones have their family radars) */
+export function radarStrokes(..._lists: (StrokeStats[] | undefined)[]): StrokeName[] {
+  return BASE_STROKES;
+}
+
+/** Axes of a family radar: the family strokes tested in at least one of the lists */
+export function familyAxes(family: Family, ...lists: (StrokeStats[] | undefined)[]): StrokeName[] {
+  return FAMILY_STROKES[family].filter(st => lists.some(l => l?.some(s => s.stroke === st && s.scores.length > 0)));
+}
+
+/** Families worth their own chart: at least one special stroke tested (fondo/rete/sensibilità) */
+export function familiesWithSpecials(...lists: (StrokeStats[] | undefined)[]): Family[] {
+  return (['fondo', 'rete', 'sensibilita'] as Family[]).filter(f =>
+    FAMILY_STROKES[f].some(st => !isBaseStroke(st) && lists.some(l => l?.some(s => s.stroke === st && s.scores.length > 0))));
 }
 
 /** Values of one stats list on the given axes (0 for missing) */
@@ -216,11 +258,13 @@ export function computeSessionResults(
   const scale: ScoreScale = options.scoreScale ?? 'radar';
 
   const stats = computeStrokeStats(session, mode);
-  // Radar values: 6 axes, 7 when the Sventaglio was tested (older tests stay identical)
-  const values = radarValuesFor(stats, radarStrokes(stats));
+  // General radar: the 6 base strokes
+  const values = radarValuesFor(stats, BASE_STROKES);
 
-  // Partial tests: only strokes that actually have data count towards the %
-  const testedValues = stats.filter(s => s.scores.length > 0).map(s => s.ave);
+  // % ideale on every stroke actually tested (base ones in radar order, then the special ones):
+  // tests with only base strokes give exactly the same value as before.
+  const ordered = [...BASE_STROKES.map(b => stats.find(s => s.stroke === b)!), ...stats.filter(s => !isBaseStroke(s.stroke))];
+  const testedValues = ordered.filter(s => s.scores.length > 0).map(s => s.ave);
   const poi = scale === 'linear' ? linearPercent(testedValues) : radarPercent(testedValues);
 
   return {

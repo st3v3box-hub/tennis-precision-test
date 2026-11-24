@@ -1,5 +1,11 @@
 import type { TestSession } from '../types';
-import { computeSessionResults, type ResultOptions } from './formulas';
+import { computeSessionResults, visibleStats, type ResultOptions } from './formulas';
+import type { StrokeName } from '../types';
+
+const SPECIAL_COLUMNS: [StrokeName, string][] = [
+  ['insideout', 'Sventaglio'], ['slice', 'Back'], ['putaway', 'Chiusura'], ['approach', 'AttaccoVolee'],
+  ['smash_volo', 'SmashVolo'], ['smash_rimbalzo', 'SmashRimbalzo'], ['dropshot', 'Smorzata'],
+];
 
 function csvRow(cells: (string | number)[]): string {
   return cells.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',');
@@ -19,7 +25,7 @@ export function exportSessionCSV(session: TestSession, options: ResultOptions = 
   lines.push('');
 
   lines.push(csvRow(['Stroke', 'Label', 'Ave', 'Dev', 'N Serie']));
-  for (const s of r.stats.filter(st => st.stroke !== 'insideout' || st.scores.length > 0)) {
+  for (const s of visibleStats(r.stats)) {
     lines.push(csvRow([s.stroke, s.label, s.ave.toFixed(3), s.dev.toFixed(3), s.scores.length]));
   }
   lines.push('');
@@ -68,8 +74,7 @@ export function exportHistoryCSV(sessions: TestSession[], options: ResultOptions
       'BH_Dev',
       'Volley_Ave',
       'Volley_Dev',
-      'Sventaglio_Ave',
-      'Sventaglio_Dev',
+      ...SPECIAL_COLUMNS.flatMap(([, n]) => [`${n}_Ave`, `${n}_Dev`]),
       'Area',
       '%Ideale',
     ])
@@ -98,8 +103,7 @@ export function exportHistoryCSV(sessions: TestSession[], options: ResultOptions
         m.backhand?.dev.toFixed(3) ?? '',
         m.volley?.ave.toFixed(3) ?? '',
         m.volley?.dev.toFixed(3) ?? '',
-        m.insideout?.scores.length ? m.insideout.ave.toFixed(3) : '',
-        m.insideout?.scores.length ? m.insideout.dev.toFixed(3) : '',
+        ...SPECIAL_COLUMNS.flatMap(([k]) => (m[k]?.scores.length ? [m[k].ave.toFixed(3), m[k].dev.toFixed(3)] : ['', ''])),
         r.radarArea.toFixed(3),
         r.percentOfIdeal.toFixed(2) + '%',
       ])
