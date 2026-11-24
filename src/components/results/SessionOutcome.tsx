@@ -13,7 +13,7 @@ export const SessionOutcome: React.FC<{ session: TestSession }> = ({ session }) 
   const zones = session.zones ?? { level: session.category, measures: session.category === 'u10_u12' ? null : settings.zoneDefaults[session.category], standard: true };
   const d = describeZones(zones, session.category);
   const custom = !isStandardZones(session);
-  const label = (m: (typeof passes)[number]['module']) => moduleDisplayName(session.series, m);
+  const label = (m: (typeof passes)[number]['module']) => moduleDisplayName(session.series, m, session.moduleOptions);
 
   return (
     <div className="bg-white rounded-2xl border border-black/[0.06] p-4 grid grid-cols-[88px_minmax(0,1fr)] gap-4 items-start">

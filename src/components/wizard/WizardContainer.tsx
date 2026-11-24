@@ -4,7 +4,7 @@ import type { WizardState, WizardPlayerData, Category, SeriesResult, TestSession
 import { uid } from '../../lib/storage';
 import { useAppData } from '../../contexts/AppDataContext';
 import { ProgressSteps } from '../ui/ProgressSteps';
-import { WIZARD_STEPS, MODULE_STEP_ORDER, DEFAULT_MODULES, detectedModules, detectedOption, OPTION_MODULES, isOptionModule } from '../../lib/protocol';
+import { WIZARD_STEPS, MODULE_STEP_ORDER, DEFAULT_MODULES, detectedModules, detectedOption, OPTION_MODULES, isOptionModule, moduleOption } from '../../lib/protocol';
 import { resolveSessionZones } from '../../lib/zones';
 import { StepSingleStroke } from './StepSingleStroke';
 import type { OptionModule as OptionModuleId } from '../../lib/protocol';
@@ -16,7 +16,6 @@ import { StepGroundstrokes } from './StepGroundstrokes';
 import { StepCombined } from './StepCombined';
 import { StepReturn } from './StepReturn';
 import { StepServe } from './StepServe';
-import { StepVolley } from './StepVolley';
 import { StepReview } from './StepReview';
 
 const ALL_MODULES = DEFAULT_MODULES;
@@ -24,8 +23,8 @@ const ALL_MODULES = DEFAULT_MODULES;
 const DEFAULT_DIRECTIONS: WizardState['strokeDirections'] = {};
 
 /** Directions used by an existing (draft) session */
-const directionsOf = (series: SeriesResult[]): WizardState['strokeDirections'] =>
-  Object.fromEntries(OPTION_MODULES.filter(m => series.some(s => s.testType === m)).map(m => [m, detectedOption(series, m).id]));
+const directionsOf = (series: SeriesResult[], saved?: Partial<Record<string, string>>): WizardState['strokeDirections'] =>
+  Object.fromEntries(OPTION_MODULES.filter(m => series.some(s => s.testType === m) || saved?.[m]).map(m => [m, detectedOption(series, m, saved?.[m]).id]));
 
 /** Custom zones of a saved session become the player's choice again on resume */
 const zonesOf = (s: TestSession): WizardPlayerData['zones'] => (s.zones && !s.zones.standard ? s.zones : undefined);
@@ -126,7 +125,7 @@ export const WizardContainer: React.FC = () => {
         }],
         challengeMode: 'none',
         selectedModules,
-        strokeDirections: directionsOf(resumeSession.series),
+        strokeDirections: directionsOf(resumeSession.series, resumeSession.moduleOptions),
         draftSessionIds: [resumeSession.id],
       };
     }
@@ -163,7 +162,7 @@ export const WizardContainer: React.FC = () => {
         players,
         challengeMode: resumeChallenge.mode,
         selectedModules,
-        strokeDirections: directionsOf(challengeSessions[0]?.series ?? []),
+        strokeDirections: directionsOf(challengeSessions[0]?.series ?? [], challengeSessions[0]?.moduleOptions),
         challengeId: resumeChallenge.challengeId,
         draftSessionIds: challengeSessions.map(s => s.id),
       };
@@ -262,8 +261,15 @@ export const WizardContainer: React.FC = () => {
     // What was planned, when the test was closed before doing every selected module
     ...(sameModules(modules, state.selectedModules) ? {} : { plannedModules: MODULE_STEP_ORDER.filter(m => state.selectedModules.includes(m)) }),
     zones: resolveSessionZones(p.category, p.zones, settings.zoneDefaults),
+    ...(moduleOptionsOf(modules) ? { moduleOptions: moduleOptionsOf(modules) } : {}),
     ...(state.challengeId ? { challengeId: state.challengeId } : {}),
   });
+
+  /** Options of the configurable modules in this test (so a resumed draft keeps them) */
+  const moduleOptionsOf = (modules: TestType[]) => {
+    const entries = modules.filter(isOptionModule).map(m => [m, moduleOption(m, state.strokeDirections[m]).id] as const);
+    return entries.length ? Object.fromEntries(entries) : undefined;
+  };
 
   const resolvePlayer = async (p: WizardPlayerData, now: string): Promise<string> => {
     if (p.profileId) return p.profileId;
@@ -397,7 +403,6 @@ export const WizardContainer: React.FC = () => {
         {currentStepId === 'combined' && <StepCombined {...stepProps} />}
         {currentStepId === 'return' && <StepReturn {...stepProps} />}
         {currentStepId === 'serve' && <StepServe {...stepProps} />}
-        {currentStepId === 'volley' && <StepVolley {...stepProps} />}
         {currentStepId !== 'meta' && currentStepId !== 'review' && (
           <ModuleActions
             state={state}

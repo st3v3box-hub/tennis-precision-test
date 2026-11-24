@@ -56,7 +56,7 @@ export const GameSimCard: React.FC<{ session: TestSession }> = ({ session }) => 
         <ol className="mt-3 flex flex-wrap gap-1.5">
           {steps.map(s => (
             <li key={s.m} className="text-xs rounded-lg bg-gray-50 border border-gray-200 px-2 py-1">
-              dopo {moduleDisplayName(session.series, s.m)}: <strong className="tabular-nums">{s.label}</strong>
+              dopo {moduleDisplayName(session.series, s.m, session.moduleOptions)}: <strong className="tabular-nums">{s.label}</strong>
             </li>
           ))}
         </ol>

@@ -83,7 +83,7 @@ const PROTOCOL_ROWS = [
   { test: 'Combined', series: 10, balls: 10, soglia: '5/10', pattern: 'Lungolinea / Diagonale (alternati)' },
   { test: 'Return', series: 10, balls: 10, soglia: '5/10', pattern: 'Da Destra (deuce) / Da Sinistra (ad) (alternati)' },
   { test: 'Servizio', series: 6, balls: 10, soglia: '3/6', pattern: '1ª Destra / 2ª Sinistra (alternati) + striscia target' },
-  { test: 'Volley', series: 10, balls: 10, soglia: '5/10', pattern: 'Volee FH / Volee BH (alternati)' },
+  { test: 'Volley', series: 10, balls: 10, soglia: '5/10', pattern: 'Volée di dritto e di rovescio alternate (protocollo), oppure solo dritto o solo rovescio' },
   { test: 'Attacco e volée', series: 20, balls: 10, soglia: '10/20', pattern: '5 coppie per serie, dritto e rovescio alternati: attacco lungolinea + volée incrociata, o attacco incrociato + volée lungolinea. La coppia vale solo se entrano tutti e due i colpi; perfetta = 5 coppie su 5' },
   { test: 'Smash al volo', series: 20, balls: 10, soglia: '10/20', pattern: 'Nella zona del dritto o del rovescio (angolo di fondo)' },
   { test: 'Smash a rimbalzo', series: 20, balls: 10, soglia: '10/20', pattern: 'Nella zona del dritto o del rovescio (angolo di fondo)' },

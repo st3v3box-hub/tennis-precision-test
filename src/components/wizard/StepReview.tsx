@@ -8,7 +8,7 @@ import {
   COMBINED_SERIES,
   RETURN_SERIES,
   SERVE_SERIES,
-  VOLLEY_SERIES, optionSeries, modulePasses, isOptionModule, moduleOption, MODULE_LABELS, MODULE_STEP_ORDER } from '../../lib/protocol';
+  optionSeries, modulePasses, isOptionModule, moduleOption, MODULE_LABELS, MODULE_STEP_ORDER } from '../../lib/protocol';
 
 interface Props {
   state: WizardState;
@@ -48,7 +48,6 @@ function makeRows(player: WizardPlayerData, selectedModules: TestType[], options
     combined: [make('Combined', 'combined', COMBINED_SERIES)],
     return: [make('Return', 'return', RETURN_SERIES)],
     serve: [make('Servizio', 'serve', SERVE_SERIES)],
-    volley: [make('Volley', 'volley', VOLLEY_SERIES)],
   };
   const allRows: SummaryRow[] = MODULE_STEP_ORDER.flatMap(m => {
     if (isOptionModule(m)) {

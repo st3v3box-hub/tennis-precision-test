@@ -27,6 +27,7 @@ const FEED: Record<OptionModule, string> = {
   insideout: 'Palla dal cesto sul lato del rovescio, il giocatore gira intorno e colpisce di dritto',
   slice: '10 palle dal cesto, colpite in back',
   putaway: 'Palla corta e alta dal cesto, da chiudere vincente di dritto',
+  volley: '10 palle a rete, volée incrociate',
   approach: '5 coppie: palla corta da attaccare, poi una volée. La coppia vale se entrano tutti e due i colpi',
   smash_volo: 'Pallonetto dal cesto, smash al volo',
   smash_rimbalzo: 'Pallonetto alto dal cesto, smash dopo il rimbalzo',
@@ -76,8 +77,8 @@ export const StepSingleStroke: React.FC<Props> = ({ module, state, setSeriesResu
             <span className={`block text-[10px] font-bold rounded-full px-2 py-0.5 mb-1 text-center ${family.soft}`}>{family.label}</span>
             <CourtZones
               measures={measures} level={zones.level}
-              focus={target.zone === 'dropshot' ? 'dropshot' : 'groundstroke'}
-              only={target.zone === 'dropshot' ? ['dropshot'] : target.zone === 'approach' ? ['groundstroke', 'volley'] : ['groundstroke']}
+              focus={target.zone === 'dropshot' ? 'dropshot' : target.zone === 'volley' ? 'volley' : 'groundstroke'}
+              only={target.zone === 'dropshot' ? ['dropshot'] : target.zone === 'volley' ? ['volley'] : target.zone === 'approach' ? ['groundstroke', 'volley'] : ['groundstroke']}
               bothCorners={target.zone === 'approach'}
               mirror={target.mirror}
               showLabels={false} className="h-24 w-auto" title="Zona bersaglio" />

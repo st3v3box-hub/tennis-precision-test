@@ -20,7 +20,7 @@ const GREEN = '#17663e';
 const PALE = '#b3d5bc';
 
 export function moduleTitle(session: TestSession, m: ModulePass['module']): string {
-  return moduleDisplayName(session.series, m);
+  return moduleDisplayName(session.series, m, session.moduleOptions);
 }
 
 const outcomeCls: Record<ModulePass['outcome'], string> = {

@@ -141,3 +141,36 @@ describe('smorzata zone', () => {
     expect(describeZones({ level: 'seconda', measures: old, standard: true }, 'seconda').dropshot).toContain('1,2 m');
   });
 });
+
+describe('volée: alternate, solo dritto, solo rovescio', () => {
+  it('three options; the original alternated protocol is the default', () => {
+    expect(MODULE_OPTIONS.volley.map(o => o.id)).toEqual(['alt', 'fh', 'bh']);
+    expect(optionSeries('volley', undefined).slice(0, 2).map(s => s.direction)).toEqual(['fh_volley', 'bh_volley']);
+    expect(optionSeries('volley', 'bh').every(s => s.direction === 'bh_volley')).toBe(true);
+    expect(optionSeries('volley', 'fh')).toHaveLength(10);
+    expect(MODULE_PASS.volley).toBe(5);
+  });
+  it('old tests (alternated) are still read as alternated, with the plain name', () => {
+    const old: SeriesResult[] = Array.from({ length: 10 }, (_, i) => ({
+      testType: 'volley', seriesIndex: i, score: 7, direction: i % 2 === 0 ? 'fh_volley' : 'bh_volley',
+    }));
+    expect(detectedOption(old, 'volley').id).toBe('alt');
+    expect(moduleDisplayName(old, 'volley')).toBe('Volley');
+  });
+  it('solo dritto / solo rovescio are recognised from the series', () => {
+    expect(detectedOption(play('volley', 'fh', [7, 8, 9]), 'volley').id).toBe('fh');
+    expect(detectedOption(play('volley', 'bh', [7]), 'volley').id).toBe('bh');
+    expect(moduleDisplayName(play('volley', 'bh', [7, 8]), 'volley')).toBe('Volley · solo rovescio');
+  });
+  it('one series only is ambiguous: the option saved with the test wins', () => {
+    const one = play('volley', 'fh', [7]);
+    expect(detectedOption(one, 'volley').id).toBe('alt');
+    expect(detectedOption(one, 'volley', 'fh').id).toBe('fh');
+    // a saved option that contradicts the series is ignored
+    expect(detectedOption(play('volley', 'bh', [7, 8]), 'volley', 'fh').id).toBe('bh');
+  });
+  it('the volley axis counts every volée whatever the option', () => {
+    const st = computeStrokeStats(sess(play('volley', 'bh', [6, 8])));
+    expect(st.find(s => s.stroke === 'volley')!.ave).toBe(7);
+  });
+});

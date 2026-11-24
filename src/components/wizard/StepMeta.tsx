@@ -20,7 +20,7 @@ const MODULE_HINT: Partial<Record<TestType, string>> = {
   combined: 'Lungolinea e diagonale alternati',
   return: 'Da destra e da sinistra alternati',
   serve: '1ª da destra e 2ª da sinistra, con la striscia',
-  volley: 'Volée di dritto e di rovescio alternate',
+  volley: 'Dritto e rovescio alternati, solo dritto o solo rovescio',
   approach: 'Attacco e volée a coppie, dritto e rovescio alternati',
   smash_volo: 'Smash al volo da pallonetto',
   smash_rimbalzo: 'Smash dopo il rimbalzo',

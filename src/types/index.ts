@@ -118,6 +118,8 @@ export interface TestSession {
   challengeId?: string;   // groups sessions belonging to the same challenge
   /** Target zones used in this test (snapshot). Missing on tests made before zones existed = standard. */
   zones?: SessionZones;
+  /** Option chosen for each configurable module (e.g. volley: 'fh'). Missing on older tests. */
+  moduleOptions?: Partial<Record<string, string>>;
 }
 
 // ─── Target zones ────────────────────────────────────────────────────────────

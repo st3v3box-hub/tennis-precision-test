@@ -21,9 +21,9 @@ export const GROUNDSTROKES_SERIES: SeriesSpec[] = Array.from({ length: 20 }, (_,
 // ═════════════════════════════════════════════════════════════════════════════
 
 export type OptionModule =
-  | 'forehand' | 'backhand' | 'insideout' | 'slice' | 'putaway' | 'approach' | 'smash_volo' | 'smash_rimbalzo' | 'dropshot';
+  | 'forehand' | 'backhand' | 'insideout' | 'slice' | 'putaway' | 'volley' | 'approach' | 'smash_volo' | 'smash_rimbalzo' | 'dropshot';
 export const OPTION_MODULES: OptionModule[] = [
-  'forehand', 'backhand', 'insideout', 'slice', 'putaway', 'approach', 'smash_volo', 'smash_rimbalzo', 'dropshot',
+  'forehand', 'backhand', 'insideout', 'slice', 'putaway', 'volley', 'approach', 'smash_volo', 'smash_rimbalzo', 'dropshot',
 ];
 export const isOptionModule = (m: TestType): m is OptionModule => (OPTION_MODULES as TestType[]).includes(m);
 
@@ -34,8 +34,8 @@ export const isSingleStroke = (m: TestType): m is SingleStrokeModule => (SINGLE_
 
 /** Where the target is drawn on the court diagram */
 export interface ModuleTarget {
-  /** groundstroke = back corner box · dropshot = squares at the net · approach = back corners + volley strip */
-  zone: 'groundstroke' | 'dropshot' | 'approach';
+  /** groundstroke = back corner box · volley = strip · dropshot = squares at the net · approach = back corners + volley strip */
+  zone: 'groundstroke' | 'volley' | 'dropshot' | 'approach';
   /** Groundstroke box on the other side (see CourtZones) */
   mirror: boolean;
 }
@@ -78,6 +78,12 @@ export const MODULE_OPTIONS: Record<OptionModule, ModuleOption[]> = {
   putaway: [
     { id: 'cross', label: 'Incrociato', hint: 'palla corta e alta, chiusa in diagonale', cycle: ['pa_cross'], target: gs(false) },
     { id: 'line', label: 'Lungolinea', hint: 'palla corta e alta, chiusa lungo la linea', cycle: ['pa_line'], target: gs(true) },
+  ],
+  volley: [
+    // First = the original protocol (alternated): older tests are read as this
+    { id: 'alt', label: 'Dritto e rovescio', hint: 'volée di dritto e di rovescio alternate', cycle: ['fh_volley', 'bh_volley'], target: { zone: 'volley', mirror: false } },
+    { id: 'fh', label: 'Solo dritto', hint: '10 serie di volée di dritto', cycle: ['fh_volley'], target: { zone: 'volley', mirror: false } },
+    { id: 'bh', label: 'Solo rovescio', hint: '10 serie di volée di rovescio', cycle: ['bh_volley'], target: { zone: 'volley', mirror: false } },
   ],
   approach: [
     {
@@ -153,16 +159,32 @@ export function optionSeries(module: OptionModule, optionId: string | undefined)
   });
 }
 
-/** Option used by a module in an existing series list (first option when unknown) */
-export function detectedOption(series: SeriesResult[], module: OptionModule): ModuleOption {
-  const d = series.find(s => s.testType === module && s.direction)?.direction;
-  return MODULE_OPTIONS[module].find(o => d !== undefined && o.cycle.includes(d)) ?? MODULE_OPTIONS[module][0];
+/**
+ * Option used by a module in an existing series list. An option fits when every saved series has
+ * the direction it would have had with that option (series index included, so "only forehand"
+ * and "alternated" are told apart). `saved` = option stored with the test, preferred when it fits.
+ * Ambiguous or unknown → the first fitting option, i.e. the original protocol.
+ */
+export function detectedOption(series: SeriesResult[], module: OptionModule, saved?: string): ModuleOption {
+  const list = MODULE_OPTIONS[module];
+  const own = series.filter(s => s.testType === module && s.direction);
+  const fits = list.filter(o => own.every(s => s.direction === o.cycle[s.seriesIndex % o.cycle.length]));
+  if (saved) {
+    const pick = fits.find(o => o.id === saved);
+    if (pick) return pick;
+  }
+  if (fits.length > 0) return fits[0];
+  const d = own[0]?.direction;
+  return list.find(o => d !== undefined && o.cycle.includes(d)) ?? list[0];
 }
 
 /** Module name with its option, e.g. "Solo dritto incrociato", "Back (slice) · rovescio lungolinea" */
-export function moduleDisplayName(series: SeriesResult[], module: TestType): string {
+export function moduleDisplayName(series: SeriesResult[], module: TestType, saved?: Partial<Record<string, string>>): string {
   if (!isOptionModule(module)) return MODULE_LABELS[module];
-  const opt = detectedOption(series, module).label.toLowerCase();
+  const option = detectedOption(series, module, saved?.[module]);
+  // Alternated volleys are the original module: keep its plain name
+  if (module === 'volley' && option.id === 'alt') return MODULE_LABELS.volley;
+  const opt = option.label.toLowerCase();
   return isSingleStroke(module) || module === 'putaway' || module === 'dropshot'
     ? `${MODULE_LABELS[module]} ${opt}`
     : `${MODULE_LABELS[module]} · ${opt}`;
